@@ -1,3 +1,4 @@
 {
-    "token": "a-very-long-token"
+    "token": "a-very-long-token",
+    "prefix": "r."
 }
