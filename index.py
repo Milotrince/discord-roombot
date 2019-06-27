@@ -1,9 +1,7 @@
-import os
 import json
-import dataset
-import discord
+import os
 from discord.ext import commands
-from datetime import datetime
+from room import *
 
 # https://discordapp.com/api/oauth2/authorize?client_id=592816310656696341&permissions=268576768&scope=bot
 print("""
@@ -17,16 +15,14 @@ print("""
 current_dir = os.path.dirname(__file__)
 with open(os.path.join(current_dir, 'config.json')) as config_file:  
     config = json.load(config_file)
-    
-# Start database
-db = dataset.connect('sqlite:///:memory:')
-rooms = db['rooms']
+
 
 # Define bot
 bot = commands.Bot(command_prefix=config['prefix'])
 
 @bot.event
 async def on_ready():
+    """Fired when bot comes online"""
     print('{0} is online!'.format(bot.user.name))
 
 
@@ -34,68 +30,77 @@ async def on_ready():
 async def new(ctx, *args):
     """Make new room"""
 
-    activity =  args[0] if len(args) > 0 else '?'
-    note = args[1] if len(args) > 1 else discord.Embed.Empty
-    waiting_for = args[2] if len(args) > 2 else 2
+    activity = None
+    activities = ctx.message.author.activities
+    if not args:
+        for a in activities:
+            activity = a.name
+            break
+    else:
+        activity = args[0]
+    
+    if not activity:
+        return await ctx.send('Please specify the room activity (or start doing something).')
 
-    new_room = dict(
-        guild=ctx.message.guild,
-        activity=activity,
-        description=note,
-        created=datetime.now(),
-        timeout=config['timeout'],
-        players=[ctx.message.author.name],
-        host=ctx.message.author.name,
-        waiting_for=waiting_for
-    )
-    # rooms.insert(new_room)
-    emb = room_embed(new_room)
+    new_room = Room.from_message(activity, ctx, args)
+    emb = new_room.get_embed()
     await ctx.send(embed=emb)
+
 
 @bot.command()
 async def join(ctx, *args):
     """Join a room"""
 
-    activity =  args[0] if len(args) > 0 else '?'
-    note = args[1] if len(args) > 1 else discord.Embed.Empty
-    waiting_for = args[2] if len(args) > 2 else 2
+    if len(args) < 1:
+        return await ctx.send("Please specify a room by activity or player.")
+    filter = args[0]
 
-    new_room = dict(
-        guild=ctx.message.guild,
-        activity=activity,
-        description=note,
-        created=datetime.now(),
-        timeout=config['timeout'],
-        players=[ctx.message.author.name],
-        host=ctx.message.author.name,
-        waiting_for=waiting_for
-    )
-    # rooms.insert(new_room)
-    emb = room_embed(new_room)
-    await ctx.send(embed=emb)
+    rooms_data = rooms.find(guild=ctx.message.guild.id)
+    if rooms_data:
+        room_match = None
+        for room_data in rooms_data:
+            r = Room.from_query(room_data)
+            if ctx.message.author.name in r.players:
+                return await ctx.send("You are already in a room.")
+            elif r.activity == filter or filter in room.players:
+                room_match = r
+                
+        if room_match:
+            member = ctx.message.author
+            if room_match.add_player(member.name):
+                role = await member.guild.create_role(name=room_match.activity)
+                await member.add_roles(role)
+                await ctx.send(embed=room_match.get_embed())
+            else:
+                await ctx.send("There was an error joining.")
+    else:
+        await ctx.send("Sorry, no rooms exist yet.")
+
+
+@bot.command()
+async def list(ctx):
+    rooms_data = rooms.find(guild=ctx.message.guild.id)
+    exists = False
+
+    embed = discord.Embed(color=discord.Color.blue())
+    for room_data in rooms_data:
+        exists = True
+        room = Room.from_query(room_data)
+
+        description = room.description if room.description else 'Players: ' + ', '.join(room.players)
+        embed.add_field(
+            name="{0} ({1}/{2})".format(room.activity, len(room.players), room.waiting_for),
+            value=description )
+    if exists:
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send("No rooms exist yet.")
+
 
 @bot.command()
 async def ping(ctx):
     """Pong!"""
     await ctx.send("Pong!")
 
-    
-def room_embed(info):
-    embed = discord.Embed(
-        color=discord.Color.blue(),
-        description=info['description'],
-        timestamp=info['created'] )
-    embed.set_author(name=info['activity'])
-    embed.add_field(
-        name="Players ({0})".format(len(info['players'])),
-        value=", ".join(info['players']) )
-    embed.add_field(
-        name="Waitng for {0} players".format(info['waiting_for']),
-        value="Room will disband in {0} {1}".format(info['timeout'], 'seconds') )
-    embed.set_footer(
-        text="Host: {0}".format(info['host']),
-        icon_url=discord.Embed.Empty )
-    
-    return embed
 
 bot.run(config['token'])
