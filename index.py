@@ -31,20 +31,33 @@ async def on_ready():
 @bot.command()
 async def new(ctx, *args):
     """Make a new room (uses current activity or input)."""
-
     activity = None
-    activities = ctx.message.author.activities
-    if not args:
-        for a in activities:
-            activity = a.name
-            break
+    player = ctx.message.author
+
+    if not args and player.activity:
+        activity = player.activity.name
     else:
         activity = " ".join(args)
     
     if not activity:
         return await ctx.send('Please specify the room activity (or start doing something).')
 
-    new_room = Room.from_message(activity, ctx, args)
+    rooms_data = rooms.find(guild=ctx.message.guild.id)
+    if rooms_data:
+        for room_data in rooms_data:
+            r = Room.from_query(room_data)
+            if player.name in r.players:
+                return await ctx.send("You are already in a room.")
+            if r.activity == activity:
+                activity += " ({})".format(player.name)
+
+    role = await player.guild.create_role(
+        name="Room - " + activity,
+        color=discord.Color.blue(),
+        hoist=True,
+        mentionable=True )
+    new_room = Room.from_message(activity, ctx, args, role.id)
+    await new_room.add_player(player)
     emb = new_room.get_embed()
     await ctx.send(embed=emb)
 
@@ -52,10 +65,10 @@ async def new(ctx, *args):
 @bot.command()
 async def join(ctx, *args):
     """Join a room (by activity or player)."""
-
+    # TODO: If full, send ping
     if len(args) < 1:
         return await ctx.send("Please specify a room by activity or player.")
-    filter = args[0]
+    filter = " ".join(args)
 
     rooms_data = rooms.find(guild=ctx.message.guild.id)
     if rooms_data:
@@ -68,25 +81,37 @@ async def join(ctx, *args):
                 room_match = r
                 
         if room_match:
-            member = ctx.message.author
-            if room_match.add_player(member.name):
-                role = await member.guild.create_role(name=room_match.activity)
-                print(role)
-                await member.add_roles(role)
+            player = ctx.message.author
+            if await room_match.add_player(player):
                 await ctx.send(embed=room_match.get_embed())
             else:
                 await ctx.send("There was an error joining.")
     else:
         await ctx.send("Sorry, no rooms exist yet.")
-        
+
+
+@bot.command()
+async def leave(ctx):
+    """Leave a room."""
+    player = ctx.message.author
+    rooms_data = rooms.find(guild=ctx.message.guild.id)
+    if rooms_data:
+        for room_data in rooms_data:
+            r = Room.from_query(room_data)
+            if player.name in r.players:
+                await r.remove_player(player)
+                return await ctx.send("You have left " + r.activity)
+    else:
+        return ctx.send("You are not in a room.")
+
 
 @bot.command()
 async def list(ctx):
     """List rooms in current guild."""
     rooms_data = rooms.find(guild=ctx.message.guild.id)
+    embed = discord.Embed(color=discord.Color.blue(), title="Rooms")
     exists = False
 
-    embed = discord.Embed(color=discord.Color.blue())
     for room_data in rooms_data:
         exists = True
         room = Room.from_query(room_data)
@@ -99,6 +124,24 @@ async def list(ctx):
         await ctx.send(embed=embed)
     else:
         await ctx.send("No rooms exist yet.")
+
+
+@bot.command()
+async def room(ctx, *args):
+    """Shows your current room (or look at another room by activity or player)."""
+    rooms_data = rooms.find(guild=ctx.message.guild.id)
+    filter = args[0] if args else ctx.message.author.name
+
+    rooms_data = rooms.find(guild=ctx.message.guild.id)
+    if rooms_data:
+        for room_data in rooms_data:
+            r = Room.from_query(room_data)
+            if filter in r.players or r.activity == filter:
+                return await ctx.send(embed=r.get_embed())        
+    else:
+        return await ctx.send("Sorry, no rooms exist yet.")
+    
+    return await ctx.send("Could not find room.")
 
 
 @bot.command()
@@ -120,8 +163,10 @@ async def help(ctx):
     await ctx.send(embed=embed)
 
 
+# Disable for full stack trace
 @bot.event
 async def on_command_error(ctx, error):
+    """Sends an error message when error is encountered."""
     pprint(error)
 
     if type(error) == discord.ext.commands.errors.CommandNotFound:
