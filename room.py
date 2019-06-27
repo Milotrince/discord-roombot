@@ -82,3 +82,7 @@ class Room:
             rooms.update(dict(id=self.id, players='\\'.join(self.players)), ['id'])
             return True
         return False
+
+    def disband(self):
+        """Delete room"""
+        rooms.delete(id=self.id)

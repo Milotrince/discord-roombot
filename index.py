@@ -2,6 +2,7 @@ import json
 import os
 from discord.ext import commands
 from room import *
+from pprint import pprint
 
 # https://discordapp.com/api/oauth2/authorize?client_id=592816310656696341&permissions=268576768&scope=bot
 print("""
@@ -19,6 +20,7 @@ with open(os.path.join(current_dir, 'config.json')) as config_file:
 
 # Define bot
 bot = commands.Bot(command_prefix=config['prefix'])
+bot.remove_command('help')
 
 @bot.event
 async def on_ready():
@@ -28,7 +30,7 @@ async def on_ready():
 
 @bot.command()
 async def new(ctx, *args):
-    """Make new room"""
+    """Make a new room (uses current activity or input)."""
 
     activity = None
     activities = ctx.message.author.activities
@@ -37,7 +39,7 @@ async def new(ctx, *args):
             activity = a.name
             break
     else:
-        activity = args[0]
+        activity = " ".join(args)
     
     if not activity:
         return await ctx.send('Please specify the room activity (or start doing something).')
@@ -49,7 +51,7 @@ async def new(ctx, *args):
 
 @bot.command()
 async def join(ctx, *args):
-    """Join a room"""
+    """Join a room (by activity or player)."""
 
     if len(args) < 1:
         return await ctx.send("Please specify a room by activity or player.")
@@ -69,16 +71,18 @@ async def join(ctx, *args):
             member = ctx.message.author
             if room_match.add_player(member.name):
                 role = await member.guild.create_role(name=room_match.activity)
+                print(role)
                 await member.add_roles(role)
                 await ctx.send(embed=room_match.get_embed())
             else:
                 await ctx.send("There was an error joining.")
     else:
         await ctx.send("Sorry, no rooms exist yet.")
-
+        
 
 @bot.command()
 async def list(ctx):
+    """List rooms in current guild."""
     rooms_data = rooms.find(guild=ctx.message.guild.id)
     exists = False
 
@@ -99,8 +103,31 @@ async def list(ctx):
 
 @bot.command()
 async def ping(ctx):
-    """Pong!"""
-    await ctx.send("Pong!")
+    """Pong! Shows latency."""
+    await ctx.send('Pong! Latency: `{0}`'.format(round(bot.latency, 1)))
+
+
+@bot.command()
+async def help(ctx):
+    """Shows the available commands."""
+    embed = discord.Embed(
+        color=discord.Color.blue(),
+        title="Commands" )
+    for command in bot.commands:
+        embed.add_field(
+            name=command,
+            value=command.short_doc )
+    await ctx.send(embed=embed)
+
+
+@bot.event
+async def on_command_error(ctx, error):
+    pprint(error)
+
+    if type(error) == discord.ext.commands.errors.CommandNotFound:
+        await ctx.send("Not a valid command. Try `{0}help`.".format(config['prefix']))
+    else:
+        await ctx.send("An error has occurred.")
 
 
 bot.run(config['token'])
