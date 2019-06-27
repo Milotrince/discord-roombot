@@ -61,6 +61,7 @@ class Room:
         """Generate a discord.Embed for this room"""
         description = discord.Embed.Empty if self.description == '' else self.description
         # TODO: format time
+        # TODO: disband if remaining time 0
         remaining_time = self.created + timedelta(seconds=self.timeout) - datetime.now()
 
         embed = discord.Embed(
@@ -83,7 +84,7 @@ class Room:
     async def add_player(self, player):
         """Add a player to this room"""
         if player.name not in self.players:
-            role = discord.utils.get(player.guild.roles, id=self.role_id)
+            role = player.guild.get_role(self.role_id)
             await player.add_roles(role)
 
             self.players.append(player.name)
@@ -94,13 +95,18 @@ class Room:
     async def remove_player(self, player):
         """Remove a player from this room"""
         if player.name in self.players:
-            role = discord.utils.get(player.guild.roles, id=self.role_id)
+            role = player.guild.get_role(self.role_id)
             await player.remove_roles(role)
             self.players.remove(player.name)
             rooms.update(dict(role_id=self.role_id, players='\\'.join(self.players)), ['role_id'])
             return True
         return False
 
-    def disband(self):
+    async def disband(self, guild):
         """Delete room"""
+        role = guild.get_role(self.role_id)
+        for player_name in self.players:
+            player = guild.get_member_named(player_name)
+            await self.remove_player(player)
         rooms.delete(role_id=self.role_id)
+        await role.delete()

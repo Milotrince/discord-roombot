@@ -84,6 +84,10 @@ async def join(ctx, *args):
             player = ctx.message.author
             if await room_match.add_player(player):
                 await ctx.send(embed=room_match.get_embed())
+                if len(room_match.players) >= room_match.waiting_for:
+                    role = player.guild.get_role(room_match.role_id)
+                    await ctx.send("{} players have joined {}. Room disbanded.".format(len(room_match.players), role.mention))
+                    await room_match.disband(player.guild)
             else:
                 await ctx.send("There was an error joining.")
     else:
@@ -103,6 +107,24 @@ async def leave(ctx):
                 return await ctx.send("You have left " + r.activity)
     else:
         return ctx.send("You are not in a room.")
+
+
+@bot.command()
+async def disband(ctx):
+    """(Host) Disband your room."""
+    player = ctx.message.author
+    rooms_data = rooms.find(guild=ctx.message.guild.id)
+    if rooms_data:
+        for room_data in rooms_data:
+            r = Room.from_query(room_data)
+            if player.name in r.players:
+                if player.name == r.host:
+                    role = player.guild.get_role(r.role_id)
+                    await r.disband(player.guild)
+                    return await ctx.send("Room disbanded.")
+                else:
+                    return await ctx.send("You are not the host.")
+    return await ctx.send("You are not in a room.")
 
 
 @bot.command()
