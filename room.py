@@ -7,7 +7,7 @@ db = dataset.connect('sqlite:///:memory:')
 rooms = db.get_table('rooms', primary_id='role_id')
 
 class Room:
-    def __init__(self, role_id, guild, activity, description, created, timeout, players, host, waiting_for):
+    def __init__(self, role_id, guild, activity, description, created, timeout, players, host, size):
         self.role_id = role_id
         self.guild = guild
         self.activity = activity
@@ -16,7 +16,7 @@ class Room:
         self.timeout = timeout
         self.players = players
         self.host = host
-        self.waiting_for = waiting_for
+        self.size = size
 
         rooms.upsert(dict(
             role_id=role_id,
@@ -25,9 +25,9 @@ class Room:
             description=description,
             created=created,
             timeout=timeout,
-            players='\\'.join(players),
+            players=ids_to_str(players),
             host=host,
-            waiting_for=waiting_for ), ['role_id'])
+            size=size ), ['role_id'])
             
     @classmethod
     def from_message(cls, activity, ctx, args, role_id):
@@ -39,9 +39,9 @@ class Room:
         created = datetime.now()
         timeout = 60 * 60
         players = []
-        host = ctx.message.author.name
-        waiting_for = 2
-        return cls(role_id, guild, activity, description, created, timeout, players, host, waiting_for)
+        host = ctx.message.author.id
+        size = 2
+        return cls(role_id, guild, activity, description, created, timeout, players, host, size)
             
     @classmethod
     def from_query(cls, data):
@@ -52,17 +52,23 @@ class Room:
         description = data['description']
         created = data['created']
         timeout = data['timeout']
-        players = data['players'].split('\\')
+        players = str_to_ids(data['players'])
         host = data['host']
-        waiting_for = data['waiting_for']
-        return cls(role_id, guild, activity, description, created, timeout, players, host, waiting_for)
+        size = data['size']
+        return cls(role_id, guild, activity, description, created, timeout, players, host, size)
 
-    def get_embed(self):
+    def get_embed(self, guild):
         """Generate a discord.Embed for this room"""
         description = discord.Embed.Empty if self.description == '' else self.description
         # TODO: format time
         # TODO: disband if remaining time 0
         remaining_time = self.created + timedelta(seconds=self.timeout) - datetime.now()
+        room_status = "Waiting for {} more players".format(self.size - len(self.players)) if len(self.players) < self.size else "Room is full"
+        player_names = []
+        for id in self.players:
+            player = guild.get_member(id)
+            if player:
+                player_names.append(player.name)
 
         embed = discord.Embed(
             color=discord.Color.blue(),
@@ -70,35 +76,35 @@ class Room:
             timestamp=self.created,
             title=self.activity )
         embed.add_field(
-            name="Players ({0})".format(len(self.players)),
-            value=", ".join(self.players) )
+            name="Players ({}/{})".format(len(self.players), self.size),
+            value=", ".join(player_names) )
         embed.add_field(
-            name="Waiting for {0} players".format(self.waiting_for),
-            value="Room will disband in {0}".format(remaining_time) )
+            name=room_status,
+            value="Room will disband in {}".format(remaining_time) )
         embed.set_footer(
-            text="Host: {0}".format(self.host),
+            text="Host: {}".format(guild.get_member(self.host).name),
             icon_url=discord.Embed.Empty )
         
         return embed
 
     async def add_player(self, player):
         """Add a player to this room"""
-        if player.name not in self.players:
+        if player.id not in self.players:
             role = player.guild.get_role(self.role_id)
-            await player.add_roles(role)
             if role:
-                self.players.append(player.name)
-                rooms.update(dict(role_id=self.role_id, players='\\'.join(self.players)), ['role_id'])
+                await player.add_roles(role)
+                self.players.append(player.id)
+                rooms.update(dict(role_id=self.role_id, players=ids_to_str(self.players)), ['role_id'])
                 return True
         return False
 
     async def remove_player(self, player):
         """Remove a player from this room"""
-        if player.name in self.players:
+        if player.id in self.players:
             role = player.guild.get_role(self.role_id)
             await player.remove_roles(role)
-            self.players.remove(player.name)
-            rooms.update(dict(role_id=self.role_id, players='\\'.join(self.players)), ['role_id'])
+            self.players.remove(player.id)
+            rooms.update(dict(role_id=self.role_id, players=ids_to_str(self.players)), ['role_id'])
             return True
         return False
 
@@ -111,26 +117,11 @@ class Room:
         rooms.delete(role_id=self.role_id)
         await role.delete()
 
-    async def update(self, player, field, new_value):
-        """Update a field of this room"""
-        role = player.guild.get_role(self.role_id)
-        if field == 'activity':
-            await role.edit(name=new_value)
-            self.activity = new_value
-            rooms.update(dict(role_id=self.role_id, activity=new_value), ['role_id'])
-        elif field == 'description':
-            self.description = new_value
-            rooms.update(dict(role_id=self.role_id, description=new_value), ['role_id'])
-        elif field == 'waiting_for':
-            self.waiting_for = new_value
-            rooms.update(dict(role_id=self.role_id, waiting_for=new_value), ['role_id'])
-        elif field == 'host':
-            for p in self.players:
-                if p == new_value:
-                    self.host = new_value
-                    rooms.update(dict(role_id=self.role_id, host=new_value), ['role_id'])
-                    return True
-            return False
-        else:
-            return False
-        return True
+
+def ids_to_str(ids, seperator=','):
+    """Turn a list of ints into a database inputable string"""
+    return seperator.join([ str(id) for id in ids ])
+
+def str_to_ids(s):
+    """Turn a string of comma seperated ints from a database into a list of ints"""
+    return [ int(id) for id in s.split(',') ]
