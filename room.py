@@ -1,4 +1,5 @@
 import dataset
+from random import choice
 from datetime import datetime, timedelta
 import discord
 
@@ -32,10 +33,16 @@ class Room:
     @classmethod
     def from_message(cls, activity, ctx, args, role_id):
         """Create a Room from a message"""
+        default_descriptions = [
+            "Let's do something together",
+            "Join me, I'm cool",
+            "Why not?",
+            "Let's play!" ]
+
         # role_id = role_id
         guild = ctx.message.guild.id
         # activity = activity
-        description = ''
+        description = choice(default_descriptions)
         created = datetime.now()
         timeout = 60 * 60
         players = []
@@ -80,7 +87,7 @@ class Room:
             value=", ".join(player_names) )
         embed.add_field(
             name=room_status,
-            value="Room will disband in {}".format(remaining_time) )
+            value="Room will automatically disband from inactivity." )
         embed.set_footer(
             text="Host: {}".format(guild.get_member(self.host).name),
             icon_url=discord.Embed.Empty )
@@ -111,8 +118,8 @@ class Room:
     async def disband(self, guild):
         """Delete room"""
         role = guild.get_role(self.role_id)
-        for player_name in self.players:
-            player = guild.get_member_named(player_name)
+        for id in self.players:
+            player = guild.get_member(id)
             await self.remove_player(player)
         rooms.delete(role_id=self.role_id)
         await role.delete()

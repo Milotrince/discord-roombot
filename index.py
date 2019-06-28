@@ -104,15 +104,19 @@ async def join(ctx, *args):
         return await ctx.send("Sorry, no rooms exist yet.")
 
 
-@bot.command(aliases=['x', 'exit'])
+@bot.command(aliases=['x', 'exit', 'disband'])
 async def leave(ctx):
-    """Leave a room."""
+    """Leave a room. If you are the host, the room will be disbanded."""
     player = ctx.message.author
     rooms_data = rooms.find(guild=ctx.message.guild.id)
     if rooms_data:
         for room_data in rooms_data:
             r = Room.from_query(room_data)
-            if player.id in r.players:
+            if r.host == player.id:
+                role = player.guild.get_role(r.role_id)
+                await r.disband(player.guild)
+                return await ctx.send("The room has been disbanded.")
+            elif player.id in r.players:
                 await r.remove_player(player)
                 await ctx.send("You have left " + r.activity)
                 if len(r.players) < 1:
@@ -142,24 +146,6 @@ async def kick(ctx):
                     await r.disband(player.guild)
                     return await ctx.send("There are no players left in the room. Room has been disbanded.")
     return await ctx.send("You are not the host of a room.")
-
-
-@bot.command(aliases=['d', 'delete'])
-async def disband(ctx):
-    """(Host) Disband your room."""
-    player = ctx.message.author
-    rooms_data = rooms.find(guild=ctx.message.guild.id)
-    if rooms_data:
-        for room_data in rooms_data:
-            r = Room.from_query(room_data)
-            if player.id in r.players:
-                if r.host == player.id:
-                    role = player.guild.get_role(r.role_id)
-                    await r.disband(player.guild)
-                    return await ctx.send("Room disbanded.")
-                else:
-                    return await ctx.send("You are not the host.")
-    return await ctx.send("You are not in a room.")
 
 
 @bot.command(aliases=['rooms', 'list'])
