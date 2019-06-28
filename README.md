@@ -1,2 +1,2 @@
-# discord-RoomBot
+# RoomBot
 Discord Hack Week

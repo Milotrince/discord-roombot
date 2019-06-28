@@ -48,7 +48,7 @@ async def new(ctx, *args):
     if not activity:
         return await ctx.send('Please specify the room activity (or start doing something).')
 
-    rooms_data = rooms.find(guild=ctx.message.guild.id)
+    rooms_data = Room.rooms_in_guild(ctx.message.guild.id)
     if rooms_data:
         for room_data in rooms_data:
             r = Room.from_query(room_data)
@@ -78,7 +78,7 @@ async def join(ctx, *args):
     player_filter = ctx.message.mentions[0].id if ctx.message.mentions else None
     activity_filter = " ".join(args) if args else None
 
-    rooms_data = rooms.find(guild=ctx.message.guild.id)
+    rooms_data = Room.rooms_in_guild(ctx.message.guild.id)
     if rooms_data:
         room_match = None
         for room_data in rooms_data:
@@ -108,7 +108,7 @@ async def join(ctx, *args):
 async def leave(ctx):
     """Leave a room. If you are the host, the room will be disbanded."""
     player = ctx.message.author
-    rooms_data = rooms.find(guild=ctx.message.guild.id)
+    rooms_data = Room.rooms_in_guild(ctx.message.guild.id)
     if rooms_data:
         for room_data in rooms_data:
             r = Room.from_query(room_data)
@@ -151,7 +151,7 @@ async def kick(ctx):
 @bot.command(aliases=['rooms', 'list'])
 async def ls(ctx):
     """List rooms in current guild."""
-    rooms_data = rooms.find(guild=ctx.message.guild.id)
+    rooms_data = Room.rooms_in_guild(ctx.message.guild.id)
     embed = discord.Embed(color=discord.Color.blue(), title="Rooms")
     exists = False
 
@@ -172,11 +172,11 @@ async def ls(ctx):
 @bot.command(aliases=['r', 'room'])
 async def look(ctx, *args):
     """Shows your current room (or look at another room by activity or player)."""
-    rooms_data = rooms.find(guild=ctx.message.guild.id)
+    rooms_data = Room.rooms_in_guild(ctx.message.guild.id)
     player_filter = ctx.message.mentions[0].id if ctx.message.mentions else ctx.message.author.id
     activity_filter = args[0] if args else None
 
-    rooms_data = rooms.find(guild=ctx.message.guild.id)
+    rooms_data = Room.rooms_in_guild(ctx.message.guild.id)
     if rooms_data:
         for room_data in rooms_data:
             r = Room.from_query(room_data)
@@ -213,7 +213,7 @@ async def edit(ctx, *args):
         words.remove(flag)
         new_value = " ".join(words)
         player = ctx.message.author
-        rooms_data = rooms.find(guild=ctx.message.guild.id)
+        rooms_data = Room.rooms_in_guild(ctx.message.guild.id)
         if rooms_data:
             for room_data in rooms_data:
                 r = Room.from_query(room_data)

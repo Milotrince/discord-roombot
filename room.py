@@ -64,6 +64,10 @@ class Room:
         size = data['size']
         return cls(role_id, guild, activity, description, created, timeout, players, host, size)
 
+    @classmethod
+    def rooms_in_guild(id):
+        return rooms.find(guild=id)
+
     def get_embed(self, guild):
         """Generate a discord.Embed for this room"""
         description = discord.Embed.Empty if self.description == '' else self.description
