@@ -35,7 +35,7 @@ class Room:
         # role_id = role_id
         guild = ctx.message.guild.id
         # activity = activity
-        description = args[1] if len(args) > 1 else ''
+        description = ''
         created = datetime.now()
         timeout = 60 * 60
         players = []
@@ -86,10 +86,10 @@ class Room:
         if player.name not in self.players:
             role = player.guild.get_role(self.role_id)
             await player.add_roles(role)
-
-            self.players.append(player.name)
-            rooms.update(dict(role_id=self.role_id, players='\\'.join(self.players)), ['role_id'])
-            return True
+            if role:
+                self.players.append(player.name)
+                rooms.update(dict(role_id=self.role_id, players='\\'.join(self.players)), ['role_id'])
+                return True
         return False
 
     async def remove_player(self, player):
@@ -110,3 +110,27 @@ class Room:
             await self.remove_player(player)
         rooms.delete(role_id=self.role_id)
         await role.delete()
+
+    async def update(self, player, field, new_value):
+        """Update a field of this room"""
+        role = player.guild.get_role(self.role_id)
+        if field == 'activity':
+            await role.edit(name=new_value)
+            self.activity = new_value
+            rooms.update(dict(role_id=self.role_id, activity=new_value), ['role_id'])
+        elif field == 'description':
+            self.description = new_value
+            rooms.update(dict(role_id=self.role_id, description=new_value), ['role_id'])
+        elif field == 'waiting_for':
+            self.waiting_for = new_value
+            rooms.update(dict(role_id=self.role_id, waiting_for=new_value), ['role_id'])
+        elif field == 'host':
+            for p in self.players:
+                if p == new_value:
+                    self.host = new_value
+                    rooms.update(dict(role_id=self.role_id, host=new_value), ['role_id'])
+                    return True
+            return False
+        else:
+            return False
+        return True

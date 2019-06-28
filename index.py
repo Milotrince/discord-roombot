@@ -2,7 +2,7 @@ import json
 import os
 from discord.ext import commands
 from room import *
-from pprint import pprint
+from pprint import pprint 
 
 # https://discordapp.com/api/oauth2/authorize?client_id=592816310656696341&permissions=268576768&scope=bot
 print("""
@@ -17,10 +17,10 @@ current_dir = os.path.dirname(__file__)
 with open(os.path.join(current_dir, 'config.json')) as config_file:  
     config = json.load(config_file)
 
-
 # Define bot
-bot = commands.Bot(command_prefix=config['prefix'])
+bot = commands.Bot(command_prefix=config['prefix'], case_insensitive=True)
 bot.remove_command('help')
+
 
 @bot.event
 async def on_ready():
@@ -28,7 +28,7 @@ async def on_ready():
     print('{0} is online!'.format(bot.user.name))
 
 
-@bot.command()
+@bot.command(aliases=['n', 'host', 'create', 'start'])
 async def new(ctx, *args):
     """Make a new room (uses current activity or input)."""
     activity = None
@@ -62,7 +62,7 @@ async def new(ctx, *args):
     await ctx.send(embed=emb)
 
 
-@bot.command()
+@bot.command(aliases=['j'])
 async def join(ctx, *args):
     """Join a room (by activity or player)."""
     # TODO: If full, send ping
@@ -88,13 +88,16 @@ async def join(ctx, *args):
                     role = player.guild.get_role(room_match.role_id)
                     await ctx.send("{} players have joined {}. Room disbanded.".format(len(room_match.players), role.mention))
                     await room_match.disband(player.guild)
+                    return
             else:
-                await ctx.send("There was an error joining.")
+                return await ctx.send("There was an error joining.")
+        else:
+            return await ctx.send("That room does not exist.")
     else:
-        await ctx.send("Sorry, no rooms exist yet.")
+        return await ctx.send("Sorry, no rooms exist yet.")
 
 
-@bot.command()
+@bot.command(aliases=['exit'])
 async def leave(ctx):
     """Leave a room."""
     player = ctx.message.author
@@ -104,12 +107,15 @@ async def leave(ctx):
             r = Room.from_query(room_data)
             if player.name in r.players:
                 await r.remove_player(player)
-                return await ctx.send("You have left " + r.activity)
+                await ctx.send("You have left " + r.activity)
+                if len(r.players) < 1:
+                    await r.disband(player.guild)
+                    return await ctx.send("There are no players left in the room. Room has been disbanded.")
     else:
-        return ctx.send("You are not in a room.")
+        return await ctx.send("You are not in a room.")
 
 
-@bot.command()
+@bot.command(aliases=['d', 'delete'])
 async def disband(ctx):
     """(Host) Disband your room."""
     player = ctx.message.author
@@ -117,18 +123,17 @@ async def disband(ctx):
     if rooms_data:
         for room_data in rooms_data:
             r = Room.from_query(room_data)
-            if player.name in r.players:
-                if player.name == r.host:
-                    role = player.guild.get_role(r.role_id)
-                    await r.disband(player.guild)
-                    return await ctx.send("Room disbanded.")
-                else:
-                    return await ctx.send("You are not the host.")
+            if r.host == player.name:
+                role = player.guild.get_role(r.role_id)
+                await r.disband(player.guild)
+                return await ctx.send("Room disbanded.")
+            else:
+                return await ctx.send("You are not the host.")
     return await ctx.send("You are not in a room.")
 
 
-@bot.command()
-async def list(ctx):
+@bot.command(aliases=['rooms', 'list'])
+async def ls(ctx):
     """List rooms in current guild."""
     rooms_data = rooms.find(guild=ctx.message.guild.id)
     embed = discord.Embed(color=discord.Color.blue(), title="Rooms")
@@ -148,7 +153,7 @@ async def list(ctx):
         await ctx.send("No rooms exist yet.")
 
 
-@bot.command()
+@bot.command(aliases=['r', 'look'])
 async def room(ctx, *args):
     """Shows your current room (or look at another room by activity or player)."""
     rooms_data = rooms.find(guild=ctx.message.guild.id)
@@ -166,13 +171,56 @@ async def room(ctx, *args):
     return await ctx.send("Could not find room.")
 
 
-@bot.command()
+@bot.command(aliases=['change', 'edit', 'e'])
+async def set(ctx, *args):
+    """(Host) Set room information. (need a -field)"""
+    fields = {
+        'activity': ['activity', 'a', 'game', 'name'],
+        'description': ['description', 'desc', 'd', 'note'],
+        'waiting_for': ['max', 'size', 'wf', 'waiting'],
+        'host': ['host', 'h', 'leader', 'owner']
+    }
+    field = None
+    flag = None
+    for arg in args:
+        if arg.startswith('-'):
+            for f, aliases in fields.items():
+                if arg[1:] in aliases:
+                    if not field:
+                        field = f
+                        flag = arg
+                    else:
+                        return await ctx.send("Cannot change multiple fields.")
+    if field:
+        words = list(args)
+        words.remove(flag)
+        new_value = " ".join(words)
+        player = ctx.message.author
+        rooms_data = rooms.find(guild=ctx.message.guild.id)
+        if rooms_data:
+            for room_data in rooms_data:
+                r = Room.from_query(room_data)
+                if r.host == player.name:
+                    success = await r.update(player, field, new_value)
+                    if success:
+                        return await ctx.send("Updated {}.".format(field))
+                    elif not success and field == 'host':
+                        return await ctx.send("{} is not in your room.".format(new_value))
+                    else:
+                        return await ctx.send("Something went wrong.")
+        else:
+            return await ctx.send("You are not the host of any room.")
+    else:
+        return await ctx.send("Please specify a field (`-description`, `-activity`, `-host`)")
+
+
+@bot.command(aliases=['pong'])
 async def ping(ctx):
     """Pong! Shows latency."""
     await ctx.send('Pong! Latency: `{0}`'.format(round(bot.latency, 1)))
 
 
-@bot.command()
+@bot.command(aliases=['commands'])
 async def help(ctx):
     """Shows the available commands."""
     embed = discord.Embed(
@@ -181,15 +229,15 @@ async def help(ctx):
     for command in bot.commands:
         embed.add_field(
             name=command,
-            value=command.short_doc )
+            value="`{}`\n{}".format("`, `".join(command.aliases), command.short_doc) )
     await ctx.send(embed=embed)
 
 
 # Disable for full stack trace
 @bot.event
 async def on_command_error(ctx, error):
-    """Sends an error message when error is encountered."""
-    pprint(error)
+    """Sends a message when command error is encountered."""
+    print(error)
 
     if type(error) == discord.ext.commands.errors.CommandNotFound:
         await ctx.send("Not a valid command. Try `{0}help`.".format(config['prefix']))
