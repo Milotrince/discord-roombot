@@ -8,8 +8,11 @@ db = dataset.connect('sqlite:///:memory:')
 rooms = db.get_table('rooms', primary_id='role_id')
 
 class Room:
-    def __init__(self, role_id, guild, activity, description, created, timeout, players, host, size):
+    def __init__(self, role_id, color, channel, guild, activity, description,
+                 created, timeout, players, host, size, last_active):
         self.role_id = role_id
+        self.color = color
+        self.channel = channel
         self.guild = guild
         self.activity = activity
         self.description = description
@@ -18,9 +21,12 @@ class Room:
         self.players = players
         self.host = host
         self.size = size
+        self.last_active = last_active
 
         rooms.upsert(dict(
             role_id=role_id,
+            color=color,
+            channel=channel,
             guild=guild,
             activity=activity,
             description=description,
@@ -28,10 +34,11 @@ class Room:
             timeout=timeout,
             players=ids_to_str(players),
             host=host,
-            size=size ), ['role_id'])
+            size=size,
+            last_active=last_active ), ['role_id'])
             
     @classmethod
-    def from_message(cls, activity, ctx, args, role_id):
+    def from_message(cls, activity, ctx, args, role_id, color):
         """Create a Room from a message"""
         default_descriptions = [
             "Let's do something together",
@@ -41,6 +48,8 @@ class Room:
 
         # role_id = role_id
         guild = ctx.message.guild.id
+        color = color.value
+        channel = ctx.message.channel.id
         # activity = activity
         description = choice(default_descriptions)
         created = datetime.now()
@@ -48,12 +57,16 @@ class Room:
         players = []
         host = ctx.message.author.id
         size = 2
-        return cls(role_id, guild, activity, description, created, timeout, players, host, size)
+        last_active = datetime.now()
+        return cls(role_id, color, channel, guild, activity, description,
+                   created, timeout, players, host, size, last_active)
             
     @classmethod
     def from_query(cls, data):
         """Create a Room from a query"""
         role_id = data['role_id']
+        color = data['color']
+        channel = data['channel']
         guild = data['guild']
         activity = data['activity']
         description = data['description']
@@ -62,18 +75,14 @@ class Room:
         players = str_to_ids(data['players'])
         host = data['host']
         size = data['size']
-        return cls(role_id, guild, activity, description, created, timeout, players, host, size)
-
-    @classmethod
-    def rooms_in_guild(id):
-        return rooms.find(guild=id)
+        last_active = data['last_active']
+        return cls(role_id, color, channel, guild, activity, description,
+                   created, timeout, players, host, size, last_active)
+                   
 
     def get_embed(self, guild):
         """Generate a discord.Embed for this room"""
         description = discord.Embed.Empty if self.description == '' else self.description
-        # TODO: format time
-        # TODO: disband if remaining time 0
-        remaining_time = self.created + timedelta(seconds=self.timeout) - datetime.now()
         room_status = "Waiting for {} more players".format(self.size - len(self.players)) if len(self.players) < self.size else "Room is full"
         player_names = []
         for id in self.players:
@@ -82,7 +91,7 @@ class Room:
                 player_names.append(player.name)
 
         embed = discord.Embed(
-            color=discord.Color.blue(),
+            color=self.color,
             description=description,
             timestamp=self.created,
             title=self.activity )
@@ -97,6 +106,12 @@ class Room:
             icon_url=discord.Embed.Empty )
         
         return embed
+
+
+    def update_active(self):
+        self.last_active = datetime.now()
+        rooms.update(dict(role_id=self.role_id, last_active=self.last_active), ['role_id'])
+
 
     async def add_player(self, player):
         """Add a player to this room"""
@@ -135,4 +150,4 @@ def ids_to_str(ids, seperator=','):
 
 def str_to_ids(s):
     """Turn a string of comma seperated ints from a database into a list of ints"""
-    return [ int(id) for id in s.split(',') ]
+    return [ int(id) for id in s.split(',') ] if s else []

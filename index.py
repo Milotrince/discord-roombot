@@ -1,5 +1,6 @@
 import json
 import os
+import asyncio
 from discord.ext import commands
 from room import *
 from pprint import pprint 
@@ -12,6 +13,17 @@ print("""
 |__|__|___|___|_|_|_|_____|_____| |_|
 """)
 
+def some_color():
+    return choice([
+        discord.Color.teal(),
+        discord.Color.green(),
+        discord.Color.blue(),
+        discord.Color.purple(),
+        discord.Color.magenta(),
+        discord.Color.gold(),
+        discord.Color.orange(),
+        discord.Color.red() ])
+
 # Get config file
 current_dir = os.path.dirname(__file__)
 with open(os.path.join(current_dir, 'config.json')) as config_file:  
@@ -20,6 +32,7 @@ with open(os.path.join(current_dir, 'config.json')) as config_file:
 # Define bot
 bot = commands.Bot(command_prefix=config['prefix'], case_insensitive=True)
 bot.remove_command('help')
+discord_blue = discord.Color.from_rgb(114, 137, 218)
 
 
 @bot.event
@@ -48,7 +61,7 @@ async def new(ctx, *args):
     if not activity:
         return await ctx.send('Please specify the room activity (or start doing something).')
 
-    rooms_data = Room.rooms_in_guild(ctx.message.guild.id)
+    rooms_data = rooms.find(guild=ctx.guild.id)
     if rooms_data:
         for room_data in rooms_data:
             r = Room.from_query(room_data)
@@ -59,12 +72,14 @@ async def new(ctx, *args):
 
     role = await player.guild.create_role(
         name="Room - " + activity,
-        color=discord.Color.blue(),
+        color=some_color(),
         hoist=True,
         mentionable=True )
-    new_room = Room.from_message(activity, ctx, args, role.id)
+    new_room = Room.from_message(activity, ctx, args, role.id, role.color)
+    new_room.update_active()
     success = await new_room.add_player(player)
     if success:
+
         emb = new_room.get_embed(player.guild)
         return await ctx.send(embed=emb)
     return await ctx.send("There was an error. Please try again.")
@@ -78,7 +93,7 @@ async def join(ctx, *args):
     player_filter = ctx.message.mentions[0].id if ctx.message.mentions else None
     activity_filter = " ".join(args) if args else None
 
-    rooms_data = Room.rooms_in_guild(ctx.message.guild.id)
+    rooms_data = rooms.find(guild=ctx.guild.id)
     if rooms_data:
         room_match = None
         for room_data in rooms_data:
@@ -89,6 +104,7 @@ async def join(ctx, *args):
                 room_match = r
                 
         if room_match:
+            room_match.update_active()
             player = ctx.message.author
             if await room_match.add_player(player):
                 await ctx.send(embed=room_match.get_embed(player.guild))
@@ -104,19 +120,21 @@ async def join(ctx, *args):
         return await ctx.send("Sorry, no rooms exist yet.")
 
 
-@bot.command(aliases=['x', 'exit', 'disband'])
+@bot.command(aliases=['x', 'exit', 'd', 'disband'])
 async def leave(ctx):
     """Leave a room. If you are the host, the room will be disbanded."""
     player = ctx.message.author
-    rooms_data = Room.rooms_in_guild(ctx.message.guild.id)
+    rooms_data = rooms.find(guild=ctx.guild.id)
     if rooms_data:
         for room_data in rooms_data:
             r = Room.from_query(room_data)
             if r.host == player.id:
+                r.update_active()
                 role = player.guild.get_role(r.role_id)
                 await r.disband(player.guild)
                 return await ctx.send("The room has been disbanded.")
             elif player.id in r.players:
+                r.update_active()
                 await r.remove_player(player)
                 await ctx.send("You have left " + r.activity)
                 if len(r.players) < 1:
@@ -140,19 +158,21 @@ async def kick(ctx):
         for room_data in rooms_data:
             r = Room.from_query(room_data)
             if r.host == player.id:
-                await r.remove_player(player)
-                await ctx.send("You have left " + r.activity)
+                r.update_active()
+                await r.remove_player(kickee)
+                await ctx.send("{} has been kicked from {}.".format(kickee.name, r.activity))
                 if len(r.players) < 1:
                     await r.disband(player.guild)
                     return await ctx.send("There are no players left in the room. Room has been disbanded.")
+                return
     return await ctx.send("You are not the host of a room.")
 
 
-@bot.command(aliases=['rooms', 'list'])
+@bot.command(aliases=['rooms', 'list', 'dir'])
 async def ls(ctx):
     """List rooms in current guild."""
-    rooms_data = Room.rooms_in_guild(ctx.message.guild.id)
-    embed = discord.Embed(color=discord.Color.blue(), title="Rooms")
+    rooms_data = rooms.find(guild=ctx.guild.id)
+    embed = discord.Embed(color=discord_blue, title="Rooms")
     exists = False
 
     for room_data in rooms_data:
@@ -172,15 +192,16 @@ async def ls(ctx):
 @bot.command(aliases=['r', 'room'])
 async def look(ctx, *args):
     """Shows your current room (or look at another room by activity or player)."""
-    rooms_data = Room.rooms_in_guild(ctx.message.guild.id)
+    rooms_data = rooms.find(guild=ctx.guild.id)
     player_filter = ctx.message.mentions[0].id if ctx.message.mentions else ctx.message.author.id
     activity_filter = args[0] if args else None
 
-    rooms_data = Room.rooms_in_guild(ctx.message.guild.id)
+    rooms_data = rooms.find(guild=ctx.guild.id)
     if rooms_data:
         for room_data in rooms_data:
             r = Room.from_query(room_data)
             if player_filter in r.players or r.activity == activity_filter:
+                r.update_active()
                 return await ctx.send(embed=r.get_embed(ctx.guild))        
     else:
         return await ctx.send("Sorry, no rooms exist yet.")
@@ -213,11 +234,12 @@ async def edit(ctx, *args):
         words.remove(flag)
         new_value = " ".join(words)
         player = ctx.message.author
-        rooms_data = Room.rooms_in_guild(ctx.message.guild.id)
+        rooms_data = rooms.find(guild=ctx.guild.id)
         if rooms_data:
             for room_data in rooms_data:
                 r = Room.from_query(room_data)
                 if r.host == player.id:
+                    r.update_active()
                     role = player.guild.get_role(r.role_id)
 
                     if field == 'activity':
@@ -258,17 +280,36 @@ async def edit(ctx, *args):
     return await ctx.send("You are not the host of a room.")
 
 
+@bot.command(aliases=['deleteall', 'clearall'])
+async def purge(ctx):
+    """(Admin) Delete all rooms in this server."""
+    player = ctx.message.author
+    if not player.guild_permissions.administrator:
+        return await ctx.send("You are not an admin.")
+    rooms_data = rooms.find(guild=ctx.guild.id)
+    if rooms_data:
+        count = 0
+        for room_data in rooms_data:
+            r = Room.from_query(room_data)
+            guild = bot.get_guild(r.guild)
+            await r.disband(guild)
+            count += 1
+        return await ctx.send("{} rooms have been deleted.".format(count))
+    return await ctx.send("There are no rooms to delete.")
+    
+
+
 @bot.command(aliases=['pong'])
 async def ping(ctx):
     """Pong! Shows latency."""
-    await ctx.send('Pong! Latency: `{0}`'.format(round(bot.latency, 1)))
+    return await ctx.send('Pong! Latency: `{0}`'.format(round(bot.latency, 1)))
 
 
 @bot.command(aliases=['commands'])
 async def help(ctx):
     """Shows the available commands."""
     embed = discord.Embed(
-        color=discord.Color.blue(),
+        color=discord_blue,
         title="Commands" )
     for command in bot.commands:
         embed.add_field(
@@ -289,4 +330,19 @@ async def on_command_error(ctx, error):
         await ctx.send("An error has occurred.")
 
 
+# Periodically check for inactive rooms
+async def delete_inactive_rooms():
+    await bot.wait_until_ready()
+    while not bot.is_closed():
+        await asyncio.sleep(5)
+        for room_data in rooms.find():
+            r = Room.from_query(room_data)
+            if datetime.now() - r.last_active > timedelta(seconds=r.timeout):
+                guild = bot.get_guild(r.guild)
+                channel = guild.get_channel(r.channel)
+                await r.disband(guild)
+                await channel.send("{} has disbanded due to inactivity.".format(r.activity))
+
+
+bot.loop.create_task(delete_inactive_rooms())
 bot.run(config['token'])
