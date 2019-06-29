@@ -5,7 +5,9 @@
     <img src="assets/demo.gif" alt="Demo"/>
 </div>
 
-Sometimes you want to play something with a group, but everyone's busy at the moment. RoomBot allows you to create rooms to let everyone know that you're ready to play/do something. Once you have enough people, RoomBot will notify everybody!
+--------
+
+Sometimes you want to play something with a group, but everyone's busy at the moment. RoomBot allows you to create rooms to let everyone know that you're ready to play/do something.
 
 ## Running RoomBot
 1. Clone this repository.
@@ -16,7 +18,9 @@ Sometimes you want to play something with a group, but everyone's busy at the mo
 ## Features
 * RoomBot will automatically disband inactive rooms.
 * A colorful hoisted role is assigned to players who join the room, so you know who's in what room.
-#### Basic Commands
+* Once you have enough people, RoomBot will notify everybody!
+
+### Basic Commands
 * `new` Create a new room based on your current activity or message
 * `list` List rooms in current guild.
 * `join` Join a room with `@someone` or the room name
@@ -24,7 +28,7 @@ Sometimes you want to play something with a group, but everyone's busy at the mo
 * `look` Show room information
 * ... and more!
 
-==========
+--------
 
 <div align="center">
     <b>Made for Discord Hack Week ♥</b>
