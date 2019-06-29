@@ -5,7 +5,6 @@ from discord.ext import commands
 from room import *
 from pprint import pprint 
 
-# https://discordapp.com/api/oauth2/authorize?client_id=592816310656696341&permissions=268576768&scope=bot
 print("""
  _____               _____ _____ _____ 
 | __  |___ ___ _____| __  |     |_   _|
@@ -38,13 +37,13 @@ discord_blue = discord.Color.from_rgb(114, 137, 218)
 @bot.event
 async def on_ready():
     """Fired when bot comes online"""
-    print('{0} is online!'.format(bot.user.name))
+    print('{} is online!'.format(bot.user.name))
 
 
 @bot.event
 async def on_disconnect():
     """Fired when bot goes offline"""
-    print('{0} has disconnected...'.format(bot.user.name))
+    print('{} has disconnected...'.format(bot.user.name))
 
 
 @bot.command(aliases=['n', 'host', 'create', 'start'])
@@ -296,13 +295,27 @@ async def purge(ctx):
             count += 1
         return await ctx.send("{} rooms have been deleted.".format(count))
     return await ctx.send("There are no rooms to delete.")
-    
 
+
+@bot.command(aliases=['hello'])
+async def hi(ctx):
+    """It's nice to just say hi sometimes."""
+    name = ctx.message.author.name
+    greetings = [
+        "Hey, hope you're doing well today",
+        "Sup {}".format(name),
+        "Hi! Tell me to do something, I'm bored",
+        "Ay, is there anything you want to do?",
+        "Hello world! and also {}!".format(name),
+        ":wave:"
+    ]
+    return await ctx.send(choice(greetings))
+    
 
 @bot.command(aliases=['pong'])
 async def ping(ctx):
     """Pong! Shows latency."""
-    return await ctx.send('Pong! Latency: `{0}`'.format(round(bot.latency, 1)))
+    return await ctx.send('Pong! Latency: `{}`'.format(round(bot.latency, 1)))
 
 
 @bot.command(aliases=['commands'])

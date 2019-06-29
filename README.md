@@ -26,6 +26,7 @@ Sometimes you want to play something with a group, but everyone's busy at the mo
 * `join` Join a room with `@someone` or the room name
 * `leave` Leave a room
 * `look` Show room information
+* `hi` Greetings, human
 * ... and more!
 
 --------
