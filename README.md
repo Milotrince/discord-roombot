@@ -1,6 +1,6 @@
 <div align="center">
     <h1>RoomBot</h1>
-    <a href="(https://discordapp.com/api/oauth2/authorize?client_id=592816310656696341&permissions=268576768&scope=bot)"><img src="assets/icon.png" height="100" alt="Invite RoomBot"/></a>
+    <a href="(https://discordapp.com/api/oauth2/authorize?client_id=592816310656696341&permissions=268437520&scope=bot)"><img src="assets/icon.png" height="100" alt="Invite RoomBot"/></a>
     <h3>Create your own rooms for games and more!</h3>
     <img src="assets/demo.gif" alt="Demo"/>
 </div>
@@ -33,5 +33,6 @@ Sometimes you want to play something with a group, but everyone's busy at the mo
 
 <div align="center">
     <b>Made for Discord Hack Week ♥</b>
+    <a href="https://blog.discordapp.com/discord-community-hack-week-category-winners-bd0364360f92">1st place Social Bot! Thank you Discord!</a>
     <a href="https://blog.discordapp.com/discord-community-hack-week-build-and-create-alongside-us-6b2a7b7bba33"><img src="assets/discord-hack-week.jpeg" alt="Discord Hack Week"/><a>
 </div>
