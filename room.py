@@ -8,11 +8,12 @@ db = dataset.connect('sqlite:///:memory:')
 rooms = db.get_table('rooms', primary_id='role_id')
 
 class Room:
-    def __init__(self, role_id, color, channel, guild, activity, description,
-                 created, timeout, players, host, size, last_active):
+    def __init__(self, role_id, channel_id, color, birth_channel, guild, activity,
+                 description, created, timeout, players, host, size, last_active):
         self.role_id = role_id
+        self.channel_id = channel_id
         self.color = color
-        self.channel = channel
+        self.birth_channel = birth_channel
         self.guild = guild
         self.activity = activity
         self.description = description
@@ -25,8 +26,9 @@ class Room:
 
         rooms.upsert(dict(
             role_id=role_id,
+            channel_id=channel_id,
             color=color,
-            channel=channel,
+            birth_channel=birth_channel,
             guild=guild,
             activity=activity,
             description=description,
@@ -38,7 +40,7 @@ class Room:
             last_active=last_active ), ['role_id'])
             
     @classmethod
-    def from_message(cls, activity, ctx, args, role_id, color):
+    def from_message(cls, activity, ctx, args, role_id, channel_id, color):
         """Create a Room from a message"""
         default_descriptions = [
             "Let's do something together",
@@ -47,9 +49,10 @@ class Room:
             "Let's play!" ]
 
         # role_id = role_id
+        # channel_id = channel_id
         guild = ctx.message.guild.id
         color = color.value
-        channel = ctx.message.channel.id
+        birth_channel = ctx.message.channel.id
         # activity = activity
         description = choice(default_descriptions)
         created = datetime.now()
@@ -58,15 +61,16 @@ class Room:
         host = ctx.message.author.id
         size = 2
         last_active = datetime.now()
-        return cls(role_id, color, channel, guild, activity, description,
+        return cls(role_id, channel_id, color, birth_channel, guild, activity, description,
                    created, timeout, players, host, size, last_active)
             
     @classmethod
     def from_query(cls, data):
         """Create a Room from a query"""
         role_id = data['role_id']
+        channel_id = data['channel_id']
         color = data['color']
-        channel = data['channel']
+        birth_channel = data['birth_channel']
         guild = data['guild']
         activity = data['activity']
         description = data['description']
@@ -76,7 +80,7 @@ class Room:
         host = data['host']
         size = data['size']
         last_active = data['last_active']
-        return cls(role_id, color, channel, guild, activity, description,
+        return cls(role_id, channel_id, color, birth_channel, guild, activity, description,
                    created, timeout, players, host, size, last_active)
                    
 
@@ -142,6 +146,9 @@ class Room:
             await self.remove_player(player)
         rooms.delete(role_id=self.role_id)
         await role.delete()
+
+        channel = guild.get_channel(self.channel_id)
+        await channel.delete()
 
 
 def ids_to_str(ids, seperator=','):

@@ -3,7 +3,6 @@ import os
 import asyncio
 from discord.ext import commands
 from room import *
-from pprint import pprint 
 
 print("""
  _____               _____ _____ _____ 
@@ -38,6 +37,7 @@ discord_blue = discord.Color.from_rgb(114, 137, 218)
 async def on_ready():
     """Fired when bot comes online"""
     print('{} is online!'.format(bot.user.name))
+    await bot.change_presence(activity=discord.Game(name='the waiting game...'))
 
 
 @bot.event
@@ -68,17 +68,23 @@ async def new(ctx, *args):
                 return await ctx.send("You are already in a room.")
             if r.activity == activity:
                 activity += " ({})".format(player.name)
-
+                
     role = await player.guild.create_role(
         name="Room - " + activity,
         color=some_color(),
         hoist=True,
         mentionable=True )
-    new_room = Room.from_message(activity, ctx, args, role.id, role.color)
+    existing_category = discord.utils.get(player.guild.categories, name='Rooms')
+    category = existing_category if existing_category else await player.guild.create_category('Rooms')
+    channel = await player.guild.create_text_channel(activity, category=category, overwrites={
+        player.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+        player.guild.me: discord.PermissionOverwrite(read_messages=True),
+        role: discord.PermissionOverwrite(read_messages=True) })
+
+    new_room = Room.from_message(activity, ctx, args, role.id, channel.id, role.color)
     new_room.update_active()
     success = await new_room.add_player(player)
     if success:
-
         emb = new_room.get_embed(player.guild)
         return await ctx.send(embed=emb)
     return await ctx.send("There was an error. Please try again.")
