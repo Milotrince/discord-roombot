@@ -11,7 +11,9 @@ print("""
 |__|__|___|___|_|_|_|_____|_____| |_|
 """)
 
+
 def some_color():
+    """Returns a random standard Discord color"""
     return choice([
         discord.Color.teal(),
         discord.Color.green(),
@@ -22,6 +24,28 @@ def some_color():
         discord.Color.orange(),
         discord.Color.red() ])
 
+
+def pop_flags(args):
+    """Returns (flags, args without flags). Flags are words starting with -"""
+    nonflags = list(args)
+    flags = []
+
+    for arg in list(args):
+        if arg.startswith('-'):
+            flags.append(arg[1:])
+            nonflags.remove(arg)
+
+    return (flags, nonflags)
+
+
+def get_hosted_room(player_id, guild_id):
+    """Returns the player's hosted room if available."""
+    rooms_data = rooms.find(guild=guild_id, host=player_id)
+    if rooms_data:
+        for room_data in rooms_data:
+            r = Room.from_query(room_data)
+            return r
+    return None
 
 def iter_len(iterator):
     return sum(1 for _ in iterator)
@@ -42,7 +66,7 @@ discord_blue = discord.Color.from_rgb(114, 137, 218)
 async def on_ready():
     """Fired when bot comes online"""
     print('{} is online!'.format(bot.user.name))
-    await bot.change_presence(activity=discord.Game(name='the waiting game...'))
+    await bot.change_presence(activity=discord.Game(name='the waiting game'))
 
 
 @bot.event
@@ -51,7 +75,7 @@ async def on_disconnect():
     print('{} has disconnected...'.format(bot.user.name))
 
 
-@bot.command(aliases=['n', 'host', 'create', 'start'])
+@bot.command(aliases=['n', 'create', 'start'])
 async def new(ctx, *args):
     """Make a new room (uses current activity or input)."""
     activity = None
@@ -130,7 +154,7 @@ async def join(ctx, *args):
         return await ctx.send("Sorry, no rooms exist yet.")
 
 
-@bot.command(aliases=['x', 'exit', 'd', 'disband'])
+@bot.command(aliases=['x', 'exit', 'disband'])
 async def leave(ctx):
     """Leave a room. If you are the host, the room will be disbanded."""
     player = ctx.message.author
@@ -155,7 +179,7 @@ async def leave(ctx):
 
 @bot.command(aliases=['k'])
 async def kick(ctx):
-    """(Host) Kick a player."""
+    """[Host] Kick a player."""
     if not ctx.message.mentions:
         return await ctx.send("Please @mention the kickee.")
     player = ctx.message.author
@@ -221,88 +245,142 @@ async def look(ctx, *args):
 
 @bot.command(aliases=['e', 'change', 'set'])
 async def edit(ctx, *args):
-    """(Host) Set room information. (need a -field)"""
+    """[Host] Edit room information. Can set multiple at once using flags (`-activity`, `-description`, `-size`, `-host` value)"""
+    r = get_hosted_room(ctx.message.author.id, ctx.guild.id)
+    if not r:
+        return await ctx.send("You are not the host of a room.")
+
     fields = {
-        'activity': ['activity', 'act','a', 'game', 'name', 'n'],
-        'description': ['description', 'desc', 'd', 'note'],
-        'size': ['size', 's', 'max'],
-        'host': ['host', 'h', 'leader', 'owner']
-    }
-    field = None
-    flag = None
-    for arg in args:
-        if arg.startswith('-'):
-            for f, aliases in fields.items():
-                if arg[1:] in aliases:
-                    if not field:
-                        field = f
-                        flag = arg
-                    else:
-                        return await ctx.send("Cannot change multiple fields.")
-    if field:
-        words = list(args)
-        words.remove(flag)
-        new_value = " ".join(words)
-        player = ctx.message.author
-        rooms_data = rooms.find(guild=ctx.guild.id)
-        if rooms_data:
-            for room_data in rooms_data:
-                r = Room.from_query(room_data)
-                if r.host == player.id:
-                    r.update_active()
-                    role = player.guild.get_role(r.role_id)
+        'activity': activity.aliases,
+        'description': description.aliases,
+        'size': size.aliases,
+        'host': host.aliases }
 
-                    if field == 'activity':
-                        await role.edit(name=new_value)
-                        r.activity = new_value
-                        rooms.update(dict(role_id=r.role_id, activity=new_value), ['role_id'])
-                        return await ctx.send("Updated activity.")
-                    elif field == 'description':
-                        r.description = new_value
-                        rooms.update(dict(role_id=r.role_id, description=new_value), ['role_id'])
-                        return await ctx.send("Updated description.")
-                    elif field == 'size':
-                        try:
-                            if len(r.players) >= int(new_value):
-                                return await ctx.send("There are too many players.")
-                            r.size = int(new_value)
-                            rooms.update(dict(role_id=r.role_id, size=int(new_value)), ['role_id'])
-                            return await ctx.send("Updated room size.")
-                        except ValueError:
-                            return await ctx.send("The value must be a digit.")
-                    elif field == 'host':
-                        if not ctx.message.mentions:
-                            return await ctx.send("Please @mention the kickee.")
-                        new_host = ctx.message.mentions[0]
-                        for p in r.players:
-                            if p == new_host.id:
-                                r.host = new_host.id
-                                rooms.update(dict(role_id=r.role_id, host=new_host.id), ['role_id'])
-                                return await ctx.send("Changed host.")
-                            return await ctx.send("{} is not in your room.".format(new_host.mention))
-                    else:
-                        return await ctx.send("Field not recognized.")
-    else:
-        fields_text = []
-        for f in fields.keys():
-            fields_text.append('`-{}({})`'.format(f[0], f[1:]))
-        return await ctx.send("Please specify a valid field\n[{}]".format(', '.join(fields_text)))
-    return await ctx.send("You are not the host of a room.")
+    edits = ' '.join(args).split('-')
+
+    if len(edits) < 2:
+        return await ctx.send("Please specify the field(s) using flags (`-activity`, `-description`, `-size`, `-host`).")
+    del edits[0] # First index contains useless args before a flag
+
+    for edit in edits:
+        words = edit.strip().split(' ')
+        valid = False
+        f = words[0]
+        for field, aliases in fields.items():
+            if f == field or f in aliases:
+                f_args = tuple(words[1:])
+                if field == 'activity':
+                    await activity.callback(ctx, *f_args)
+                elif field == 'description':
+                    await description.callback(ctx, *f_args)
+                elif field == 'size':
+                    await size.callback(ctx, *f_args)
+                elif field == 'host':
+                    await host.callback(ctx, *f_args)
+                valid = True
+                break
+        if not valid:
+            await ctx.send("The field `{}` is not recognized.".format(f))
 
 
-@bot.command(aliases=['deleteall', 'clearall'])
+@bot.command(aliases=['a', 'game', 'name'])
+async def activity(ctx, *args):
+    """[Host] Set the name of your room"""
+    r = get_hosted_room(ctx.message.author.id, ctx.guild.id)
+    if not r:
+        return await ctx.send("You are not the host of a room.")
+
+    r.update_active()
+    role = ctx.guild.get_role(r.role_id)
+    channel = ctx.guild.get_channel(r.channel_id)
+    (flags, words) = pop_flags(args)
+    new_value = " ".join(words)
+
+    await role.edit(name="Room - " + new_value)
+    await channel.edit(name=new_value)
+    r.activity = new_value
+    rooms.update(dict(role_id=r.role_id, activity=new_value), ['role_id'])
+    return await ctx.send("Updated activity to {}.".format(new_value))
+
+
+@bot.command(aliases=['d', 'desc', 'note'])
+async def description(ctx, *args):
+    """[Host] Set the description of your room"""
+    r = get_hosted_room(ctx.message.author.id, ctx.guild.id)
+    if not r:
+        return await ctx.send("You are not the host of a room.")
+    
+    r.update_active()
+    role = ctx.guild.get_role(r.role_id)
+    (flags, words) = pop_flags(args)
+    new_value = " ".join(words)
+
+    r.description = new_value
+    rooms.update(dict(role_id=r.role_id, description=new_value), ['role_id'])
+    return await ctx.send("Updated description for {}.".format(r.activity))
+
+
+@bot.command(aliases=['s', 'max', 'players'])
+async def size(ctx, *args):
+    """[Host] Set the max player size of your room"""
+    r = get_hosted_room(ctx.message.author.id, ctx.guild.id)
+    if not r:
+        return await ctx.send("You are not the host of a room.")
+    
+    r.update_active()
+    role = ctx.guild.get_role(r.role_id)
+    (flags, words) = pop_flags(args)
+    new_value = " ".join(words)
+
+    try:
+        if len(r.players) >= int(new_value):
+            return await ctx.send("There are too many players.")
+        r.size = min(abs(int(new_value)), 100) # Max room size is 100
+        rooms.update(dict(role_id=r.role_id, size=int(new_value)), ['role_id'])
+        return await ctx.send("Updated room size to {}.".format(new_value))
+    except ValueError:
+        return await ctx.send("The new room size must be an integer.")
+
+
+@bot.command(aliases=['h', 'bestow', 'leader'])
+async def host(ctx, *args):
+    """[Host] Change the host of your room"""
+    r = get_hosted_room(ctx.message.author.id, ctx.guild.id)
+    if not r:
+        return await ctx.send("You are not the host of a room.")
+    
+    r.update_active()
+
+    if not ctx.message.mentions:
+        return await ctx.send("Please @mention the new host.")
+
+    role = ctx.guild.get_role(r.role_id)
+    (flags, words) = pop_flags(args)
+    new_host = ctx.message.mentions[0]
+
+    for p in r.players:
+        if p == new_host.id:
+            r.host = new_host.id
+            rooms.update(dict(role_id=r.role_id, host=new_host.id), ['role_id'])
+            return await ctx.send("{} is now the new host of {}.".format(new_host.mention, r.activity))
+        return await ctx.send("{} is not in {}.".format(new_host.mention, r.activity))
+
+
+@bot.command(aliases=['clear', 'delete'])
 async def purge(ctx, *args):
-    """(ADMIN) Delete all rooms in this server (`-b` for broken rooms only, `-a` for all)"""
+    """[ADMIN] Delete room(s) in this server (`-a` for all active rooms, `-b` for all broken rooms). For moderation purposes."""
     player = ctx.message.author
     if not player.guild_permissions.administrator:
         return await ctx.send("You are not an administrator.")
 
-    category = discord.utils.get(player.guild.categories, name='Rooms')
-
     (flags, words) = pop_flags(args)
-    if 'b' in flags or 'a' in flags:
+    if 'a' not in flags and 'b' not in flags:
+        return await ctx.send("Please specify a room (by `@role` or `#channel`) or a flag (`-a`, `-b`).")
+
+    if 'b' in flags:
         deleted_channels = 0
         deleted_roles = 0
+        category = discord.utils.get(player.guild.categories, name='Rooms')
         for channel in category.channels:
             if iter_len(rooms.find(guild=ctx.guild.id, channel_id=channel.id)) < 1:
                 await channel.delete()
@@ -312,20 +390,21 @@ async def purge(ctx, *args):
                 await role.delete()
                 deleted_roles += 1
         await ctx.send("{} broken channels and {} broken roles have been deleted.".format(deleted_channels, deleted_roles))
-        if 'b' in flags:
-            return
 
-    rooms_data = rooms.find(guild=ctx.guild.id)
-    if iter_len(rooms_data) < 1:
-        return await ctx.send("There are no rooms to delete.")
-    count = 0
-    for room_data in rooms_data:
-        r = Room.from_query(room_data)
-        guild = bot.get_guild(r.guild)
-        await r.disband(guild)
-        count += 1
-    return await ctx.send("{} rooms have been deleted.".format(count))
-    
+    if 'a' in flags:
+        rooms_data = rooms.find(guild=ctx.guild.id)
+        if iter_len(rooms_data) < 1:
+            await ctx.send("There are no rooms to delete.")
+            if 'a' not in flags:
+                await ctx.send("(To delete broken rooms, use `-b`.)")
+            return
+        count = 0
+        for room_data in rooms_data:
+            r = Room.from_query(room_data)
+            guild = bot.get_guild(r.guild)
+            await r.disband(guild)
+            count += 1
+        await ctx.send("{} rooms have been deleted.".format(count))
 
 
 @bot.command(aliases=['hello'])
@@ -349,16 +428,32 @@ async def ping(ctx):
     return await ctx.send('Pong! Latency: `{}`'.format(round(bot.latency, 1)))
 
 
+@bot.command(aliases=['info'])
+async def about(ctx):
+    """All about me!"""
+    embed = discord.Embed(
+        color=discord_blue,
+        description='\n'.join([
+            ":shield: Serving {} servers".format(len(bot.guilds)),
+            ":cat: [GitHub](https://github.com/Milotrince/discord-roombot) Help improve me!",
+            ":mailbox: [Invite Link](https://discordapp.com/oauth2/authorize?client_id=592816310656696341&permissions=268437520&scope=bot) Invite me to another server!",
+            ":woman: [Profile](https://github.com/Milotrince) Contact my creator",
+            ":heart: RoomBot was made for Discord Hack Week"]) )
+    embed.set_author(name="About RoomBot")
+    return await ctx.send(embed=embed)
+
+
 @bot.command(aliases=['commands'])
 async def help(ctx):
     """Shows the available commands."""
     embed = discord.Embed(
         color=discord_blue,
         title="Commands" )
-    for command in bot.commands:
+    for command in sorted(bot.commands, key=lambda c:c.name):
         embed.add_field(
-            name=command,
-            value="`{}`\n{}".format("`, `".join(command.aliases), command.short_doc) )
+            name="**{}**    aka `{}`".format(command, "`, `".join(command.aliases)),
+            value=command.short_doc,
+            inline=False )
     await ctx.send(embed=embed)
 
 
