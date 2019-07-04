@@ -22,6 +22,11 @@ def some_color():
         discord.Color.orange(),
         discord.Color.red() ])
 
+
+def iter_len(iterator):
+    return sum(1 for _ in iterator)
+
+
 # Get config file
 current_dir = os.path.dirname(__file__)
 with open(os.path.join(current_dir, 'config.json')) as config_file:  
