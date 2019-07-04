@@ -18,6 +18,7 @@ Sometimes you want to play something with a group, but everyone's busy at the mo
 ## Features
 * RoomBot will automatically disband inactive rooms.
 * A colorful hoisted role is assigned to players who join the room, so you know who's in what room.
+* A private channel is created for your room.
 * Once you have enough people, RoomBot will notify everybody!
 
 ### Basic Commands
