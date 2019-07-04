@@ -48,12 +48,9 @@ class Room:
             "Why not?",
             "Let's play!" ]
 
-        # role_id = role_id
-        # channel_id = channel_id
         guild = ctx.message.guild.id
         color = color.value
         birth_channel = ctx.message.channel.id
-        # activity = activity
         description = choice(default_descriptions)
         created = datetime.now()
         timeout = 60 * 60
