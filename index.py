@@ -286,21 +286,41 @@ async def edit(ctx, *args):
 
 
 @bot.command(aliases=['deleteall', 'clearall'])
-async def purge(ctx):
-    """(Admin) Delete all rooms in this server."""
+async def purge(ctx, *args):
+    """(ADMIN) Delete all rooms in this server (`-b` for broken rooms only, `-a` for all)"""
     player = ctx.message.author
     if not player.guild_permissions.administrator:
-        return await ctx.send("You are not an admin.")
+        return await ctx.send("You are not an administrator.")
+
+    category = discord.utils.get(player.guild.categories, name='Rooms')
+
+    (flags, words) = pop_flags(args)
+    if 'b' in flags or 'a' in flags:
+        deleted_channels = 0
+        deleted_roles = 0
+        for channel in category.channels:
+            if iter_len(rooms.find(guild=ctx.guild.id, channel_id=channel.id)) < 1:
+                await channel.delete()
+                deleted_channels += 1
+        for role in ctx.guild.roles:
+            if iter_len(rooms.find(guild=ctx.guild.id, role_id=role.id)) < 1 and role.name.startswith("Room -"):
+                await role.delete()
+                deleted_roles += 1
+        await ctx.send("{} broken channels and {} broken roles have been deleted.".format(deleted_channels, deleted_roles))
+        if 'b' in flags:
+            return
+
     rooms_data = rooms.find(guild=ctx.guild.id)
-    if rooms_data:
-        count = 0
-        for room_data in rooms_data:
-            r = Room.from_query(room_data)
-            guild = bot.get_guild(r.guild)
-            await r.disband(guild)
-            count += 1
-        return await ctx.send("{} rooms have been deleted.".format(count))
-    return await ctx.send("There are no rooms to delete.")
+    if iter_len(rooms_data) < 1:
+        return await ctx.send("There are no rooms to delete.")
+    count = 0
+    for room_data in rooms_data:
+        r = Room.from_query(room_data)
+        guild = bot.get_guild(r.guild)
+        await r.disband(guild)
+        count += 1
+    return await ctx.send("{} rooms have been deleted.".format(count))
+    
 
 
 @bot.command(aliases=['hello'])
