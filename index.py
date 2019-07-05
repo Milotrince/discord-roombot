@@ -88,6 +88,8 @@ async def new(ctx, *args):
     
     if not activity:
         return await ctx.send('Please specify the room activity (or start doing something).')
+    if not ctx.guild.me.guild_permissions.manage_channels or not ctx.guild.me.guild_permissions.manage_roles:
+        raise discord.ext.commands.errors.CommandInvokeError("Missing Permissons")
 
     rooms_data = rooms.find(guild=ctx.guild.id)
     if rooms_data:
@@ -461,10 +463,19 @@ async def help(ctx):
 @bot.event
 async def on_command_error(ctx, error):
     """Sends a message when command error is encountered."""
-    print(error)
+    print('{} {}'.format(datetime.now(), error))
 
     if type(error) == discord.ext.commands.errors.CommandNotFound:
         await ctx.send("Not a valid command. Try `{0}help`.".format(config['prefix']))
+    elif type(error) == discord.ext.commands.errors.CommandInvokeError:
+        missing_permissions = []
+        if not ctx.guild.me.guild_permissions.manage_channels:
+            missing_permissions.append("ManageChannels")
+        if not ctx.guild.me.guild_permissions.manage_roles:
+            missing_permissions.append("ManageRoles")
+        if missing_permissions:
+            await ctx.send("I am missing permissions: `{}`".format('`, `'.join(missing_permissions)))
+        else: ctx.send("Something went wrong.")
     else:
         await ctx.send("An error has occurred.")
 
@@ -473,12 +484,12 @@ async def on_command_error(ctx, error):
 async def delete_inactive_rooms():
     await bot.wait_until_ready()
     while not bot.is_closed():
-        await asyncio.sleep(5)
+        await asyncio.sleep(60 * 10) # check every 10 minutes
         for room_data in rooms.find():
             r = Room.from_query(room_data)
             if datetime.now() - r.last_active > timedelta(seconds=r.timeout):
                 guild = bot.get_guild(r.guild)
-                channel = guild.get_channel(r.channel)
+                channel = guild.get_channel(r.birth_channel)
                 await r.disband(guild)
                 await channel.send("{} has disbanded due to inactivity.".format(r.activity))
 

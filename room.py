@@ -1,7 +1,8 @@
+import discord
 import dataset
+import pytz
 from random import choice
 from datetime import datetime, timedelta
-import discord
 
 # Start database
 db = dataset.connect('sqlite:///:memory:')
@@ -52,12 +53,12 @@ class Room:
         color = color.value
         birth_channel = ctx.message.channel.id
         description = choice(default_descriptions)
-        created = datetime.now()
+        created = datetime.now(pytz.utc)
         timeout = 60 * 60
         players = []
         host = ctx.message.author.id
         size = 2
-        last_active = datetime.now()
+        last_active = datetime.now(pytz.utc)
         return cls(role_id, channel_id, color, birth_channel, guild, activity, description,
                    created, timeout, players, host, size, last_active)
             
@@ -110,7 +111,7 @@ class Room:
 
 
     def update_active(self):
-        self.last_active = datetime.now()
+        self.last_active = datetime.now(pytz.utc)
         rooms.update(dict(role_id=self.role_id, last_active=self.last_active), ['role_id'])
 
 
