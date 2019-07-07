@@ -1,5 +1,3 @@
-import json
-import os
 import asyncio
 from discord.ext import commands
 from room import *
@@ -51,10 +49,9 @@ def iter_len(iterator):
     return sum(1 for _ in iterator)
 
 
-# Get config file
-current_dir = os.path.dirname(__file__)
-with open(os.path.join(current_dir, 'config.json')) as config_file:  
-    config = json.load(config_file)
+def log(content):
+    print('{} {}'.format(datetime.now(), content))
+
 
 # Define bot
 bot = commands.Bot(command_prefix=config['prefix'], case_insensitive=True)
@@ -117,6 +114,7 @@ async def new(ctx, *args):
     success = await new_room.add_player(player)
     if success:
         emb = new_room.get_embed(player.guild)
+        await channel.send("Welcome to your room, {}.".format(player.display_name))
         return await ctx.send(embed=emb)
     return await ctx.send("There was an error. Please try again.")
 
@@ -126,17 +124,25 @@ async def join(ctx, *args):
     """Join a room (by activity or player)."""
     if len(args) < 1:
         return await ctx.send("Please specify a room by activity or player.")
-    player_filter = ctx.message.mentions[0].id if ctx.message.mentions else None
-    activity_filter = " ".join(args) if args else None
+    user_mention_filter = ctx.message.mentions[0].id if ctx.message.mentions else None
+    role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions else None
+    text_filter = " ".join(args).lower() if args else None
 
     rooms_data = rooms.find(guild=ctx.guild.id)
     if rooms_data:
         room_match = None
         for room_data in rooms_data:
             r = Room.from_query(room_data)
-            if ctx.message.author.name in r.players:
+            if ctx.message.author.id in r.players:
                 return await ctx.send("You are already in a room.")
-            elif r.activity == activity_filter or player_filter in r.players:
+
+            player_names = []
+            for id in r.players:
+                player = ctx.guild.get_member(id)
+                if player:
+                    player_names.append(player.display_name.lower())
+
+            if r.activity.lower() == text_filter or text_filter in player_names or user_mention_filter in r.players or role_mention_filter == r.role_id:
                 room_match = r
                 
         if room_match:
@@ -144,6 +150,17 @@ async def join(ctx, *args):
             player = ctx.message.author
             if await room_match.add_player(player):
                 await ctx.send(embed=room_match.get_embed(player.guild))
+                room_channel = ctx.guild.get_channel(room_match.channel_id)
+                join_message = choice([
+                    "Do not fear! {} is here!",
+                    "{} joined the room.",
+                    "{} just stepped inside.",
+                    "Be nice to {}, ok everyone?",
+                    "The adventurer {} has joined your party.",
+                    "A {} has spawned!",
+                    "A wild {} appears!" ])
+                await room_channel.send(join_message.format(player.display_name))
+
                 if len(room_match.players) >= room_match.size:
                     role = player.guild.get_role(room_match.role_id)
                     await ctx.send("Hey {}! {} players have joined.".format(role.mention, len(room_match.players)))
@@ -168,7 +185,12 @@ async def leave(ctx):
                 r.update_active()
                 role = player.guild.get_role(r.role_id)
                 await r.disband(player.guild)
-                return await ctx.send("The room has been disbanded.")
+                try:
+                    await ctx.send("The room has been disbanded.")
+                except discord.errors.NotFound as e:
+                    log(e)
+                    
+                return
             elif player.id in r.players:
                 r.update_active()
                 await r.remove_player(player)
@@ -391,7 +413,10 @@ async def purge(ctx, *args):
             if iter_len(rooms.find(guild=ctx.guild.id, role_id=role.id)) < 1 and role.name.startswith("Room -"):
                 await role.delete()
                 deleted_roles += 1
-        await ctx.send("{} broken channels and {} broken roles have been deleted.".format(deleted_channels, deleted_roles))
+        try:
+            await ctx.send("{} broken channels and {} broken roles have been deleted.".format(deleted_channels, deleted_roles))
+        except discord.errors.NotFound as e:
+            log(e)
 
     if 'a' in flags:
         rooms_data = rooms.find(guild=ctx.guild.id)
@@ -406,7 +431,10 @@ async def purge(ctx, *args):
             guild = bot.get_guild(r.guild)
             await r.disband(guild)
             count += 1
-        await ctx.send("{} rooms have been deleted.".format(count))
+        try:
+            await ctx.send("{} rooms have been deleted.".format(count))
+        except discord.errors.NotFound as e:
+            log(e)
 
 
 @bot.command(aliases=['hello'])
@@ -463,31 +491,32 @@ async def help(ctx):
 @bot.event
 async def on_command_error(ctx, error):
     """Sends a message when command error is encountered."""
-    print('{} {}'.format(datetime.now(), error))
+    log(error)
 
     if type(error) == discord.ext.commands.errors.CommandNotFound:
-        await ctx.send("Not a valid command. Try `{0}help`.".format(config['prefix']))
+        return await ctx.send("Not a valid command. Try `{0}help`.".format(config['prefix']))
     elif type(error) == discord.ext.commands.errors.CommandInvokeError:
         missing_permissions = []
         if not ctx.guild.me.guild_permissions.manage_channels:
             missing_permissions.append("ManageChannels")
         if not ctx.guild.me.guild_permissions.manage_roles:
             missing_permissions.append("ManageRoles")
+
         if missing_permissions:
-            await ctx.send("I am missing permissions: `{}`".format('`, `'.join(missing_permissions)))
-        else: ctx.send("Something went wrong.")
-    else:
-        await ctx.send("An error has occurred.")
+            return await ctx.send("It seems I am missing permissions: `{}`".format('`, `'.join(missing_permissions)))
+    await ctx.send("Something went wrong. The developer has been notified.")
 
 
 # Periodically check for inactive rooms
 async def delete_inactive_rooms():
     await bot.wait_until_ready()
     while not bot.is_closed():
-        await asyncio.sleep(60 * 10) # check every 10 minutes
+        await asyncio.sleep(5 ) # check every 5 minutes
         for room_data in rooms.find():
             r = Room.from_query(room_data)
-            if datetime.now() - r.last_active > timedelta(seconds=r.timeout):
+            time_diff = datetime.now(pytz.utc) - r.last_active.replace(tzinfo=pytz.utc)
+            # timeout is in minutes
+            if time_diff.total_seconds() / 60 >= r.timeout:
                 guild = bot.get_guild(r.guild)
                 channel = guild.get_channel(r.birth_channel)
                 await r.disband(guild)

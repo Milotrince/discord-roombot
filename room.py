@@ -1,5 +1,7 @@
 import discord
 import dataset
+import json
+import os
 import pytz
 from random import choice
 from datetime import datetime, timedelta
@@ -7,6 +9,12 @@ from datetime import datetime, timedelta
 # Start database
 db = dataset.connect('sqlite:///:memory:')
 rooms = db.get_table('rooms', primary_id='role_id')
+
+# Get config file
+current_dir = os.path.dirname(__file__)
+with open(os.path.join(current_dir, 'config.json')) as config_file:  
+    config = json.load(config_file)
+    
 
 class Room:
     def __init__(self, role_id, channel_id, color, birth_channel, guild, activity,
@@ -54,7 +62,7 @@ class Room:
         birth_channel = ctx.message.channel.id
         description = choice(default_descriptions)
         created = datetime.now(pytz.utc)
-        timeout = 60 * 60
+        timeout = config['timeout']
         players = []
         host = ctx.message.author.id
         size = 2
@@ -86,11 +94,6 @@ class Room:
         """Generate a discord.Embed for this room"""
         description = discord.Embed.Empty if self.description == '' else self.description
         room_status = "Waiting for {} more players".format(self.size - len(self.players)) if len(self.players) < self.size else "Room is full"
-        player_names = []
-        for id in self.players:
-            player = guild.get_member(id)
-            if player:
-                player_names.append(player.name)
 
         embed = discord.Embed(
             color=self.color,
@@ -99,7 +102,7 @@ class Room:
             title=self.activity )
         embed.add_field(
             name="Players ({}/{})".format(len(self.players), self.size),
-            value=", ".join(player_names) )
+            value="<@{}>".format(">, <@".join([str(id) for id in self.players])) )
         embed.add_field(
             name=room_status,
             value="Room will automatically disband from inactivity." )

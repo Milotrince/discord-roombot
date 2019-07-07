@@ -1,4 +1,5 @@
 {
     "token": "a-very-long-token",
-    "prefix": "r."
+    "prefix": "r.",
+    "timeout": 1440
 }
