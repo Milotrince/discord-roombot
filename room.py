@@ -122,12 +122,18 @@ class Room:
         """Add a player to this room"""
         if player.id not in self.players:
             role = player.guild.get_role(self.role_id)
-            if role:
-                await player.add_roles(role)
-                self.players.append(player.id)
-                rooms.update(dict(role_id=self.role_id, players=ids_to_str(self.players)), ['role_id'])
-                return True
-        return False
+            channel = player.guild.get_channel(self.channel_id)
+
+            if not channel or not role:
+                return False
+
+            await player.add_roles(role)
+            self.players.append(player.id)
+            rooms.update(dict(role_id=self.role_id, players=ids_to_str(self.players)), ['role_id'])
+
+            await channel.edit(topic="({}/{}) {}".format(len(self.players), self.size, self.description))
+
+        return True
 
     async def remove_player(self, player):
         """Remove a player from this room"""

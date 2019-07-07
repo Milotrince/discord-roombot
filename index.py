@@ -23,6 +23,27 @@ def some_color():
         discord.Color.red() ])
 
 
+def get_color(color):
+    if color == 'teal':
+        return discord.Color.teal()
+    elif color == 'green':
+        return discord.Color.green()
+    elif color == 'blue':
+        return discord.Color.blue()
+    elif color == 'purple':
+        return discord.Color.purple()
+    elif color == 'magenta' or color == 'pink':
+        return discord.Color.magenta()
+    elif color == 'gold' or color == 'yellow':
+        return discord.Color.gold()
+    elif color == 'orange':
+        return discord.Color.orange()
+    elif color == 'red':
+        return discord.Color.red()
+    else:
+        return some_color()
+
+
 def pop_flags(args):
     """Returns (flags, args without flags). Flags are words starting with -"""
     nonflags = list(args)
@@ -278,7 +299,8 @@ async def edit(ctx, *args):
         'activity': activity.aliases,
         'description': description.aliases,
         'size': size.aliases,
-        'host': host.aliases }
+        'host': host.aliases,
+        'color': color.aliases }
 
     edits = ' '.join(args).split('-')
 
@@ -301,6 +323,8 @@ async def edit(ctx, *args):
                     await size.callback(ctx, *f_args)
                 elif field == 'host':
                     await host.callback(ctx, *f_args)
+                elif field == 'color':
+                    await color.callback(ctx, *f_args)
                 valid = True
                 break
         if not valid:
@@ -314,6 +338,8 @@ async def activity(ctx, *args):
     if not r:
         return await ctx.send("You are not the host of a room.")
 
+    channel = ctx.guild.get_channel(r.channel_id)
+
     r.update_active()
     role = ctx.guild.get_role(r.role_id)
     channel = ctx.guild.get_channel(r.channel_id)
@@ -324,7 +350,7 @@ async def activity(ctx, *args):
     await channel.edit(name=new_value)
     r.activity = new_value
     rooms.update(dict(role_id=r.role_id, activity=new_value), ['role_id'])
-    return await ctx.send("Updated activity to {}.".format(new_value))
+    return await ctx.send("Updated activity for {}.".format(channel.mention))
 
 
 @bot.command(aliases=['d', 'desc', 'note'])
@@ -334,6 +360,8 @@ async def description(ctx, *args):
     if not r:
         return await ctx.send("You are not the host of a room.")
     
+    channel = ctx.guild.get_channel(r.channel_id)
+
     r.update_active()
     role = ctx.guild.get_role(r.role_id)
     (flags, words) = pop_flags(args)
@@ -341,7 +369,9 @@ async def description(ctx, *args):
 
     r.description = new_value
     rooms.update(dict(role_id=r.role_id, description=new_value), ['role_id'])
-    return await ctx.send("Updated description for {}.".format(r.activity))
+    await channel.edit(topic="({}/{}) {}".format(len(r.players), r.size, r.description))
+    
+    return await ctx.send("Updated description for {}.".format(channel.mention))
 
 
 @bot.command(aliases=['s', 'max', 'players'])
@@ -350,6 +380,8 @@ async def size(ctx, *args):
     r = get_hosted_room(ctx.message.author.id, ctx.guild.id)
     if not r:
         return await ctx.send("You are not the host of a room.")
+    
+    channel = ctx.guild.get_channel(r.channel_id)
     
     r.update_active()
     role = ctx.guild.get_role(r.role_id)
@@ -361,7 +393,7 @@ async def size(ctx, *args):
             return await ctx.send("There are too many players.")
         r.size = min(abs(int(new_value)), 100) # Max room size is 100
         rooms.update(dict(role_id=r.role_id, size=int(new_value)), ['role_id'])
-        return await ctx.send("Updated room size to {}.".format(new_value))
+        return await ctx.send("Updated room size to {} for {}.".format(new_value, channel.mention))
     except ValueError:
         return await ctx.send("The new room size must be an integer.")
 
@@ -374,20 +406,48 @@ async def host(ctx, *args):
         return await ctx.send("You are not the host of a room.")
     
     r.update_active()
+    new_host = ctx.message.mentions[0] if ctx.message.mentions else None
 
-    if not ctx.message.mentions:
-        return await ctx.send("Please @mention the new host.")
+    name_filter = " ".join(args)
+    for id in r.players:
+        p = ctx.guild.get_member(id)
+        if p.display_name == name_filter:
+            new_host = p
+
+    if not new_host:
+        return await ctx.send("Please @mention or type the name of the new host.")
+
+    channel = ctx.guild.get_channel(r.channel_id)
 
     role = ctx.guild.get_role(r.role_id)
     (flags, words) = pop_flags(args)
-    new_host = ctx.message.mentions[0]
 
     for p in r.players:
         if p == new_host.id:
             r.host = new_host.id
             rooms.update(dict(role_id=r.role_id, host=new_host.id), ['role_id'])
-            return await ctx.send("{} is now the new host of {}.".format(new_host.mention, r.activity))
-        return await ctx.send("{} is not in {}.".format(new_host.mention, r.activity))
+            return await ctx.send("{} is now the new host of {}.".format(new_host.mention, channel.mention))
+        return await ctx.send("{} is not in {}.".format(new_host.mention, channel.mention))
+
+
+@bot.command(aliases=['c', 'colour'])
+async def color(ctx, *args):
+    """[Host] Set the color of your room"""
+    r = get_hosted_room(ctx.message.author.id, ctx.guild.id)
+    if not r:
+        return await ctx.send("You are not the host of a room.")
+
+    channel = ctx.guild.get_channel(r.channel_id)
+
+    r.update_active()
+    role = ctx.guild.get_role(r.role_id)
+    channel = ctx.guild.get_channel(r.channel_id)
+    
+    color = get_color(" ".join(args))
+
+    await role.edit(color=color)
+    rooms.update(dict(role_id=r.role_id, color=color.value), ['role_id'])
+    return await ctx.send("Updated color for {}.".format(channel.mention))
 
 
 @bot.command(aliases=['clear', 'delete'])
