@@ -123,9 +123,10 @@ async def new(ctx, *args):
         color=some_color(),
         hoist=True,
         mentionable=True )
+    # await role.edit(position=1)
     existing_category = discord.utils.get(player.guild.categories, name='Rooms')
     category = existing_category if existing_category else await player.guild.create_category('Rooms')
-    channel = await player.guild.create_text_channel(activity, category=category, overwrites={
+    channel = await player.guild.create_text_channel(activity, category=category, position=0, overwrites={
         player.guild.default_role: discord.PermissionOverwrite(read_messages=False),
         player.guild.me: discord.PermissionOverwrite(read_messages=True),
         role: discord.PermissionOverwrite(read_messages=True) })
@@ -571,16 +572,19 @@ async def on_command_error(ctx, error):
 async def delete_inactive_rooms():
     await bot.wait_until_ready()
     while not bot.is_closed():
-        await asyncio.sleep(5 ) # check every 5 minutes
+        await asyncio.sleep(5 * 60) # check every 5 minutes
         for room_data in rooms.find():
             r = Room.from_query(room_data)
             time_diff = datetime.now(pytz.utc) - r.last_active.replace(tzinfo=pytz.utc)
             # timeout is in minutes
             if time_diff.total_seconds() / 60 >= r.timeout:
-                guild = bot.get_guild(r.guild)
-                channel = guild.get_channel(r.birth_channel)
-                await r.disband(guild)
-                await channel.send("{} has disbanded due to inactivity.".format(r.activity))
+                try:
+                    guild = bot.get_guild(r.guild)
+                    channel = guild.get_channel(r.birth_channel)
+                    await r.disband(guild)
+                    await channel.send("{} has disbanded due to inactivity.".format(r.activity))
+                except Exception as e:
+                    log(e)
 
 
 bot.loop.create_task(delete_inactive_rooms())

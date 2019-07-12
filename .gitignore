@@ -1,4 +1,5 @@
 .DS_Store
-config.json
 .vscode
 __pycache__
+config.json
+database.db

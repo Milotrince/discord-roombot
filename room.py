@@ -7,7 +7,7 @@ from random import choice
 from datetime import datetime, timedelta
 
 # Start database
-db = dataset.connect('sqlite:///:memory:')
+db = dataset.connect('sqlite:///database.db')
 rooms = db.get_table('rooms', primary_id='role_id')
 
 # Get config file
