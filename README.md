@@ -1,7 +1,9 @@
 <div align="center">
     <h1>RoomBot</h1>
-    <a href="(https://discordapp.com/api/oauth2/authorize?client_id=592816310656696341&permissions=268437520&scope=bot)"><img src="assets/icon.png" height="100" alt="Invite RoomBot"/></a>
+    <img src="assets/icon.png" height="100" alt="RoomBot"/>
     <h3>Create your own rooms for games and more!</h3>
+    <a href="(https://discordapp.com/api/oauth2/authorize?client_id=592816310656696341&permissions=268437520&scope=bot)">Invite RoomBot
+    </a>
     <img src="assets/demo.gif" alt="Demo"/>
 </div>
 
@@ -9,7 +11,7 @@
 
 Sometimes you want to play something with a group, but everyone's busy at the moment. RoomBot allows you to create rooms to let everyone know that you're ready to play/do something.
 
-## Running RoomBot
+## Running Your Own RoomBot
 1. Clone this repository.
 2. Rename `config-template.json` to `config.json` and replace token
 3. `pip install discord.py`
