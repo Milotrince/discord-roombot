@@ -90,7 +90,7 @@ class Room:
                    created, timeout, players, host, size, last_active)
                    
 
-    def get_embed(self, guild):
+    def get_embed(self, player, footer_action):
         """Generate a discord.Embed for this room"""
         description = discord.Embed.Empty if self.description == '' else self.description
         room_status = "Waiting for {} more players".format(self.size - len(self.players)) if len(self.players) < self.size else "Room is full"
@@ -106,8 +106,11 @@ class Room:
         embed.add_field(
             name=room_status,
             value="Room will automatically disband from inactivity." )
+        embed.add_field(
+            name="Host",
+            value="<@{}>".format(self.host)),
         embed.set_footer(
-            text="Host: {}".format(guild.get_member(self.host).name),
+            text="{} by: {}".format(footer_action, player.display_name),
             icon_url=discord.Embed.Empty )
         
         return embed

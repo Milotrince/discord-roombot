@@ -86,11 +86,15 @@ async def on_ready():
     print('{} is online!'.format(bot.user.name))
     await bot.change_presence(activity=discord.Game(name='the waiting game'))
 
-
 @bot.event
 async def on_disconnect():
     """Fired when bot goes offline"""
     print('{} has disconnected...'.format(bot.user.name))
+
+@bot.event
+async def on_command(ctx):
+    if config["delete_command_message"] == "true":
+        await ctx.message.delete()
 
 
 @bot.command(aliases=['n', 'create', 'start'])
@@ -135,10 +139,10 @@ async def new(ctx, *args):
     new_room.update_active()
     success = await new_room.add_player(player)
     if success:
-        emb = new_room.get_embed(player.guild)
+        emb = new_room.get_embed(player, "New room made")
         await channel.send("Welcome to your room, {}.".format(player.display_name))
         return await ctx.send(embed=emb)
-    return await ctx.send("There was an error. Please try again.")
+    return await ctx.send("There was an error creating the room. Please try again.")
 
 
 @bot.command(aliases=['j'])
@@ -171,7 +175,7 @@ async def join(ctx, *args):
             room_match.update_active()
             player = ctx.message.author
             if await room_match.add_player(player):
-                await ctx.send(embed=room_match.get_embed(player.guild))
+                await ctx.send(embed=room_match.get_embed(player, "Room joined by"))
                 room_channel = ctx.guild.get_channel(room_match.channel_id)
                 join_message = choice([
                     "Do not fear! {} is here!",
@@ -208,7 +212,7 @@ async def leave(ctx):
                 role = player.guild.get_role(r.role_id)
                 await r.disband(player.guild)
                 try:
-                    await ctx.send("The room has been disbanded.")
+                    await ctx.send("{}'s room `{}` has been disbanded.".format(player.display_name, r.activity))
                 except discord.errors.NotFound as e:
                     log(e)
                     
@@ -216,22 +220,22 @@ async def leave(ctx):
             elif player.id in r.players:
                 r.update_active()
                 await r.remove_player(player)
-                await ctx.send("You have left " + r.activity)
+                await ctx.send("{} has left " + r.activity)
                 if len(r.players) < 1:
                     await r.disband(player.guild)
                     return await ctx.send("There are no players left in the room. Room has been disbanded.")
-    return await ctx.send("You are not in a room.")
+    return await ctx.send("{}, you cannot leave a room if you are not in one.".format(player.display_name))
 
 
 @bot.command(aliases=['k'])
 async def kick(ctx):
-    """[Host] Kick a player."""
+    """**[Host]** Kick a player."""
     if not ctx.message.mentions:
         return await ctx.send("Please @mention the kickee.")
     player = ctx.message.author
     kickee = ctx.message.mentions[0]
     if player.id == kickee.id:
-        return await ctx.send("You cannot be the kicker and kickee.")
+        return await ctx.send("{}, why are you trying to kick yourself?".format(player.display_name))
 
     rooms_data = rooms.find(guild=ctx.message.guild.id, host=player.id)
     if rooms_data:
@@ -240,12 +244,12 @@ async def kick(ctx):
             if r.host == player.id:
                 r.update_active()
                 await r.remove_player(kickee)
-                await ctx.send("{} has been kicked from {}.".format(kickee.name, r.activity))
+                await ctx.send("{} has kicked {} from {}.".format(player.display_name, kickee.display_name, r.activity))
                 if len(r.players) < 1:
                     await r.disband(player.guild)
                     return await ctx.send("There are no players left in the room. Room has been disbanded.")
                 return
-    return await ctx.send("You are not the host of a room.")
+    return await ctx.send("{}, you are not the host of a room.".format(player.display_name))
 
 
 @bot.command(aliases=['rooms', 'list', 'dir'])
@@ -272,9 +276,10 @@ async def ls(ctx):
 @bot.command(aliases=['r', 'room'])
 async def look(ctx, *args):
     """Shows your current room (or look at another room by activity or player)."""
+    player_name = ctx.message.author.display_name
     rooms_data = rooms.find(guild=ctx.guild.id)
     player_filter = ctx.message.mentions[0].id if ctx.message.mentions else ctx.message.author.id
-    activity_filter = args[0] if args else None
+    activity_filter = " ".join(args) if args else None
 
     rooms_data = rooms.find(guild=ctx.guild.id)
     if rooms_data:
@@ -282,19 +287,20 @@ async def look(ctx, *args):
             r = Room.from_query(room_data)
             if player_filter in r.players or r.activity == activity_filter:
                 r.update_active()
-                return await ctx.send(embed=r.get_embed(ctx.guild))        
+                return await ctx.send(embed=r.get_embed(ctx.author, "Request")) 
     else:
-        return await ctx.send("Sorry, no rooms exist yet.")
+        return await ctx.send("Oh {}, looks like no rooms exist yet.".format(player_name))
     
-    return await ctx.send("Could not find room.")
+    return await ctx.send("Sorry {}, I could not find your room.".format(player_name))
 
 
 @bot.command(aliases=['e', 'change', 'set'])
 async def edit(ctx, *args):
-    """[Host] Edit room information. Can set multiple at once using flags (`-activity`, `-description`, `-size`, `-host` value)"""
-    r = get_hosted_room(ctx.message.author.id, ctx.guild.id)
+    """**[Host]** Edit room information. Can set multiple at once using flags (`-activity`, `-description`, `-size`, `-host` value)"""
+    player = ctx.message.author
+    r = get_hosted_room(player.id, ctx.guild.id)
     if not r:
-        return await ctx.send("You are not the host of a room.")
+        return await ctx.send("{}, you are not the host of a room.".format(player.display_name))
 
     fields = {
         'activity': activity.aliases,
@@ -334,10 +340,11 @@ async def edit(ctx, *args):
 
 @bot.command(aliases=['a', 'game', 'name'])
 async def activity(ctx, *args):
-    """[Host] Set the name of your room"""
-    r = get_hosted_room(ctx.message.author.id, ctx.guild.id)
+    """**[Host]** Set the name of your room"""
+    player = ctx.message.author
+    r = get_hosted_room(player.id, ctx.guild.id)
     if not r:
-        return await ctx.send("You are not the host of a room.")
+        return await ctx.send("{}, you are not the host of a room.".format(player.display_name))
 
     channel = ctx.guild.get_channel(r.channel_id)
 
@@ -351,15 +358,16 @@ async def activity(ctx, *args):
     await channel.edit(name=new_value)
     r.activity = new_value
     rooms.update(dict(role_id=r.role_id, activity=new_value), ['role_id'])
-    return await ctx.send("Updated activity for {}.".format(channel.mention))
+    return await ctx.send("{} updated activity for {}.".format(player.mention, channel.mention))
 
 
 @bot.command(aliases=['d', 'desc', 'note'])
 async def description(ctx, *args):
-    """[Host] Set the description of your room"""
-    r = get_hosted_room(ctx.message.author.id, ctx.guild.id)
+    """**[Host]** Set the description of your room"""
+    player = ctx.message.author
+    r = get_hosted_room(player.id, ctx.guild.id)
     if not r:
-        return await ctx.send("You are not the host of a room.")
+        return await ctx.send("{}, you are not the host of a room.".format(player.display_name))
     
     channel = ctx.guild.get_channel(r.channel_id)
 
@@ -372,13 +380,14 @@ async def description(ctx, *args):
     rooms.update(dict(role_id=r.role_id, description=new_value), ['role_id'])
     await channel.edit(topic="({}/{}) {}".format(len(r.players), r.size, r.description))
     
-    return await ctx.send("Updated description for {}.".format(channel.mention))
+    return await ctx.send("{} updated the description for {}.".format(player.mention, channel.mention))
 
 
 @bot.command(aliases=['s', 'max', 'players'])
 async def size(ctx, *args):
-    """[Host] Set the max player size of your room"""
-    r = get_hosted_room(ctx.message.author.id, ctx.guild.id)
+    """**[Host]** Set the max player size of your room"""
+    player = ctx.message.author
+    r = get_hosted_room(player.id, ctx.guild.id)
     if not r:
         return await ctx.send("You are not the host of a room.")
     
@@ -390,19 +399,22 @@ async def size(ctx, *args):
     new_value = " ".join(words)
 
     try:
-        if len(r.players) >= int(new_value):
+        if len(r.players) > int(new_value):
             return await ctx.send("There are too many players.")
+        elif len(r.players) == int(new_value):
+            await ctx.send("The room is now full.")
         r.size = min(abs(int(new_value)), 100) # Max room size is 100
         rooms.update(dict(role_id=r.role_id, size=int(new_value)), ['role_id'])
-        return await ctx.send("Updated room size to {} for {}.".format(new_value, channel.mention))
+        return await ctx.send("{} updated room size of {} to {}.".format(player.mention, channel.mention, new_value))
     except ValueError:
         return await ctx.send("The new room size must be an integer.")
 
 
 @bot.command(aliases=['h', 'bestow', 'leader'])
 async def host(ctx, *args):
-    """[Host] Change the host of your room"""
-    r = get_hosted_room(ctx.message.author.id, ctx.guild.id)
+    """**[Host]** Change the host of your room"""
+    player = ctx.message.author
+    r = get_hosted_room(player.id, ctx.guild.id)
     if not r:
         return await ctx.send("You are not the host of a room.")
     
@@ -433,8 +445,9 @@ async def host(ctx, *args):
 
 @bot.command(aliases=['c', 'colour'])
 async def color(ctx, *args):
-    """[Host] Set the color of your room"""
-    r = get_hosted_room(ctx.message.author.id, ctx.guild.id)
+    """**[Host]** Set the color of your room"""
+    player = ctx.message.author
+    r = get_hosted_room(player.id, ctx.guild.id)
     if not r:
         return await ctx.send("You are not the host of a room.")
 
@@ -448,12 +461,12 @@ async def color(ctx, *args):
 
     await role.edit(color=color)
     rooms.update(dict(role_id=r.role_id, color=color.value), ['role_id'])
-    return await ctx.send("Updated color for {}.".format(channel.mention))
+    return await ctx.send("{} updated color for {}.".format(player.mention, channel.mention))
 
 
 @bot.command(aliases=['clear', 'delete'])
 async def purge(ctx, *args):
-    """[ADMIN] Delete room(s) in this server (`-a` for all active rooms, `-b` for all broken rooms). For moderation purposes."""
+    """**[ADMIN]** Delete room(s) in this server (`-a` for all active rooms, `-b` for all broken rooms). For moderation purposes."""
     player = ctx.message.author
     if not player.guild_permissions.administrator:
         return await ctx.send("You are not an administrator.")
@@ -555,17 +568,23 @@ async def on_command_error(ctx, error):
     log(error)
 
     if type(error) == discord.ext.commands.errors.CommandNotFound:
-        return await ctx.send("Not a valid command. Try `{0}help`.".format(config['prefix']))
+        if config["respond_to_invalid_command"] == "true":
+            await ctx.send("\"{}\" is not a valid command. Try `{}help`.".format(ctx.message.content, config['prefix']))
+        if config["delete_command_message"] == "true":
+            await ctx.message.delete()
+        return
     elif type(error) == discord.ext.commands.errors.CommandInvokeError:
         missing_permissions = []
         if not ctx.guild.me.guild_permissions.manage_channels:
             missing_permissions.append("ManageChannels")
         if not ctx.guild.me.guild_permissions.manage_roles:
             missing_permissions.append("ManageRoles")
+        if not ctx.guild.me.guild_permissions.manage_messages:
+            missing_permissions.append("ManageMessages")
 
         if missing_permissions:
             return await ctx.send("It seems I am missing permissions: `{}`".format('`, `'.join(missing_permissions)))
-    await ctx.send("Something went wrong. The developer has been notified.")
+    await ctx.send("Something went wrong. If this keeps happening, please post an issue at GitHub (https://github.com/Milotrince/discord-roombot/issues)")
 
 
 # Periodically check for inactive rooms

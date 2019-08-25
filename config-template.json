@@ -1,5 +1,7 @@
 {
     "token": "a-very-long-token",
     "prefix": "r.",
-    "timeout": 1440
+    "timeout": 300,
+    "respond_to_invalid_command": "true",
+    "delete_command_message": "false"
 }
