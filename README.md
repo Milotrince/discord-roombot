@@ -32,6 +32,9 @@ Sometimes you want to play something with a group, but everyone's busy at the mo
 * `hi` Greetings, human
 * ... and more!
 
+## Help improve RoomBot
+RoomBot is still growing up. If there are any features you would like to see added, [create a new issue](https://github.com/Milotrince/discord-roombot/issues/new) or message me on Discord (Milotrince#0001)!
+
 --------
 
 <div align="center">
