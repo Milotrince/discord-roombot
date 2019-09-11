@@ -74,10 +74,38 @@ def log(content):
     print('{} {}'.format(datetime.now(), content))
 
 
+def join_message(name):
+    return choice([
+        "Do not fear! {} is here!",
+        "{} joined the room.",
+        "{} just stepped inside.",
+        "Be nice to {}, ok everyone?",
+        "The adventurer {} has joined your party.",
+        "A {} has spawned!",
+        "A wild {} appears!" ]).format(name)
+
+def create_message(name):
+    return choice([
+        "Welcome to your room, {}.",
+        "{}, you are now the proud owner of this room.",
+        "Hi {}! A very cool room, this is.",
+        "A very nice and roomy room I made for you, {}.",
+        "So.. are you gonna have parties in this place {}?" ]).format(name)
+
+def invite_message(player_name, room_name):
+    return choice([
+        "You have been cordially invited to join `{1}`.",
+        "{0} wants YOU to join `{1}`.",
+        "A wild invite appeared!",
+        "Come join {0}'s room!",
+        "Hop into `{1}`!" ]).format(player_name, room_name)
+
+
 # Define bot
 bot = commands.Bot(command_prefix=config['prefix'], case_insensitive=True)
 bot.remove_command('help')
 discord_blue = discord.Color.from_rgb(114, 137, 218)
+invitee_list = []
 
 
 @bot.event
@@ -140,7 +168,7 @@ async def new(ctx, *args):
     success = await new_room.add_player(player)
     if success:
         emb = new_room.get_embed(player, "New room made")
-        await channel.send("Welcome to your room, {}.".format(player.display_name))
+        await channel.send(create_message(player.display_name))
         return await ctx.send(embed=emb)
     return await ctx.send("There was an error creating the room. Please try again.")
 
@@ -161,13 +189,13 @@ async def join(ctx, *args):
             r = Room.from_query(room_data)
             if ctx.message.author.id in r.players:
                 return await ctx.send("You are already in a room.")
-
+                
             player_names = []
             for id in r.players:
                 player = ctx.guild.get_member(id)
                 if player:
                     player_names.append(player.display_name.lower())
-
+                    
             if r.activity.lower() == text_filter or text_filter in player_names or user_mention_filter in r.players or role_mention_filter == r.role_id:
                 room_match = r
                 
@@ -177,15 +205,7 @@ async def join(ctx, *args):
             if await room_match.add_player(player):
                 await ctx.send(embed=room_match.get_embed(player, "Room joined by"))
                 room_channel = ctx.guild.get_channel(room_match.channel_id)
-                join_message = choice([
-                    "Do not fear! {} is here!",
-                    "{} joined the room.",
-                    "{} just stepped inside.",
-                    "Be nice to {}, ok everyone?",
-                    "The adventurer {} has joined your party.",
-                    "A {} has spawned!",
-                    "A wild {} appears!" ])
-                await room_channel.send(join_message.format(player.display_name))
+                await room_channel.send(join_message(player.display_name))
 
                 if len(room_match.players) >= room_match.size:
                     role = player.guild.get_role(room_match.role_id)
@@ -220,10 +240,11 @@ async def leave(ctx):
             elif player.id in r.players:
                 r.update_active()
                 await r.remove_player(player)
-                await ctx.send("{} has left " + r.activity)
+                await ctx.send("{} has left `{}`".format(player.name, r.activity))
                 if len(r.players) < 1:
                     await r.disband(player.guild)
                     return await ctx.send("There are no players left in the room. Room has been disbanded.")
+                return
     return await ctx.send("{}, you cannot leave a room if you are not in one.".format(player.display_name))
 
 
@@ -280,12 +301,13 @@ async def look(ctx, *args):
     rooms_data = rooms.find(guild=ctx.guild.id)
     player_filter = ctx.message.mentions[0].id if ctx.message.mentions else ctx.message.author.id
     activity_filter = " ".join(args) if args else None
+    role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions else None
 
     rooms_data = rooms.find(guild=ctx.guild.id)
     if rooms_data:
         for room_data in rooms_data:
             r = Room.from_query(room_data)
-            if player_filter in r.players or r.activity == activity_filter:
+            if player_filter in r.players or r.activity == activity_filter or r.role_id == role_mention_filter:
                 r.update_active()
                 return await ctx.send(embed=r.get_embed(ctx.author, "Request")) 
     else:
@@ -358,7 +380,7 @@ async def activity(ctx, *args):
     await channel.edit(name=new_value)
     r.activity = new_value
     rooms.update(dict(role_id=r.role_id, activity=new_value), ['role_id'])
-    return await ctx.send("{} updated activity for {}.".format(player.mention, channel.mention))
+    return await ctx.send("{} updated activity for {}.".format(player.display_name, channel.mention))
 
 
 @bot.command(aliases=['d', 'desc', 'note'])
@@ -380,7 +402,7 @@ async def description(ctx, *args):
     rooms.update(dict(role_id=r.role_id, description=new_value), ['role_id'])
     await channel.edit(topic="({}/{}) {}".format(len(r.players), r.size, r.description))
     
-    return await ctx.send("{} updated the description for {}.".format(player.mention, channel.mention))
+    return await ctx.send("{} updated the description for {}.".format(player.display_name, channel.mention))
 
 
 @bot.command(aliases=['s', 'max', 'players'])
@@ -405,7 +427,7 @@ async def size(ctx, *args):
             await ctx.send("The room is now full.")
         r.size = min(abs(int(new_value)), 100) # Max room size is 100
         rooms.update(dict(role_id=r.role_id, size=int(new_value)), ['role_id'])
-        return await ctx.send("{} updated room size of {} to {}.".format(player.mention, channel.mention, new_value))
+        return await ctx.send("{} updated room size of {} to {}.".format(player.display_name, channel.mention, new_value))
     except ValueError:
         return await ctx.send("The new room size must be an integer.")
 
@@ -440,7 +462,7 @@ async def host(ctx, *args):
             r.host = new_host.id
             rooms.update(dict(role_id=r.role_id, host=new_host.id), ['role_id'])
             return await ctx.send("{} is now the new host of {}.".format(new_host.mention, channel.mention))
-        return await ctx.send("{} is not in {}.".format(new_host.mention, channel.mention))
+    return await ctx.send("{} is not in {}.".format(new_host.mention, channel.mention))
 
 
 @bot.command(aliases=['c', 'colour'])
@@ -461,7 +483,7 @@ async def color(ctx, *args):
 
     await role.edit(color=color)
     rooms.update(dict(role_id=r.role_id, color=color.value), ['role_id'])
-    return await ctx.send("{} updated color for {}.".format(player.mention, channel.mention))
+    return await ctx.send("{} updated color for {}.".format(player.display_name, channel.mention))
 
 
 @bot.command(aliases=['clear', 'delete'])
@@ -541,7 +563,7 @@ async def about(ctx):
             ":shield: Serving {} servers".format(len(bot.guilds)),
             ":cat: [GitHub](https://github.com/Milotrince/discord-roombot) Help improve me!",
             ":mailbox: [Invite Link](https://discordapp.com/oauth2/authorize?client_id=592816310656696341&permissions=268437520&scope=bot) Invite me to another server!",
-            ":woman: [Profile](https://github.com/Milotrince) Contact my creator",
+            ":woman: [GitHub Profile](https://github.com/Milotrince) Contact my creator @Milotrince#0001",
             ":heart: RoomBot was made for Discord Hack Week"]) )
     embed.set_author(name="About RoomBot")
     return await ctx.send(embed=embed)
