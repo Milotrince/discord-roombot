@@ -151,9 +151,6 @@ class Room:
     async def disband(self, guild):
         """Delete room"""
         role = guild.get_role(self.role_id)
-        for id in self.players:
-            player = guild.get_member(id)
-            await self.remove_player(player)
         rooms.delete(role_id=self.role_id)
         await role.delete()
 
