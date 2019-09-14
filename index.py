@@ -776,9 +776,13 @@ async def delete_inactive_rooms():
             if time_diff.total_seconds() / 60 >= r.timeout:
                 try:
                     guild = bot.get_guild(r.guild)
-                    channel = guild.get_channel(r.birth_channel)
-                    await r.disband(guild)
-                    await channel.send("{} has disbanded due to inactivity.".format(r.activity))
+                    channel = guild.get_channel(r.birth_channel) if guild else None
+                    if guild and channel:
+                        await r.disband(guild)
+                        await channel.send("{} has disbanded due to inactivity.".format(r.activity))
+                    else:
+                        rooms.delete(role_id=r.role_id)
+
                 except Exception as e:
                     log(e)
 
