@@ -1,4 +1,4 @@
-from utility import *
+from room import *
 from discord.ext import commands
 import discord
 
@@ -11,7 +11,6 @@ class RoomHost(commands.Cog, name="Room Host"):
         self.p = dict.fromkeys(self.p_keys)
 
     def get_target_player(self, ctx, args):
-        log(args)
         name_filter = " ".join(args).lower()
         target_player = self.p['mentioned_player']
         if not target_player:
@@ -22,18 +21,19 @@ class RoomHost(commands.Cog, name="Room Host"):
 
     async def cog_before_invoke(self, ctx, *args):
         self.p['player'] = ctx.message.author
-        r = get_hosted_room(self.p['player'].id, ctx.guild.id)
+        r = Room.get_hosted(self.p['player'].id, ctx.guild.id)
         r.update_active()
         self.p['room'] = r
-        self.p['room_channel'] = ctx.guild.get_channel(r.channel_id)
-        self.p['room_role'] = ctx.guild.get_role(r.role_id)
+        self.p['channel'] = ctx.guild.get_channel(r.channel_id)
+        self.p['voice_channel'] = ctx.guild.get_channel(r.voice_channel_id)
+        self.p['role'] = ctx.guild.get_role(r.role_id)
         self.p['mentioned_player'] = ctx.message.mentions[0] if ctx.message.mentions else None
 
     async def cog_after_invoke(self, ctx):
         self.p = dict.fromkeys(self.p_keys)
 
     async def cog_check(self, ctx):
-        return get_hosted_room(ctx.message.author.id, ctx.guild.id)
+        return Room.get_hosted(ctx.message.author.id, ctx.guild.id)
 
     async def cog_command_error(self, ctx, error):
         if type(error) == discord.ext.commands.errors.CheckFailure:
@@ -55,10 +55,10 @@ class RoomHost(commands.Cog, name="Room Host"):
             await self.p['room'].remove_player(kickee)
             await ctx.send("{} has kicked {} from {}.".format(self.p['player'].display_name, kickee.display_name, self.p['room'].activity))
             if len(self.p['room'].players) < 1:
-                await self.p['room'].disband(player.guild)
+                await self.p['room'].disband(self.p['player'].guild)
                 return await ctx.send("There are no players left in the room. Room has been disbanded.")
         else:
-            return await ctx.send("{} is not in your room {}.".format(kickee.display_name, self.p['room_channel'].mention))
+            return await ctx.send("{} is not in your room {}.".format(kickee.display_name, self.p['channel'].mention))
 
 
     @commands.command(aliases=['h', 'bestow', 'leader'])
@@ -73,12 +73,12 @@ class RoomHost(commands.Cog, name="Room Host"):
         for p in self.p['room'].players:
             if p == new_host.id:
                 self.p['room'].host = new_host.id
-                rooms.update(dict(role_id=self.p['room'].role_id, host=new_host.id), ['role_id'])
-                return await ctx.send("{} is now the new host of {}.".format(new_host.mention, self.p['room_channel'].mention))
-        return await ctx.send("{} is not in your room {}.".format(new_host.display_name, self.p['room_channel'].mention))
+                self.p['room'].update('host', new_host.id)
+                return await ctx.send("{} is now the new host of {}.".format(new_host.mention, self.p['channel'].mention))
+        return await ctx.send("{} is not in your room {}.".format(new_host.display_name, self.p['channel'].mention))
 
 
-    @commands.command(aliases=['e', 'change', 'set'])
+    @commands.command(aliases=['e'])
     async def edit(self, ctx, *args):
         """
         Edit room information using flags.
@@ -127,11 +127,11 @@ class RoomHost(commands.Cog, name="Room Host"):
         This is what the channel and role will be named as.
         """
         new_activity = ' '.join(args)
-        await self.p['room_role'].edit(name="Room - " + new_activity)
-        await self.p['room_channel'].edit(name=new_activity)
+        await self.p['role'].edit(name="(Room) " + new_activity)
+        await self.p['channel'].edit(name=new_activity)
         self.p['room'].activity = new_activity
-        rooms.update(dict(role_id=self.p['room'].role_id, activity=new_activity), ['role_id'])
-        return await ctx.send("{} updated activity for {}.".format(self.p['player'].display_name, self.p['room_channel'].mention))
+        self.p['room'].update('activity', new_activity)
+        return await ctx.send("{} updated activity for {}.".format(self.p['player'].display_name, self.p['channel'].mention))
 
 
     @commands.command(aliases=['d', 'desc', 'note'])
@@ -142,9 +142,9 @@ class RoomHost(commands.Cog, name="Room Host"):
         """
         new_description = ' '.join(args)
         self.p['room'].description = new_description
-        rooms.update(dict(role_id=self.p['room'].role_id, description=new_description), ['role_id'])
-        await self.p['room_channel'].edit(topic="({}/{}) {}".format(len(self.p['room'].players), self.p['room'].size, self.p['room'].description))
-        return await ctx.send("{} updated the description for {}.".format(self.p['player'].display_name, self.p['room_channel'].mention))
+        self.p['room'].update('description', new_description)
+        await self.p['channel'].edit(topic="({}/{}) {}".format(len(self.p['room'].players), self.p['room'].size, self.p['room'].description))
+        return await ctx.send("{} updated the description for {}.".format(self.p['player'].display_name, self.p['channel'].mention))
 
 
     @commands.command(aliases=['s', 'max', 'players'])
@@ -160,8 +160,8 @@ class RoomHost(commands.Cog, name="Room Host"):
             elif len(self.p['room'].players) == int(new_size):
                 await ctx.send("The room is now full.")
             self.p['room'].size = min(abs(int(new_size)), 100) # Max room size is 100
-            rooms.update(dict(role_id=self.p['room'].role_id, size=int(new_size)), ['role_id'])
-            return await ctx.send("{} updated room size of {} to {}.".format(self.p['player'].display_name, self.p['room_channel'].mention, new_size))
+            self.p['room'].update('size', new_size)
+            return await ctx.send("{} updated room size of {} to {}.".format(self.p['player'].display_name, self.p['channel'].mention, new_size))
         except ValueError:
             return await ctx.send("The new room size must be an integer.")
 
@@ -174,10 +174,27 @@ class RoomHost(commands.Cog, name="Room Host"):
         gold/yellow, orange, and red.
         A random color is set if the specified color is not included above.
         """
-        color = get_color(" ".join(args))
-        await self.p['room_role'].edit(color=color)
-        rooms.update(dict(role_id=self.p['room'].role_id, color=color.value), ['role_id'])
-        return await ctx.send("{} updated color for {}.".format(self.p['player'].display_name, self.p['room_channel'].mention))
+        color = get_color(args[0] if args else '')
+        await self.p['role'].edit(color=color)
+        self.p['room'].update('color', color.value)
+        return await ctx.send("{} updated color for {}.".format(self.p['player'].display_name, self.p['channel'].mention))
+
+    @commands.command(aliases=['vc', 'voice', 'voicechannel'])
+    async def voice_channel(self, ctx, *args):
+        """
+        Create a voice channel associated with this room.
+        Will not create if already exists.
+        """
+        if self.p['voice_channel']:
+            return await ctx.send("There is already a voice channel for this room.")
+        category = await get_rooms_category(ctx.guild)
+        voice_channel = await ctx.guild.create_voice_channel(self.p['room'].activity, category=category, position=0, overwrites={
+            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            ctx.guild.me: discord.PermissionOverwrite(move_members=True),
+            self.p['role']: discord.PermissionOverwrite(read_messages=True) })
+        self.p['room'].update('voice_channel_id', voice_channel.id)
+        return await ctx.send("Created voice channel `#{}`.".format(voice_channel.name))
+
 
 
 

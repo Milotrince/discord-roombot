@@ -1,0 +1,41 @@
+{
+    "True":[
+        "1",
+        "y",
+        "ye",
+        "yes",
+        "t",
+        "true",
+        "on"
+    ],
+    "joined":[
+        "Do not fear! {} is here!",
+        "{} joined the room.",
+        "{} just stepped inside.",
+        "Be nice to {}, ok everyone?",
+        "The adventurer {} has joined your party.",
+        "A {} has spawned!",
+        "A wild {} appears!"
+    ],
+    "new":[
+        "Welcome to your room, {}.",
+        "{}, you are now the proud owner of this room.",
+        "Hi {}! A very cool room, this is.",
+        "A very nice and roomy room I made for you, {}.",
+        "So.. are you gonna have parties in this place {}?"
+    ],
+    "invite":[
+        "You have been cordially invited to join `{1}`.",
+        "{0} wants YOU to join `{1}`.",
+        "A wild invite appeared!",
+        "Come join {0}'s room!",
+        "Hop into `{1}`!"
+    ],
+    "description":[
+        "Let's do something together",
+        "Join me, I'm cool",
+        "Why not?",
+        "Let's play!"
+    ]
+}
+        

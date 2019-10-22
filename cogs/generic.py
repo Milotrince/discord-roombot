@@ -1,4 +1,4 @@
-from utility import *
+from room import *
 from discord.ext import commands
 import discord
 
@@ -47,7 +47,7 @@ class Generic(commands.Cog):
         return await ctx.send(embed=embed)
 
 
-    @commands.command(aliases=['commands'])
+    @commands.command(aliases=['commands', 'command', 'cmd'])
     async def help(self, ctx, *args):
         """
         Shows descriptions of all or specific commands.
