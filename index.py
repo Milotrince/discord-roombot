@@ -23,13 +23,11 @@ bot.remove_command('help')
 
 @bot.event
 async def on_ready():
-    """Fired when bot comes online"""
     print('{} is online!'.format(bot.user.name))
-    await bot.change_presence(activity=discord.Game(name='the waiting game'))
+    await bot.change_presence(activity=discord.Game(name=strings['bot_presence']))
 
 @bot.event
 async def on_disconnect():
-    """Fired when bot goes offline"""
     print('{} has disconnected...'.format(bot.user.name))
 
 @bot.event
@@ -48,7 +46,7 @@ async def on_command_error(ctx, error):
         return
     elif type(error) == commands.errors.CommandNotFound:
         if settings.respond_to_invalid:
-            await ctx.send("\"{}\" is not a valid command. Try `{}help`.".format(ctx.message.content, settings.prefix))
+            await ctx.send(strings['invalid_command'].format(ctx.message.content, settings.prefix))
         if settings.delete_command_message:
             await ctx.message.delete()
         return
@@ -62,12 +60,12 @@ async def on_command_error(ctx, error):
             missing_permissions.append("ManageMessages")
 
         if missing_permissions:
-            return await ctx.send("It seems I am missing permissions: `{}`".format('`, `'.join(missing_permissions)))
+            return await ctx.send(strings['missing_permission'].format('`, `'.join(missing_permissions)))
     log(error)
-    await ctx.send("Something went wrong. If this keeps happening, please message `Milotrince#0001` or post an issue at GitHub (https://github.com/Milotrince/discord-roombot/issues)")
+    await ctx.send(strings['fatal_error'])
 
 
-# Periodically check for inactive rooms_db
+# Periodically check for inactive rooms
 async def delete_inactive_rooms_db():
     await bot.wait_until_ready()
     while not bot.is_closed():
@@ -82,7 +80,7 @@ async def delete_inactive_rooms_db():
                     channel = guild.get_channel(r.birth_channel) if guild else None
                     if guild and channel:
                         await r.disband(guild)
-                        await channel.send("{} has disbanded due to inactivity.".format(r.activity))
+                        await channel.send(strings['disband_from_inactivity'].format(r.activity))
                     else:
                         rooms_db.delete(role_id=r.role_id)
 
@@ -90,10 +88,18 @@ async def delete_inactive_rooms_db():
                     log(e)
 
 # add cogs (groups of commands)
-bot.add_cog(generic.Generic(bot)) 
-bot.add_cog(basicroom.BasicRoom(bot))
-bot.add_cog(roomhost.RoomHost(bot))
-bot.add_cog(admin.Admin(bot))
+cogs = [
+    generic.Generic(bot),
+    basicroom.BasicRoom(bot),
+    roomhost.RoomHost(bot),
+    admin.Admin(bot) ]
+for cog in cogs:
+    for command in cog.get_commands():
+        command.aliases = strings['_aliases'][command.name]
+        command.help = '\n'.join(strings['_help'][command.name])
+        command.name = strings['_name'][command.name]
+    bot.add_cog(cog)
+
 
 bot.loop.create_task(delete_inactive_rooms_db())
 

@@ -2,7 +2,7 @@ from room import *
 from discord.ext import commands
 import discord
 
-class BasicRoom(commands.Cog, name="Basic Room"):
+class BasicRoom(commands.Cog, name=strings['_cog']['room']):
     def __init__(self, bot):
         self.bot = bot
         self._last_member = None
@@ -10,19 +10,19 @@ class BasicRoom(commands.Cog, name="Basic Room"):
         # self.invitee_list = db.get_table('invitees', primary_id='id')
         self.invitee_list = []
 
-    @commands.command(aliases=['n', 'create', 'start'])
+    @commands.command()
     async def new(self, ctx, *args):
         """Make a new room (uses current activity or input)."""
         activity = None
         player = ctx.message.author
 
-        if not args and player.activity:
+        if args:
+            activity = " ".join(args)
+        elif player.activity:
             activity = player.activity.name
         else:
-            activity = " ".join(args)
+            activity = choice(strings['default_room_names']).format(player.display_name)
         
-        if not activity:
-            return await ctx.send('Please specify the room activity (or start doing something).')
         if not ctx.guild.me.guild_permissions.manage_channels or not ctx.guild.me.guild_permissions.manage_roles:
             raise discord.ext.commands.errors.CommandInvokeError("Missing Permissons")
 
@@ -31,7 +31,7 @@ class BasicRoom(commands.Cog, name="Basic Room"):
             for room_data in rooms:
                 r = Room.from_query(room_data)
                 if player.id in r.players:
-                    return await ctx.send("You are already in a room.")
+                    return await ctx.send(strings['already_in_room'])
                 if r.activity == activity:
                     activity += " ({})".format(player.name)
                     
@@ -58,17 +58,17 @@ class BasicRoom(commands.Cog, name="Basic Room"):
         
         success = await new_room.add_player(player)
         if success:
-            emb = new_room.get_embed(player, "New room made")
-            await channel.send(choice(strings['new']).format(player.display_name))
+            emb = new_room.get_embed(player, strings['new_room'])
+            await channel.send(choice(strings['new_room_welcomes']).format(player.display_name))
             return await ctx.send(embed=emb)
-        return await ctx.send("There was an error creating the room. Please try again.")
+        return await ctx.send(strings['retry_error'])
 
 
-    @commands.command(aliases=['j'])
+    @commands.command()
     async def join(self, ctx, *args):
         """Join a room (by activity or player)."""
         if len(args) < 1:
-            return await ctx.send("Please specify a room by activity or player.")
+            return await ctx.send(strings['missing_target_room'])
         user_mention_filter = ctx.message.mentions[0].id if ctx.message.mentions else None
         role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions else None
         text_filter = " ".join(args).lower() if args else None
@@ -79,7 +79,7 @@ class BasicRoom(commands.Cog, name="Basic Room"):
             for room_data in rooms:
                 r = Room.from_query(room_data)
                 if ctx.message.author.id in r.players:
-                    return await ctx.send("You are already in a room.")
+                    return await ctx.send(strings['already_in_room'])
                     
                 player_names = []
                 for id in r.players:
@@ -94,27 +94,25 @@ class BasicRoom(commands.Cog, name="Basic Room"):
                 room_match.update_active()
                 player = ctx.message.author
                 if await room_match.add_player(player):
-                    await ctx.send(embed=room_match.get_embed(player, "Room joined by"))
+                    await ctx.send(embed=room_match.get_embed(player, strings['room_joined']))
                     room_channel = ctx.guild.get_channel(room_match.channel_id)
-                    await room_channel.send(choice(strings['joined']).format(player.display_name))
+                    await room_channel.send(choice(strings['join_messages']).format(player.display_name))
 
                     if len(room_match.players) >= room_match.size:
                         role = player.guild.get_role(room_match.role_id)
-                        await ctx.send("Hey {}! {} players have joined.".format(role.mention, len(room_match.players)))
+                        await ctx.send(strings['full_room_notification'].format(role.mention, len(room_match.players)))
                         return
                 else:
-                    return await ctx.send("There was an error joining.")
-            else:
-                return await ctx.send("That room does not exist.")
-        else:
-            return await ctx.send("Sorry, no rooms exist yet.")
+                    return await ctx.send(strings['retry_error'])
+
+        return await ctx.send(strings['room_not_exist'])
 
 
-    @commands.command(aliases=['i'])
+    @commands.command()
     async def invite(self, ctx, *args):
         """Invite a player/players to your room (by name or mention)."""
         if len(args) < 1:
-            return await ctx.send("Please specify the name or mention of the invitee.")
+            return await ctx.send(strings['missing_target'])
         user_mentions = ctx.message.mentions
         role_mentions = ctx.message.role_mentions
         player = ctx.message.author
@@ -149,41 +147,40 @@ class BasicRoom(commands.Cog, name="Basic Room"):
                 if player.id in r.players:
                     room = r
         if not room:
-            return await ctx.send("You are not in a room.")
+            return await ctx.send(strings['not_in_room'])
 
         if not invitees:
-            return await ctx.send("Invite who? (Check if the username is correct?)")
+            return await ctx.send(strings['missing_target_invitees'])
                     
         room.update_active()
         embed = discord.Embed(
             color=discord.Color.blurple(),
-            description="Lucky you.",
             timestamp=datetime.now(pytz.utc),
-            title=choice(strings['invite']).format(player.display_name, room.activity) )
+            title=choice(strings['invite_messages']).format(player.display_name, room.activity) )
         embed.add_field(
-            name="Players ({}/{})".format(len(room.players), room.size),
+            name="{} ({}/{})".format(strings['players'], len(room.players), room.size),
             value="<@{}>".format(">, <@".join([str(id) for id in room.players])) )
         embed.add_field(
-            name="Inviter: " + player.display_name,
-            value="Server: " + player.guild.name )
+            name=strings['inviter'] + ": " + player.display_name,
+            value=strings['server'] + ": " + player.guild.name )
         embed.add_field(
-            name="Room: " + room.activity,
-            value="Note: " + room.description )
+            name=strings['room'] + ": " + room.activity,
+            value=strings['description'] + ": " + room.description )
         embed.add_field(
-            name="Room ID",
+            name="ID",
             value=room.role_id )
         embed.set_footer(
-            text="React to accept or decline the invite.",
+            text=strings['invite_instructions'],
             icon_url=discord.Embed.Empty )
 
 
         result_embed = discord.Embed(
             color=discord.Color.blurple(),
-            description="for room: `{}`".format(room.activity),
+            description="{}: `{}`".format(strings['room'], room.activity),
             timestamp=datetime.now(pytz.utc),
-            title="Invites Sent" )
+            title=strings['invites_sent'] )
         result_embed.set_footer(
-            text="Invites sent by: " + player.display_name,
+            text="{}: {}".format(strings['inviter'], player.display_name),
             icon_url=discord.Embed.Empty )
         invitee_success = []
         invitee_fail = []
@@ -204,15 +201,15 @@ class BasicRoom(commands.Cog, name="Basic Room"):
 
         if invitee_success:
             result_embed.add_field(
-                name="Invitees",
+                name=strings['invitees'],
                 value="<@{}>".format(">, <@".join([str(id) for id in invitee_success])) )
         if invitee_fail:
             result_embed.add_field(
-                name="Failed invites",
-                value="I was unable to access these folks, probably because of their settings or because they are a bot.\n<@{}>".format(">, <@".join([str(id) for id in invitee_fail])) )
+                name=strings['failed_invites'],
+                value="{}\n<@{}>".format(strings['failed_invites_description'], ">, <@".join([str(id) for id in invitee_fail])) )
         if invitee_already_joined:
             result_embed.add_field(
-                name="Already joined",
+                name=strings['already_joined'],
                 value="<@{}>".format(">, <@".join([str(id) for id in invitee_already_joined])) )
             
         return await ctx.send(embed=result_embed)
@@ -232,7 +229,7 @@ class BasicRoom(commands.Cog, name="Basic Room"):
         self.invitee_list.remove(player.id)
         room_id = None
         for field in reaction.message.embeds[0].fields:
-            if field.name == "Room ID":
+            if field.name == "ID":
                 room_id = field.value
                 break
         room = None
@@ -240,40 +237,40 @@ class BasicRoom(commands.Cog, name="Basic Room"):
         if room_data:
             room = Room.from_query(room_data)
         if not room:
-            return await channel.send("Room no longer exists.")
+            return await channel.send(strings['room_not_exist'])
 
         if (accept):
             guild = self.bot.get_guild(room.guild)
 
             if not guild:
-                return await channel.send("I am not in that server anymore :(")
+                return await channel.send(strings['room_not_exist'])
             player = guild.get_member(player.id)
             if player.id in room.players:
-                return await channel.send("You are already in that room.")
+                return await channel.send(strings['already_in_room'])
             rooms = rooms_db.find(guild=guild.id)
             if rooms:
                 for room_data in rooms:
                     r = Room.from_query(room_data)
                     if player.id in r.players:
-                        return await channel.send("You are already in a room.")
+                        return await channel.send(strings['already_in_room'])
 
-            await channel.send("Invite accepted.")
+            await channel.send(strings['invite_accepted'])
             room.update_active()
             if await room.add_player(player):
-                await channel.send(embed=room.get_embed(player, "Room joined by"))
+                await channel.send(embed=room.get_embed(player, strings['room_joined']))
                 room_channel = guild.get_channel(room.channel_id)
-                await room_channel.send(choice(strings['joined']).format(player.display_name))
+                await room_channel.send(choice(strings['join_messages']).format(player.display_name))
 
                 if len(room.players) >= room.size:
                     role = guild.get_role(room.role_id)
                     room_channel = guild.get_channel(room.channel_id)
-                    await room_channel.send("Hey {}! {} players have joined.".format(role.mention, len(room.players)))
+                    await room_channel.send(strings['full_room_notification'].format(role.mention, len(room.players)))
         else:
-            await channel.send("Invite declined.")
+            await channel.send(strings['invite_declined'])
                 
 
 
-    @commands.command(aliases=['x', 'exit', 'disband'])
+    @commands.command()
     async def leave(self, ctx):
         """Leave a room. If you are the host, the room will be disbanded."""
         player = ctx.message.author
@@ -286,7 +283,7 @@ class BasicRoom(commands.Cog, name="Basic Room"):
                     role = player.guild.get_role(r.role_id)
                     await r.disband(player.guild)
                     try:
-                        await ctx.send("{}'s room `{}` has been disbanded.".format(player.display_name, r.activity))
+                        await ctx.send(strings['disband_room'].format(player.display_name, r.activity))
                     except discord.errors.NotFound as e:
                         log(e)
                         
@@ -294,15 +291,15 @@ class BasicRoom(commands.Cog, name="Basic Room"):
                 elif player.id in r.players:
                     r.update_active()
                     await r.remove_player(player)
-                    await ctx.send("{} has left `{}`".format(player.name, r.activity))
+                    await ctx.send(strings['left_room'].format(player.name, r.activity))
                     if len(r.players) < 1:
                         await r.disband(player.guild)
-                        return await ctx.send("There are no players left in the room. Room has been disbanded.")
+                        return await ctx.send(strings['disband_empty_room'])
                     return
-        return await ctx.send("{}, you cannot leave a room if you are not in one.".format(player.display_name))
+        return await ctx.send(strings['not_in_room'])
 
 
-    @commands.command(aliases=['rooms', 'list', 'dir'])
+    @commands.command()
     async def ls(self, ctx):
         """List rooms in current guild."""
         rooms = rooms_db.find(guild=ctx.guild.id)
@@ -313,17 +310,17 @@ class BasicRoom(commands.Cog, name="Basic Room"):
             exists = True
             room = Room.from_query(room_data)
 
-            description = room.description if room.description else 'Players: ' + ', '.join(room.players)
+            description = room.description if room.description else "{}: {}".format(strings['players'], ', '.join(room.players))
             embed.add_field(
                 name="{0} ({1}/{2})".format(room.activity, len(room.players), room.size),
                 value=description )
         if exists:
             await ctx.send(embed=embed)
         else:
-            await ctx.send("No rooms exist yet.")
+            await ctx.send(strings['no_rooms'])
 
 
-    @commands.command(aliases=['r', 'room'])
+    @commands.command()
     async def look(self, ctx, *args):
         """Shows your current room (or look at another room by activity or player)."""
         player_name = ctx.message.author.display_name
@@ -338,10 +335,8 @@ class BasicRoom(commands.Cog, name="Basic Room"):
                 r = Room.from_query(room_data)
                 if player_filter in r.players or r.activity == activity_filter or r.role_id == role_mention_filter:
                     r.update_active()
-                    return await ctx.send(embed=r.get_embed(ctx.author, "Request")) 
+                    return await ctx.send(embed=r.get_embed(ctx.author, strings['request'])) 
         else:
-            return await ctx.send("Oh {}, looks like no rooms exist yet.".format(player_name))
+            return await ctx.send(strings['no_rooms'])
         
-        return await ctx.send("Sorry {}, I could not find your room.".format(player_name))
-
-
+        return await ctx.send(strings['no_room'])

@@ -2,7 +2,7 @@ from room import *
 from discord.ext import commands
 import discord
 
-class RoomHost(commands.Cog, name="Room Host"):
+class RoomHost(commands.Cog, name=strings['_cog']['host']):
     def __init__(self, bot):
         self.bot = bot
         self._last_member = None
@@ -37,10 +37,10 @@ class RoomHost(commands.Cog, name="Room Host"):
 
     async def cog_command_error(self, ctx, error):
         if type(error) == discord.ext.commands.errors.CheckFailure:
-            await ctx.send("You are not the host of a room.")
+            await ctx.send(strings['not_host'])
 
 
-    @commands.command(aliases=['k'])
+    @commands.command()
     async def kick(self, ctx, *args):
         """
         Kick a player.
@@ -48,20 +48,20 @@ class RoomHost(commands.Cog, name="Room Host"):
         """
         kickee = self.get_target_player(ctx, args)
         if not kickee:
-            return await ctx.send("Please @mention or type the name of the kickee.")
+            return await ctx.send(strings['missing_target'])
         if self.p['player'].id == kickee.id:
-            return await ctx.send("{}, why are you trying to kick yourself?".format(self.p['player'].display_name))
+            return await ctx.send(strings['self_target'].format(self.p['player'].display_name))
         if kickee.id in self.p['room'].players:
             await self.p['room'].remove_player(kickee)
-            await ctx.send("{} has kicked {} from {}.".format(self.p['player'].display_name, kickee.display_name, self.p['room'].activity))
+            await ctx.send(strings['kicked'].format(self.p['player'].display_name, kickee.display_name, self.p['room'].activity))
             if len(self.p['room'].players) < 1:
                 await self.p['room'].disband(self.p['player'].guild)
-                return await ctx.send("There are no players left in the room. Room has been disbanded.")
+                return await ctx.send(strings['disband_empty_room'])
         else:
-            return await ctx.send("{} is not in your room {}.".format(kickee.display_name, self.p['channel'].mention))
+            return await ctx.send(strings['target_not_in_room'].format(kickee.display_name, self.p['channel'].mention))
 
 
-    @commands.command(aliases=['h', 'bestow', 'leader'])
+    @commands.command()
     async def host(self, ctx, *args):
         """
         Change the host of your room.
@@ -69,16 +69,16 @@ class RoomHost(commands.Cog, name="Room Host"):
         """
         new_host = self.get_target_player(ctx, args)
         if not new_host:
-            return await ctx.send("Please @mention or type the name of the new host.")
+            return await ctx.send(strings['missing_target'])
         for p in self.p['room'].players:
             if p == new_host.id:
                 self.p['room'].host = new_host.id
                 self.p['room'].update('host', new_host.id)
-                return await ctx.send("{} is now the new host of {}.".format(new_host.mention, self.p['channel'].mention))
-        return await ctx.send("{} is not in your room {}.".format(new_host.display_name, self.p['channel'].mention))
+                return await ctx.send(strings['new_host'].format(self.p['player'].display_name, new_host.mention, self.p['channel'].mention))
+        return await ctx.send(strings['target_not_in_room'].format(new_host.display_name, self.p['channel'].mention))
 
 
-    @commands.command(aliases=['e'])
+    @commands.command()
     async def edit(self, ctx, *args):
         """
         Edit room information using flags.
@@ -91,36 +91,32 @@ class RoomHost(commands.Cog, name="Room Host"):
             'size': self.size.aliases,
             'host': self.host.aliases,
             'colour': self.colour.aliases }
-        edits = ' '.join(args).split('-')
+        (flags, flag_args) = pop_flags(args)
 
-        if len(edits) < 2:
-            return await ctx.send("Please specify the field(s) using flags (`-activity`, `-description`, `-size`, `-host`).")
-        del edits[0] # First index contains useless args before a flag
+        if len(flags) < 2:
+            return await ctx.send(strings['require_flags'])
 
-        for edit in edits:
-            words = edit.strip().split(' ')
+        for i, flag in enumerate(flags):
             valid = False
-            f = words[0]
             for field, aliases in fields.items():
-                if f == field or f in aliases:
-                    f_args = tuple(words[1:])
+                if flag == field or flag in aliases:
                     if field == 'activity':
-                        await self.activity.callback(self, ctx, *f_args)
+                        await self.activity.callback(self, ctx, *tuple(flag_args))
                     elif field == 'description':
-                        await self.description.callback(self, ctx, *f_args)
+                        await self.description.callback(self, ctx, *tuple(flag_args))
                     elif field == 'size':
-                        await self.size.callback(self, ctx, *f_args)
+                        await self.size.callback(self, ctx, *tuple(flag_args))
                     elif field == 'host':
-                        await self.host.callback(self, ctx, *f_args)
+                        await self.host.callback(self, ctx, *tuple(flag_args))
                     elif field == 'colour':
-                        await self.colour.callback(self, ctx, *f_args)
+                        await self.colour.callback(self, ctx, *tuple(flag_args))
                     valid = True
                     break
             if not valid:
-                await ctx.send("The field `{}` is not recognized.".format(f))
+                await ctx.send(strings['bad_field'].format(flag))
 
 
-    @commands.command(aliases=['a', 'game', 'name'])
+    @commands.command()
     async def activity(self, ctx, *args):
         """
         Set the name of your room.
@@ -131,10 +127,10 @@ class RoomHost(commands.Cog, name="Room Host"):
         await self.p['channel'].edit(name=new_activity)
         self.p['room'].activity = new_activity
         self.p['room'].update('activity', new_activity)
-        return await ctx.send("{} updated activity for {}.".format(self.p['player'].display_name, self.p['channel'].mention))
+        return await ctx.send(strings['updated_field'].format(strings['activity'], new_activity, self.p['player'].display_name, self.p['channel'].mention))
 
 
-    @commands.command(aliases=['d', 'desc', 'note'])
+    @commands.command()
     async def description(self, ctx, *args):
         """
         Set the description of your room.
@@ -144,10 +140,10 @@ class RoomHost(commands.Cog, name="Room Host"):
         self.p['room'].description = new_description
         self.p['room'].update('description', new_description)
         await self.p['channel'].edit(topic="({}/{}) {}".format(len(self.p['room'].players), self.p['room'].size, self.p['room'].description))
-        return await ctx.send("{} updated the description for {}.".format(self.p['player'].display_name, self.p['channel'].mention))
+        return await ctx.send(strings['updated_field'].format(strings['description'], new_description, self.p['player'].display_name, self.p['channel'].mention))
 
 
-    @commands.command(aliases=['s', 'max', 'players'])
+    @commands.command()
     async def size(self, ctx, *args):
         """
         Set the max player size of your room.
@@ -156,17 +152,15 @@ class RoomHost(commands.Cog, name="Room Host"):
         new_size = args[0] if args else None
         try:
             if len(self.p['room'].players) > int(new_size):
-                return await ctx.send("There are too many players.")
-            elif len(self.p['room'].players) == int(new_size):
-                await ctx.send("The room is now full.")
+                return await ctx.send(strings['size_too_small'])
             self.p['room'].size = min(abs(int(new_size)), 100) # Max room size is 100
             self.p['room'].update('size', new_size)
-            return await ctx.send("{} updated room size of {} to {}.".format(self.p['player'].display_name, self.p['channel'].mention, new_size))
+            return await ctx.send(strings['updated_field'].format(strings['size'], new_size, self.p['player'].display_name, self.p['channel'].mention))
         except ValueError:
-            return await ctx.send("The new room size must be an integer.")
+            return await ctx.send(strings['need_integer'])
 
 
-    @commands.command(aliases=['c', 'color'])
+    @commands.command()
     async def colour(self, ctx, *args):
         """
         Set the color of your room.
@@ -177,23 +171,24 @@ class RoomHost(commands.Cog, name="Room Host"):
         color = get_color(args[0] if args else '')
         await self.p['role'].edit(color=color)
         self.p['room'].update('color', color.value)
-        return await ctx.send("{} updated color for {}.".format(self.p['player'].display_name, self.p['channel'].mention))
+        return await ctx.send(strings['updated_field'].format(strings['color'], color, self.p['player'].display_name, self.p['channel'].mention))
 
-    @commands.command(aliases=['vc', 'voice', 'voicechannel'])
+
+    @commands.command()
     async def voice_channel(self, ctx, *args):
         """
         Create a voice channel associated with this room.
         Will not create if already exists.
         """
         if self.p['voice_channel']:
-            return await ctx.send("There is already a voice channel for this room.")
+            return await ctx.send(strings['voice_channel_exists'])
         category = await get_rooms_category(ctx.guild)
         voice_channel = await ctx.guild.create_voice_channel(self.p['room'].activity, category=category, position=0, overwrites={
             ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
             ctx.guild.me: discord.PermissionOverwrite(move_members=True),
             self.p['role']: discord.PermissionOverwrite(read_messages=True) })
         self.p['room'].update('voice_channel_id', voice_channel.id)
-        return await ctx.send("Created voice channel `#{}`.".format(voice_channel.name))
+        return await ctx.send(strings['new_voice_channel'].format(voice_channel.name))
 
 
 

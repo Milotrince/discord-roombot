@@ -11,9 +11,7 @@ db = dataset.connect('sqlite:///database.db')
 rooms_db = db.get_table('rooms', primary_id='role_id')
 settings_db = db.get_table('settings', primary_id='guild_id')
 
-# Get json files
-with open('config/settings.json', 'r') as settings_file:  
-    settings_format = json.load(settings_file)
+# Get json file of strings
 with open('config/strings.json', 'r') as strings_file:  
     strings = json.load(strings_file)
 
@@ -92,40 +90,33 @@ async def get_rooms_category(guild):
 class Settings:
     format = dict(
         prefix={
-            "category": "General",
-            "description": "Command prefix for RoomBot",
+            "description": strings['prefix_description'],
             "flags": ["prefix"],
             "default_value": "r." },
         timeout={
-            "category": "General",
-            "description": "After inactivity for this amount of minutes, the room will automatically be disbanded.",
+            "description": strings['timeout_description'],
             "flags": ["timeout"],
             "default_value": 300 },
         respond_to_invalid={
-            "category": "General",
-            "description": "Whether or not to respond to a command with prefix that does not exist.",
+            "description": strings['respond_to_invalid_description'],
             "flags": ["respond_to_invalid", "rti"],
             "default_value": True },
         delete_command_message={
-            "category": "General",
-            "description": "Whether or not to delete the command message that the user sends.",
+            "description": strings['delete_command_message_description'],
             "flags": ["delete_command_message", "dcm"],
             "default_value": False },
         size={
-            "category": "Default Room",
-            "description": "Default room size upon room creation",
+            "description": strings['size'],
             "flags": ["size"],
             "default_value": 4 },
         voice_channel={
-            "category": "Default Room",
-            "description": "Whether or not to create a voice channel upon room creation",
+            "description": strings['voice_channel_description'],
             "flags": ["voice_channel", "vc"],
             "default_value": False },
         category_name={
-            "category": "General",
-            "description": "The name of the category where all the rooms are grouped.",
+            "description": strings['category_name_description'],
             "flags": ["category_name", "category"],
-            "default_value": "Rooms" })
+            "default_value": strings['room'] })
     
     def __init__(self, guild_id, prefix, timeout, respond_to_invalid,
                  delete_command_message, size, voice_channel, category_name):
@@ -277,7 +268,7 @@ class Room:
         voice_channel_id = voice_channel.id if voice_channel else 0
         color = role.color.value
         birth_channel = ctx.message.channel.id
-        description = choice(strings['description'])
+        description = choice(strings['default_room_descriptions'])
         created = datetime.now(pytz.utc)
         timeout = settings.timeout
         players = []
@@ -320,7 +311,7 @@ class Room:
     def get_embed(self, player, footer_action):
         """Generate a discord.Embed for this room"""
         description = discord.Embed.Empty if self.description == '' else self.description
-        room_status = "Waiting for {} more players".format(self.size - len(self.players)) if len(self.players) < self.size else "Room is full"
+        room_status = strings['room_status'].format(self.size - len(self.players)) if len(self.players) < self.size else strings['full_room']
 
         embed = discord.Embed(
             color=self.color,
@@ -328,16 +319,16 @@ class Room:
             timestamp=self.created,
             title=self.activity )
         embed.add_field(
-            name="Players ({}/{})".format(len(self.players), self.size),
+            name="{} ({}/{})".format(strings['players'], len(self.players), self.size),
             value="<@{}>".format(">, <@".join([str(id) for id in self.players])) )
         embed.add_field(
             name=room_status,
-            value="Room will automatically disband from inactivity." )
+            value=strings['room_status_description'] )
         embed.add_field(
-            name="Host",
+            name=strings['host'],
             value="<@{}>".format(self.host)),
         embed.set_footer(
-            text="{} by: {}".format(footer_action, player.display_name),
+            text="{} : {}".format(footer_action, player.display_name),
             icon_url=discord.Embed.Empty )
         
         return embed
