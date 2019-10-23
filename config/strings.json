@@ -201,11 +201,11 @@
         ]
     },
 
-    "_category":{
-        "generic":"generic",
-        "room":"basic room",
-        "host":"room host",
-        "admin":"admin"
+    "_cog":{
+        "generic":"Generic",
+        "room":"Basic Room",
+        "host":"Room Host",
+        "admin":"Admin"
     },
  
  
