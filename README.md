@@ -12,9 +12,14 @@ Sometimes you want to play something with a group, but everyone's busy at the mo
 
 ## Running Your Own RoomBot
 1. Clone this repository.
-2. Rename `config-template.json` to `config.json` and replace token
-3. `pip install discord.py`
-4. `python index.py`
+2. Replace contents of `token` with bot token (from [Discord Developer Portal](https://discordapp.com/developers/applications/))
+3. Install `pipenv`
+    * macOS (Terminal) `brew install pipenv` or `pip3 install pipenv`
+    * linux (Fedora 28) `sudo dnf install pipenv`
+    * windows (Powershell) `pip install pipenv`
+4. `pipenv shell`
+5. `pipenv install`
+6. `python3 index.py`
 
 ## Features
 * RoomBot will automatically disband inactive rooms.
@@ -28,7 +33,6 @@ Sometimes you want to play something with a group, but everyone's busy at the mo
 * `join` Join a room with `@someone` or the room name
 * `leave` Leave a room
 * `look` Show room information
-* `hi` Greetings, human
 * ... and more!
 
 ## Help improve RoomBot
