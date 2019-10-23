@@ -95,7 +95,7 @@ class Settings:
             "category": "General",
             "description": "Command prefix for RoomBot",
             "flags": ["prefix"],
-            "default_value": "t." },
+            "default_value": "r." },
         timeout={
             "category": "General",
             "description": "After inactivity for this amount of minutes, the room will automatically be disbanded.",
