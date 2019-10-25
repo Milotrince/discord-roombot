@@ -69,7 +69,7 @@ class Admin(commands.Cog, name=strings['_cog']['admin']):
                     await role.delete()
                     deleted_roles += 1
             try:
-                await ctx.send(strings['purged'].format(deleted_channels, deleted_roles))
+                await ctx.send(strings['purged_b'].format(deleted_channels, deleted_roles))
             except discord.errors.NotFound as e:
                 log(e)
 
