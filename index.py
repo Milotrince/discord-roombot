@@ -1,6 +1,5 @@
 from discord.ext import commands
 from room import *
-from cogs import *
 
 print("""
  _____               _____ _____ _____ 
@@ -18,13 +17,15 @@ async def determine_prefix(bot, message):
     return Settings.get_default_value('prefix')
 
 # Define bot
-bot = commands.Bot(command_prefix=determine_prefix, case_insensitive=True)
+bot = commands.Bot(
+    command_prefix=determine_prefix, 
+    case_insensitive=True,
+    activity=discord.Game(strings['bot_presence']))
 bot.remove_command('help')
 
 @bot.event
 async def on_ready():
     print('{} is online!'.format(bot.user.name))
-    await bot.change_presence(activity=discord.Game(name=strings['bot_presence']))
 
 @bot.event
 async def on_disconnect():
@@ -61,6 +62,7 @@ async def on_command_error(ctx, error):
 
         if missing_permissions:
             return await ctx.send(strings['missing_permission'].format('`, `'.join(missing_permissions)))
+    log("===== ERROR RAISED FROM: " + ctx.message.content)
     log(error)
     await ctx.send(strings['fatal_error'])
 
@@ -87,22 +89,20 @@ async def delete_inactive_rooms_db():
                 except Exception as e:
                     log(e)
 
+bot.loop.create_task(delete_inactive_rooms_db())
+
 # add cogs (groups of commands)
-cogs = [
-    generic.Generic(bot),
-    basicroom.BasicRoom(bot),
-    roomhost.RoomHost(bot),
-    admin.Admin(bot) ]
-for cog in cogs:
+cogs_folder = 'cogs'
+cogs = [ 'generic', 'basicroom', 'roomhost', 'admin' ]
+for cog_name in cogs:
+    bot.load_extension(cogs_folder + '.' + cog_name)
+for cog in bot.cogs.values():
     for command in cog.get_commands():
         command.aliases = strings['_aliases'][command.name]
         command.help = '\n'.join(strings['_help'][command.name])
         command.name = strings['_name'][command.name]
-    bot.add_cog(cog)
 
-
-bot.loop.create_task(delete_inactive_rooms_db())
-
+# run bot
 with open('config/token.txt', 'r') as token_file:  
     token = token_file.read()
 bot.run(token)

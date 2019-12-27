@@ -85,3 +85,7 @@ class Admin(commands.Cog, name=strings['_cog']['admin']):
                 await ctx.send(strings['purged_a'].format(count))
             except discord.errors.NotFound as e:
                 log(e)
+
+
+def setup(bot):
+    bot.add_cog(Admin(bot))

@@ -8,12 +8,10 @@ class Generic(commands.Cog, name=strings['_cog']['generic']):
         self._last_member = None
         self.color = discord.Color.greyple()
         
-
     @commands.command()
     async def ping(self, ctx):
         """Pong! Shows latency."""
         return await ctx.send(strings['ping'].format(round(self.bot.latency, 1)))
-
 
     @commands.command()
     async def about(self, ctx):
@@ -68,3 +66,5 @@ class Generic(commands.Cog, name=strings['_cog']['generic']):
             await ctx.send(embed=embed)
 
 
+def setup(bot):
+    bot.add_cog(Generic(bot))

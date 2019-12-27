@@ -3,8 +3,7 @@ from discord.ext import commands
 import discord
 
 class RoomHost(commands.Cog, name=strings['_cog']['host']):
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self):
         self._last_member = None
         self.color = discord.Color.blurple()
         self.p_keys = ['player', 'room', 'room_channel', 'room_role', 'flags', 'words', 'new_value', 'mentioned_player']
@@ -191,6 +190,5 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
         return await ctx.send(strings['new_voice_channel'].format(voice_channel.name))
 
 
-
-
-
+def setup(bot):
+    bot.add_cog(RoomHost())

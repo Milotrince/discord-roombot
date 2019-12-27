@@ -340,3 +340,7 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
             return await ctx.send(strings['no_rooms'])
         
         return await ctx.send(strings['no_room'])
+
+
+def setup(bot):
+    bot.add_cog(BasicRoom(bot))
