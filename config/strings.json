@@ -61,6 +61,7 @@
     "need_integer": "The new value must be an integer",
     "voice_channel_exists": "There is already a voice channel for this room.",
     "size_too_small": "There are too many players.",
+    "prefix_too_long": "Prefix is too long. Should be less than {} characters.",
 
     "purged_a": "{} rooms existing in the database have been deleted.",
     "purged_b": "{0} broken channels and {1} broken roles have been deleted.",
@@ -81,6 +82,7 @@
     "size_description": "Default room size upon room creation",
     "voice_channel_description": "Whether or not to create a voice channel upon room creation",
     "category_name_description": "The name of the category where all the rooms are grouped.",
+    "settings_success": "Set `{}` to `{}`.",
 
     "_name": {
         "about":"about",
@@ -121,7 +123,7 @@
         "new": ["n", "create", "start"],
         "ping": ["pong"],
         "purge": ["clear", "delete"],
-        "settings": ["set", "options", "config"],
+        "settings": ["options", "config"],
         "size": ["s", "max", "players"],
         "voice_channel": ["vc", "voice", "voicechannel"]
     },

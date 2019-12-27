@@ -35,7 +35,8 @@ class Admin(commands.Cog, name=strings['_cog']['admin']):
                 title=strings['settings'])
             for field_name, field in Settings.format.items():
                 field_value = settings.get(field_name)
-                if isinstance(field_value, bool): field_value = bool_to_text(field_value)
+                if isinstance(field_value, bool): 
+                    field_value = bool_to_text(field_value)
                 embed.add_field(
                     name="***{}***  **{}**".format(field_name, field_value),
                     value="**{}:** `-{}`\n{}".format(strings['flags'], "`, `-".join(field['flags']), field['description'] ))

@@ -106,7 +106,7 @@ class Settings:
             "flags": ["delete_command_message", "dcm"],
             "default_value": False },
         size={
-            "description": strings['size'],
+            "description": strings['size_description'],
             "flags": ["size"],
             "default_value": 4 },
         voice_channel={
@@ -175,44 +175,32 @@ class Settings:
             cls.get_default_value('category_name'))
 
     def set(self, field, value):
-        result = (None, None)
+        result = (True, None)
         parsed_value = value
         if field == 'prefix':
-            if len(value) < 3:
-                result = (True, "Set prefix to `{}`.".format(value))
-            else:
-                result = (False, "Prefix is too long.")
+            max_char_length = 5
+            if len(value) > max_char_length:
+                result = (False, strings['prefix_too_long'].format(max_char_length))
         elif field == 'timeout':
             try:
                 parsed_value = int(value)
-                result = (True, "Set timeout to `{}` minutes.".format(value))
             except ValueError:
-                result = (False, "Timeout must be a whole number (in minutes).")
-        elif field == 'respond_to_invalid':
+                result = (False, strings['need_integer'])
+        elif field == 'respond_to_invalid' or field == 'delete_command_message' or field == 'voice_channel':
             parsed_value = text_to_bool(value)
-            bool_message = "" if text_to_bool(value) else "not "
-            result = (True, "Ok, I will {}respond to invalid commands.".format(bool_message))
-        elif field == 'delete_command_message':
-            parsed_value = text_to_bool(value)
-            bool_message = "" if text_to_bool(value) else "not "
-            result = (True, "Ok, I will {}delete command messages.".format(bool_message))
         elif field == 'size':
             try:
                 parsed_value = min(abs(int(value)), 100)
-                result = (True, "Set default room size to {}.".format(parsed_value))
             except ValueError:
-                result = (False, "Default room size must be a whole number.")
-        elif field == 'voice_channel':
-            parsed_value = text_to_bool(value)
-            bool_message = "" if text_to_bool(value) else "not "
-            result = (True, "Ok, I will {}automatically create a voice channel on room creation.".format(bool_message))
+                result = (False, strings['need_integer'])
         elif field == 'category_name':
-            result = (True, "Set category name to `{}`".format(value))
+            pass
         else:
-            result = (False, "Invalid field.")
+            result = (False, ['require_flags'])
 
         (success, message) = result
         if (success):
+            result = (True, strings['settings_success'].format(field, parsed_value))
             self.update(field, parsed_value)
         return result
 
