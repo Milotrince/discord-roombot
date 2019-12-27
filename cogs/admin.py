@@ -78,7 +78,7 @@ class Admin(commands.Cog, name=strings['_cog']['admin']):
             count = 0
             for room_data in rooms_db_data:
                 r = Room.from_query(room_data)
-                guild = bot.get_guild(r.guild)
+                guild = self.bot.get_guild(r.guild)
                 await r.disband(guild)
                 count += 1
             try:
