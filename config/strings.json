@@ -77,6 +77,7 @@
     "invite_instructions": "React to accept or decline the invite.",
     "prefix_description": "Command prefix for RoomBot",
     "timeout_description": "After inactivity for this amount of minutes, the room will automatically be disbanded.",
+    "role_restriction_description": "Only these roles and administrators can use RoomBot. If there are no roles here, anyone can use RoomBot.",
     "respond_to_invalid_description": "Whether or not to respond to a command with prefix that does not exist.",
     "delete_command_message_description": "Whether or not to delete the command message that the user sends.",
     "size_description": "Default room size upon room creation",

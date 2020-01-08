@@ -3,6 +3,7 @@ import asyncio
 import pytz
 import dataset
 import json
+import re
 from random import choice
 from datetime import datetime, timedelta
 
@@ -97,6 +98,10 @@ class Settings:
             "description": strings['timeout_description'],
             "flags": ["timeout"],
             "default_value": 300 },
+        role_restriction={
+            "description": strings['role_restriction_description'],
+            "flags": ["role", "roles", "rr"],
+            "default_value": [] },
         respond_to_invalid={
             "description": strings['respond_to_invalid_description'],
             "flags": ["respond_to_invalid", "rti"],
@@ -118,11 +123,12 @@ class Settings:
             "flags": ["category_name", "category"],
             "default_value": strings['room'] })
     
-    def __init__(self, guild_id, prefix, timeout, respond_to_invalid,
+    def __init__(self, guild_id, prefix, timeout, role_restriction, respond_to_invalid,
                  delete_command_message, size, voice_channel, category_name):
         self.guild_id = guild_id
         self.prefix = prefix
         self.timeout = timeout
+        self.role_restriction = role_restriction
         self.respond_to_invalid = respond_to_invalid
         self.delete_command_message = delete_command_message
         self.size = size
@@ -133,6 +139,7 @@ class Settings:
             guild_id=guild_id,
             prefix=prefix,
             timeout=timeout,
+            role_restriction=ids_to_str(role_restriction),
             respond_to_invalid=respond_to_invalid,
             delete_command_message=delete_command_message,
             size=size,
@@ -155,12 +162,13 @@ class Settings:
         guild_id = data['guild_id']
         prefix = data['prefix'] if 'prefix' in data else cls.get_default_value('prefix')
         timeout = data['timeout'] if 'timeout' in data else int(cls.get_default_value('timeout'))
+        role_restriction = str_to_ids(data['role_restriction']) if 'role_restriction' in data else cls.get_default_value('role_restriction')
         respond_to_invalid = data['respond_to_invalid'] if 'respond_to_invalid' in data else text_to_bool(cls.get_default_value('respond_to_invalid'))
         delete_command_message = data['delete_command_message'] if 'delete_command_message' in data else text_to_bool(cls.get_default_value('delete_command_message'))
         size = data['size'] if 'size' in data else int(cls.get_default_value('size'))
         voice_channel = data['voice_channel'] if 'voice_channel' in data else text_to_bool(cls.get_default_value('voice_channel'))
         category_name = data['category_name'] if 'category_name' in data else cls.get_default_value('category_name')
-        return cls(guild_id, prefix, timeout, respond_to_invalid,
+        return cls(guild_id, prefix, timeout, role_restriction, respond_to_invalid,
                  delete_command_message, size, voice_channel, category_name)                 
 
     @classmethod
@@ -168,6 +176,7 @@ class Settings:
         return cls(guild_id,
             cls.get_default_value('prefix'),
             cls.get_default_value('timeout'),
+            cls.get_default_value('role_restriction'),
             cls.get_default_value('respond_to_invalid'),
             cls.get_default_value('delete_command_message'),
             cls.get_default_value('size'),
@@ -193,6 +202,14 @@ class Settings:
                 parsed_value = min(abs(int(value)), 100)
             except ValueError:
                 result = (False, strings['need_integer'])
+        elif field == 'role_restriction':
+            # TODO: 
+            roles = []
+            for word in value.split():
+                role_id = int( ''.join(re.findall(r'\d*', word)) )
+                log(role_id)
+                roles.append(role_id)
+            parsed_value = ids_to_str(roles) 
         elif field == 'category_name':
             pass
         else:

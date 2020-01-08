@@ -23,6 +23,18 @@ bot = commands.Bot(
     activity=discord.Game(strings['bot_presence']))
 bot.remove_command('help')
 
+def has_common_element(a, b):
+    return set(a) & set(b)
+
+@bot.check
+def passes_role_restriction(ctx):
+    member = ctx.message.author
+    settings = Settings.get_for(ctx.guild.id)
+    if len(settings.role_restriction) > 0:
+        role_ids = [ role.id for role in member.roles ]
+        return has_common_element(role_ids, settings.role_restriction) or member.guild_permissions.administrator
+    return True
+
 @bot.event
 async def on_ready():
     print('{} is online!'.format(bot.user.name))
@@ -43,8 +55,10 @@ async def on_command_error(ctx, error):
     """Sends a message when command error is encountered."""
     settings = Settings.get_for(ctx.guild.id)
 
-    if type(error) == commands.errors.CheckFailure:
+    if not passes_role_restriction(ctx):
         return
+    elif type(error) == commands.errors.CheckFailure:
+        return await ctx.send(strings['not_admin'])
     elif type(error) == commands.errors.CommandNotFound:
         if settings.respond_to_invalid:
             await ctx.send(strings['invalid_command'].format(ctx.message.content, settings.prefix))

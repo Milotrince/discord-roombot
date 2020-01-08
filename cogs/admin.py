@@ -11,10 +11,6 @@ class Admin(commands.Cog, name=strings['_cog']['admin']):
     async def cog_check(self, ctx):
         return ctx.message.author.guild_permissions.administrator
 
-    async def cog_command_error(self, ctx, error):
-        if type(error) == discord.ext.commands.errors.CheckFailure:
-            await ctx.send(strings['not_admin'])
-
     @commands.command()
     async def settings(self, ctx, *args):
         """
