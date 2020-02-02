@@ -58,7 +58,7 @@ async def on_command_error(ctx, error):
     if not passes_role_restriction(ctx):
         return
     elif type(error) == commands.errors.CheckFailure:
-        return await ctx.send(strings['not_admin'])
+        return
     elif type(error) == commands.errors.CommandNotFound:
         if settings.respond_to_invalid:
             await ctx.send(strings['invalid_command'].format(ctx.message.content, settings.prefix))
@@ -105,6 +105,9 @@ async def delete_inactive_rooms_db():
 
 bot.loop.create_task(delete_inactive_rooms_db())
 
+# init strings for settings
+Settings.set_strings();
+
 # add cogs (groups of commands)
 cogs_folder = 'cogs'
 cogs = [ 'generic', 'basicroom', 'roomhost', 'admin' ]
@@ -112,9 +115,9 @@ for cog_name in cogs:
     bot.load_extension(cogs_folder + '.' + cog_name)
 for cog in bot.cogs.values():
     for command in cog.get_commands():
-        command.aliases = strings['_aliases'][command.name]
-        command.help = '\n'.join(strings['_help'][command.name])
         command.name = strings['_name'][command.name]
+        command.help = '\n'.join(strings['_help'][command.name])
+        # command.aliases = strings['_aliases'][command.name]
 
 # run bot
 with open('config/token.txt', 'r') as token_file:  

@@ -39,7 +39,7 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
             await ctx.send(strings['not_host'])
 
 
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['kick'])
     async def kick(self, ctx, *args):
         """
         Kick a player.
@@ -60,7 +60,7 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
             return await ctx.send(strings['target_not_in_room'].format(kickee.display_name, self.p['channel'].mention))
 
 
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['host'])
     async def host(self, ctx, *args):
         """
         Change the host of your room.
@@ -77,7 +77,7 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
         return await ctx.send(strings['target_not_in_room'].format(new_host.display_name, self.p['channel'].mention))
 
 
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['edit'])
     async def edit(self, ctx, *args):
         """
         Edit room information using flags.
@@ -115,7 +115,7 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
                 await ctx.send(strings['bad_field'].format(flag))
 
 
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['activity'])
     async def activity(self, ctx, *args):
         """
         Set the name of your room.
@@ -129,7 +129,7 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
         return await ctx.send(strings['updated_field'].format(strings['activity'], new_activity, self.p['player'].display_name, self.p['channel'].mention))
 
 
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['description'])
     async def description(self, ctx, *args):
         """
         Set the description of your room.
@@ -142,7 +142,7 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
         return await ctx.send(strings['updated_field'].format(strings['description'], new_description, self.p['player'].display_name, self.p['channel'].mention))
 
 
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['size'])
     async def size(self, ctx, *args):
         """
         Set the max player size of your room.
@@ -159,7 +159,7 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
             return await ctx.send(strings['need_integer'])
 
 
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['colour'])
     async def colour(self, ctx, *args):
         """
         Set the color of your room.
@@ -173,7 +173,7 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
         return await ctx.send(strings['updated_field'].format(strings['color'], color, self.p['player'].display_name, self.p['channel'].mention))
 
 
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['voice_channel'])
     async def voice_channel(self, ctx, *args):
         """
         Create a voice channel associated with this room.
@@ -182,10 +182,16 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
         if self.p['voice_channel']:
             return await ctx.send(strings['voice_channel_exists'])
         category = await get_rooms_category(ctx.guild)
-        voice_channel = await ctx.guild.create_voice_channel(self.p['room'].activity, category=category, position=0, overwrites={
-            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            ctx.guild.me: discord.PermissionOverwrite(move_members=True),
-            self.p['role']: discord.PermissionOverwrite(read_messages=True) })
+        settings = Settings.get_for(ctx.guild.id)
+        voice_channel = await ctx.guild.create_voice_channel(
+            self.p['room'].activity,
+            category=category,
+            position=0,
+            bitrate=settings.bitrate * 1000, 
+            overwrites={
+                ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                ctx.guild.me: discord.PermissionOverwrite(move_members=True),
+                self.p['role']: discord.PermissionOverwrite(read_messages=True) })
         self.p['room'].update('voice_channel_id', voice_channel.id)
         return await ctx.send(strings['new_voice_channel'].format(voice_channel.name))
 

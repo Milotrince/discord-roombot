@@ -2,6 +2,9 @@ from room import *
 from discord.ext import commands
 import discord
 
+def filterBots(member):
+    return member.bot
+
 class BasicRoom(commands.Cog, name=strings['_cog']['room']):
     def __init__(self, bot):
         self.bot = bot
@@ -10,7 +13,7 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
         # self.invitee_list = db.get_table('invitees', primary_id='id')
         self.invitee_list = []
 
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['new'])
     async def new(self, ctx, *args):
         """Make a new room (uses current activity or input)."""
         activity = None
@@ -40,19 +43,33 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
             color=some_color(),
             hoist=True,
             mentionable=True )
-        # await role.edit(position=1)
-        category = await get_rooms_category(player.guild)
-        channel = await player.guild.create_text_channel(activity, category=category, position=0, overwrites={
+
+        bots = list(filter(filterBots, ctx.guild.members))
+        overwrites = {
             player.guild.default_role: discord.PermissionOverwrite(read_messages=False),
             player.guild.me: discord.PermissionOverwrite(read_messages=True, manage_channels=True),
-            role: discord.PermissionOverwrite(read_messages=True) })
+            role: discord.PermissionOverwrite(read_messages=True)
+        }
+        for bot in bots:
+            overwrites[bot] = discord.PermissionOverwrite(read_messages=True)
+
+        category = await get_rooms_category(player.guild)
+        channel = await player.guild.create_text_channel(
+            activity,
+            category=category,
+            position=0,
+            overwrites=overwrites
+        )
         voice_channel = None
         settings = Settings.get_for(ctx.guild.id)
         if settings.voice_channel:
-            voice_channel = await player.guild.create_voice_channel(activity, category=category, position=0, overwrites={
-                player.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-                player.guild.me: discord.PermissionOverwrite(move_members=True),
-                role: discord.PermissionOverwrite(read_messages=True) })
+            voice_channel = await player.guild.create_voice_channel(
+                activity,
+                bitrate=settings.bitrate * 1000,
+                category=category,
+                position=0,
+                overwrites=overwrites
+            )
 
         new_room = Room.from_message(ctx, args, settings, activity, role, channel, voice_channel)
         
@@ -64,7 +81,7 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
         return await ctx.send(strings['retry_error'])
 
 
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['join'])
     async def join(self, ctx, *args):
         """Join a room (by activity or player)."""
         if len(args) < 1:
@@ -97,18 +114,18 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
                     await ctx.send(embed=room_match.get_embed(player, strings['room_joined']))
                     room_channel = ctx.guild.get_channel(room_match.channel_id)
                     await room_channel.send(choice(strings['join_messages']).format(player.display_name))
-
                     if len(room_match.players) >= room_match.size:
                         role = player.guild.get_role(room_match.role_id)
                         await ctx.send(strings['full_room_notification'].format(role.mention, len(room_match.players)))
                         return
+                    return
                 else:
                     return await ctx.send(strings['retry_error'])
 
         return await ctx.send(strings['room_not_exist'])
 
 
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['invite'])
     async def invite(self, ctx, *args):
         """Invite a player/players to your room (by name or mention)."""
         if len(args) < 1:
@@ -270,7 +287,7 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
                 
 
 
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['leave'])
     async def leave(self, ctx):
         """Leave a room. If you are the host, the room will be disbanded."""
         player = ctx.message.author
@@ -299,7 +316,7 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
         return await ctx.send(strings['not_in_room'])
 
 
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['ls'])
     async def ls(self, ctx):
         """List rooms in current guild."""
         rooms = rooms_db.find(guild=ctx.guild.id)
@@ -320,7 +337,7 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
             await ctx.send(strings['no_rooms'])
 
 
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['look'])
     async def look(self, ctx, *args):
         """Shows your current room (or look at another room by activity or player)."""
         player_name = ctx.message.author.display_name

@@ -75,14 +75,6 @@
 
     "settings_instructions": "To set an option(s), use `{}settings -flag value`",
     "invite_instructions": "React to accept or decline the invite.",
-    "prefix_description": "Command prefix for RoomBot",
-    "timeout_description": "After inactivity for this amount of minutes, the room will automatically be disbanded.",
-    "role_restriction_description": "Only these roles and administrators can use RoomBot. If there are no roles here, anyone can use RoomBot.",
-    "respond_to_invalid_description": "Whether or not to respond to a command with prefix that does not exist.",
-    "delete_command_message_description": "Whether or not to delete the command message that the user sends.",
-    "size_description": "Default room size upon room creation",
-    "voice_channel_description": "Whether or not to create a voice channel upon room creation",
-    "category_name_description": "The name of the category where all the rooms are grouped.",
     "settings_success": "Set `{}` to `{}`.",
 
     "_name": {
@@ -104,7 +96,17 @@
         "purge":"purge",
         "settings":"settings",
         "size":"size",
-        "voice_channel":"voice_channel"
+        "voice_channel":"voice_channel",
+
+        "prefix": "prefix",
+        "timeout": "timeout",
+        "role_restriction": "role_restriction",
+        "respond_to_invalid": "respond_to_invalid",
+        "delete_command_message": "delete_command_message",
+        "default_size": "default_size",
+        "create_voice_channel": "create_voice_channel",
+        "bitrate": "bitrate",
+        "category_name": "category_name"
     },
 
     "_aliases":{
@@ -126,7 +128,17 @@
         "purge": ["clear", "delete"],
         "settings": ["options", "config"],
         "size": ["s", "max", "players"],
-        "voice_channel": ["vc", "voice", "voicechannel"]
+        "voice_channel": ["vc", "voice", "voicechannel"],
+
+        "prefix": [],
+        "timeout": [],
+        "role_restriction": ["role", "rr"],
+        "respond_to_invalid": ["rti"],
+        "delete_command_message": ["dcm"],
+        "default_size": ["size", "ds"],
+        "create_voice_channel": ["voice", "vc"],
+        "bitrate": ["br"],
+        "category_name": ["category"]
     },
 
     "_help":{
@@ -201,6 +213,34 @@
             "Set the color of your room.",
             "Possible colors are: teal, green, blue, purple, magenta/pink, gold/yellow, orange, and red.",
             "A random color is set if the specified color is not included above."
+        ],
+
+        "prefix": [
+            "Bot prefix; RoomBot won't respond unless this prefix is the first thing in your message!"
+        ],
+        "timeout": [
+            "After inactivity for this amount of minutes, the room will automatically be disbanded."
+        ],
+        "role_restriction": [
+            "Only these roles and administrators can use RoomBot. If there are no roles here, anyone can use RoomBot."
+        ],
+        "respond_to_invalid": [
+            "Whether or not to respond to a command with prefix that does not exist."
+        ],
+        "delete_command_message": [
+            "Whether or not to delete the command message that the user sends."
+        ],
+        "default_size": [
+            "Default room size upon room creation"
+        ],
+        "create_voice_channel": [
+            "Whether or not to create a voice channel upon room creation"
+        ],
+        "bitrate": [
+            "Default bitrate of voice channel"
+        ],
+        "category_name": [
+            "The name of the category where all the rooms are grouped."
         ]
     },
 

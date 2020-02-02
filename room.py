@@ -82,6 +82,14 @@ def str_to_ids(s):
     """Turn a string of comma seperated ints from a database into a list of ints"""
     return [ int(id) for id in s.split(',') ] if s else []
 
+def clamp(n, min, max):
+    if n < min:
+        return min
+    elif n > max:
+        return max
+    else:
+        return n
+
 async def get_rooms_category(guild):
     settings = Settings.get_for(guild.id)
     existing_category = discord.utils.get(guild.categories, name=settings.category_name)
@@ -89,50 +97,29 @@ async def get_rooms_category(guild):
 
 
 class Settings:
-    format = dict(
-        prefix={
-            "description": strings['prefix_description'],
-            "flags": ["prefix"],
-            "default_value": "r." },
-        timeout={
-            "description": strings['timeout_description'],
-            "flags": ["timeout"],
-            "default_value": 300 },
-        role_restriction={
-            "description": strings['role_restriction_description'],
-            "flags": ["role", "roles", "rr"],
-            "default_value": [] },
-        respond_to_invalid={
-            "description": strings['respond_to_invalid_description'],
-            "flags": ["respond_to_invalid", "rti"],
-            "default_value": True },
-        delete_command_message={
-            "description": strings['delete_command_message_description'],
-            "flags": ["delete_command_message", "dcm"],
-            "default_value": False },
-        size={
-            "description": strings['size_description'],
-            "flags": ["size"],
-            "default_value": 4 },
-        voice_channel={
-            "description": strings['voice_channel_description'],
-            "flags": ["voice_channel", "vc"],
-            "default_value": False },
-        category_name={
-            "description": strings['category_name_description'],
-            "flags": ["category_name", "category"],
-            "default_value": strings['room'] })
-    
+    format = {
+        'prefix': { "default_value": "r." },
+        'timeout': { "default_value": 300 },
+        'role_restriction': { "default_value": [] },
+        'respond_to_invalid': { "default_value": True },
+        'delete_command_message': { "default_value": False },
+        'default_size': { "default_value": 4 },
+        'voice_channel': { "default_value": False },
+        'bitrate': { "default_value": 64 },
+        'category_name': { "default_value": strings['room'] }
+    }
+   
     def __init__(self, guild_id, prefix, timeout, role_restriction, respond_to_invalid,
-                 delete_command_message, size, voice_channel, category_name):
+                 delete_command_message, default_size, voice_channel, bitrate, category_name):
         self.guild_id = guild_id
         self.prefix = prefix
         self.timeout = timeout
         self.role_restriction = role_restriction
         self.respond_to_invalid = respond_to_invalid
         self.delete_command_message = delete_command_message
-        self.size = size
+        self.default_size = default_size
         self.voice_channel = voice_channel
+        self.bitrate = bitrate 
         self.category_name = category_name
 
         self.dict = dict(
@@ -142,11 +129,19 @@ class Settings:
             role_restriction=ids_to_str(role_restriction),
             respond_to_invalid=respond_to_invalid,
             delete_command_message=delete_command_message,
-            size=size,
+            default_size=default_size,
             voice_channel=voice_channel,
+            bitrate=bitrate,
             category_name=category_name)
 
         settings_db.upsert(self.dict, ['guild_id'])
+
+    @classmethod
+    def set_strings(cls):
+        for setting in cls.format.keys():
+            cls.format[setting]['name'] = strings['_name'][setting]
+            cls.format[setting]['flags'] = strings['_aliases'][setting]
+            cls.format[setting]['description'] = strings['_help'][setting]
 
     @classmethod
     def get_default_value(cls, key):
@@ -159,17 +154,18 @@ class Settings:
 
     @classmethod
     def from_query(cls, data):
-        guild_id = data['guild_id']
-        prefix = data['prefix'] if 'prefix' in data else cls.get_default_value('prefix')
-        timeout = data['timeout'] if 'timeout' in data else int(cls.get_default_value('timeout'))
-        role_restriction = str_to_ids(data['role_restriction']) if 'role_restriction' in data else cls.get_default_value('role_restriction')
-        respond_to_invalid = data['respond_to_invalid'] if 'respond_to_invalid' in data else text_to_bool(cls.get_default_value('respond_to_invalid'))
-        delete_command_message = data['delete_command_message'] if 'delete_command_message' in data else text_to_bool(cls.get_default_value('delete_command_message'))
-        size = data['size'] if 'size' in data else int(cls.get_default_value('size'))
-        voice_channel = data['voice_channel'] if 'voice_channel' in data else text_to_bool(cls.get_default_value('voice_channel'))
-        category_name = data['category_name'] if 'category_name' in data else cls.get_default_value('category_name')
-        return cls(guild_id, prefix, timeout, role_restriction, respond_to_invalid,
-                 delete_command_message, size, voice_channel, category_name)                 
+        return cls(
+            data['guild_id'],
+            data['prefix'] if 'prefix' in data else cls.get_default_value('prefix'),
+            data['timeout'] if 'timeout' in data else int(cls.get_default_value('timeout')),
+            str_to_ids(data['role_restriction']) if 'role_restriction' in data else cls.get_default_value('role_restriction'),
+            data['respond_to_invalid'] if 'respond_to_invalid' in data else text_to_bool(cls.get_default_value('respond_to_invalid')),
+            data['delete_command_message'] if 'delete_command_message' in data else text_to_bool(cls.get_default_value('delete_command_message')),
+            data['default_size'] if 'default_size' in data else int(cls.get_default_value('default_size')),
+            data['voice_channel'] if 'voice_channel' in data else text_to_bool(cls.get_default_value('voice_channel')),
+            data['bitrate'] if 'bitrate' in data else int(cls.get_default_value('bitrate')),
+            data['category_name'] if 'category_name' in data else cls.get_default_value('category_name')
+        )
 
     @classmethod
     def make_default(cls, guild_id):
@@ -179,8 +175,9 @@ class Settings:
             cls.get_default_value('role_restriction'),
             cls.get_default_value('respond_to_invalid'),
             cls.get_default_value('delete_command_message'),
-            cls.get_default_value('size'),
+            cls.get_default_value('default_size'),
             cls.get_default_value('voice_channel'),
+            cls.get_default_value('bitrate'),
             cls.get_default_value('category_name'))
 
     def set(self, field, value):
@@ -190,20 +187,14 @@ class Settings:
             max_char_length = 5
             if len(value) > max_char_length:
                 result = (False, strings['prefix_too_long'].format(max_char_length))
-        elif field == 'timeout':
+        elif field == 'timeout' or field == 'default_size' or field == 'bitrate':
             try:
                 parsed_value = int(value)
             except ValueError:
                 result = (False, strings['need_integer'])
         elif field == 'respond_to_invalid' or field == 'delete_command_message' or field == 'voice_channel':
             parsed_value = text_to_bool(value)
-        elif field == 'size':
-            try:
-                parsed_value = min(abs(int(value)), 100)
-            except ValueError:
-                result = (False, strings['need_integer'])
         elif field == 'role_restriction':
-            # TODO: 
             roles = []
             for word in value.split():
                 role_id = int( ''.join(re.findall(r'\d*', word)) )
@@ -214,6 +205,11 @@ class Settings:
             pass
         else:
             result = (False, ['require_flags'])
+
+        if field == 'default_size':
+            parsed_value = clamp (parsed_value, 0, 100)
+        elif field == 'bitrate':
+            parsed_value = clamp (parsed_value, 8, 96)
 
         (success, message) = result
         if (success):
@@ -278,7 +274,7 @@ class Room:
         timeout = settings.timeout
         players = []
         host = ctx.message.author.id
-        size = settings.size
+        size = settings.default_size
         last_active = datetime.now(pytz.utc)
         return cls(role.id, channel.id, voice_channel_id, color, birth_channel,
                    guild, activity, description, created, timeout, players, host, size, last_active)

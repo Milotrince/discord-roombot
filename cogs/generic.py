@@ -8,12 +8,12 @@ class Generic(commands.Cog, name=strings['_cog']['generic']):
         self._last_member = None
         self.color = discord.Color.greyple()
         
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['ping'])
     async def ping(self, ctx):
         """Pong! Shows latency."""
         return await ctx.send(strings['ping'].format(round(self.bot.latency, 1)))
 
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['about'])
     async def about(self, ctx):
         """
         All about me!
@@ -31,7 +31,7 @@ class Generic(commands.Cog, name=strings['_cog']['generic']):
         return await ctx.send(embed=embed)
 
 
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['help'])
     async def help(self, ctx, *args):
         """
         Shows descriptions of all or specific commands.

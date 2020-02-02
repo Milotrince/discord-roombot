@@ -11,7 +11,12 @@ class Admin(commands.Cog, name=strings['_cog']['admin']):
     async def cog_check(self, ctx):
         return ctx.message.author.guild_permissions.administrator
 
-    @commands.command()
+    async def cog_command_error(self, ctx, error):
+        if type(error) == discord.ext.commands.errors.CheckFailure:
+            await ctx.send(strings['not_admin'])
+
+
+    @commands.command(aliases=strings['_aliases']['settings'])
     async def settings(self, ctx, *args):
         """
         Set options for this server.
@@ -21,9 +26,9 @@ class Admin(commands.Cog, name=strings['_cog']['admin']):
         settings = Settings.get_for(ctx.guild.id)
         if flags:
             for i, flag in enumerate(flags):
-                for field_name, field in Settings.format.items():
-                    if flag in field['flags']:
-                        (success, message) = settings.set(field_name, flag_args[i])
+                for field in Settings.format.values():
+                    if flag in field['flags'] + [field['name']]:
+                        (success, message) = settings.set(field['name'], flag_args[i])
                         await ctx.send(message)
         else:
             embed = discord.Embed(
@@ -35,11 +40,11 @@ class Admin(commands.Cog, name=strings['_cog']['admin']):
                     field_value = bool_to_text(field_value)
                 embed.add_field(
                     name="***{}***  **{}**".format(field_name, field_value),
-                    value="**{}:** `-{}`\n{}".format(strings['flags'], "`, `-".join(field['flags']), field['description'] ))
+                    value="**{}:** `-{}`\n{}".format(strings['flags'], "`, `-".join(field['flags']), '\n'.join(field['description']) ))
             await ctx.send(strings['settings_instructions'].format('r.'), embed=embed)
             
 
-    @commands.command()
+    @commands.command(aliases=strings['_aliases']['purge'])
     async def purge(self, ctx, *args):
         """Delete room(s) in this server (`-a` for all active rooms_db, `-b` for all broken rooms_db). For moderation purposes."""
         settings = Settings.get_for(ctx.guild.id)
