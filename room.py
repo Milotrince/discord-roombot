@@ -1,11 +1,4 @@
-import discord
-import asyncio
-import pytz
-import dataset
-import json
-import re
-from random import choice
-from datetime import datetime, timedelta
+from functions import *
 
 # Get database
 db = dataset.connect('sqlite:///database.db')
@@ -16,79 +9,6 @@ settings_db = db.get_table('settings', primary_id='guild_id')
 with open('config/strings.json', 'r') as strings_file:  
     strings = json.load(strings_file)
 
-# General helper functions
-def log(content):
-    print('{} {}'.format(datetime.now(), content))
-
-def some_color():
-    """Returns a random standard Discord color"""
-    return choice([
-        discord.Color.teal(),
-        discord.Color.green(),
-        discord.Color.blue(),
-        discord.Color.purple(),
-        discord.Color.magenta(),
-        discord.Color.gold(),
-        discord.Color.orange(),
-        discord.Color.red() ])
-
-def get_color(color):
-    if color == 'teal':
-        return discord.Color.teal()
-    elif color == 'green':
-        return discord.Color.green()
-    elif color == 'blue':
-        return discord.Color.blue()
-    elif color == 'purple':
-        return discord.Color.purple()
-    elif color == 'magenta' or color == 'pink':
-        return discord.Color.magenta()
-    elif color == 'gold' or color == 'yellow':
-        return discord.Color.gold()
-    elif color == 'orange':
-        return discord.Color.orange()
-    elif color == 'red':
-        return discord.Color.red()
-    else:
-        return some_color()
-
-def pop_flags(args):
-    """Returns (flags, args for flag). Flags are words starting with -"""
-    split_on_flags = ' '.join(list(args)).split('-')
-    del split_on_flags[0]
-    flags = []
-    flag_args = []
-    for flag_group in split_on_flags:
-        flag_group_list = flag_group.split(' ')
-        flag = flag_group_list.pop(0)
-        flags.append(flag)
-        flag_args.append(' '.join(flag_group_list))
-    return (flags, flag_args)
-
-def text_to_bool(text):
-    return text.lower() in strings['True']
-
-def bool_to_text(yes):
-    return "Yes" if yes else "No"
-
-def iter_len(iterator):
-    return sum(1 for _ in iterator)
-
-def ids_to_str(ids, seperator=','):
-    """Turn a list of ints into a database inputable string"""
-    return seperator.join([ str(id) for id in ids ])
-
-def str_to_ids(s):
-    """Turn a string of comma seperated ints from a database into a list of ints"""
-    return [ int(id) for id in s.split(',') ] if s else []
-
-def clamp(n, min, max):
-    if n < min:
-        return min
-    elif n > max:
-        return max
-    else:
-        return n
 
 async def get_rooms_category(guild):
     settings = Settings.get_for(guild.id)
@@ -101,6 +21,7 @@ class Settings:
         'prefix': { "default_value": "r." },
         'timeout': { "default_value": 300 },
         'role_restriction': { "default_value": [] },
+        'access_all_rooms_role': { "default_value": [] },
         'respond_to_invalid': { "default_value": True },
         'delete_command_message': { "default_value": False },
         'default_size': { "default_value": 4 },
@@ -109,12 +30,13 @@ class Settings:
         'category_name': { "default_value": strings['room'] }
     }
    
-    def __init__(self, guild_id, prefix, timeout, role_restriction, respond_to_invalid,
+    def __init__(self, guild_id, prefix, timeout, role_restriction, access_all_rooms_role, respond_to_invalid,
                  delete_command_message, default_size, voice_channel, bitrate, category_name):
         self.guild_id = guild_id
         self.prefix = prefix
         self.timeout = timeout
         self.role_restriction = role_restriction
+        self.access_all_rooms_role = access_all_rooms_role 
         self.respond_to_invalid = respond_to_invalid
         self.delete_command_message = delete_command_message
         self.default_size = default_size
@@ -127,6 +49,7 @@ class Settings:
             prefix=prefix,
             timeout=timeout,
             role_restriction=ids_to_str(role_restriction),
+            access_all_rooms_role=ids_to_str(access_all_rooms_role),
             respond_to_invalid=respond_to_invalid,
             delete_command_message=delete_command_message,
             default_size=default_size,
@@ -159,6 +82,7 @@ class Settings:
             data['prefix'] if 'prefix' in data else cls.get_default_value('prefix'),
             data['timeout'] if 'timeout' in data else int(cls.get_default_value('timeout')),
             str_to_ids(data['role_restriction']) if 'role_restriction' in data else cls.get_default_value('role_restriction'),
+            str_to_ids(data['access_all_rooms_role']) if 'access_all_rooms_role' in data else cls.get_default_value('access_all_rooms_role'),
             data['respond_to_invalid'] if 'respond_to_invalid' in data else text_to_bool(cls.get_default_value('respond_to_invalid')),
             data['delete_command_message'] if 'delete_command_message' in data else text_to_bool(cls.get_default_value('delete_command_message')),
             data['default_size'] if 'default_size' in data else int(cls.get_default_value('default_size')),
@@ -173,6 +97,7 @@ class Settings:
             cls.get_default_value('prefix'),
             cls.get_default_value('timeout'),
             cls.get_default_value('role_restriction'),
+            cls.get_default_value('access_all_rooms_role'),
             cls.get_default_value('respond_to_invalid'),
             cls.get_default_value('delete_command_message'),
             cls.get_default_value('default_size'),
@@ -180,7 +105,7 @@ class Settings:
             cls.get_default_value('bitrate'),
             cls.get_default_value('category_name'))
 
-    def set(self, field, value):
+    def set(self, ctx, field, value):
         result = (True, None)
         parsed_value = value
         if field == 'prefix':
@@ -194,7 +119,7 @@ class Settings:
                 result = (False, strings['need_integer'])
         elif field == 'respond_to_invalid' or field == 'delete_command_message' or field == 'voice_channel':
             parsed_value = text_to_bool(value)
-        elif field == 'role_restriction':
+        elif field == 'role_restriction' or field == 'access_all_rooms_role':
             roles = []
             for word in value.split():
                 role_id = int( ''.join(re.findall(r'\d*', word)) )
@@ -209,7 +134,7 @@ class Settings:
         if field == 'default_size':
             parsed_value = clamp (parsed_value, 0, 100)
         elif field == 'bitrate':
-            parsed_value = clamp (parsed_value, 8, 96)
+            parsed_value = clamp (parsed_value, 8, int(ctx.guild.bitrate_limit/1000))
 
         (success, message) = result
         if (success):

@@ -44,14 +44,27 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
             hoist=True,
             mentionable=True )
 
-        bots = list(filter(filterBots, ctx.guild.members))
+        settings = Settings.get_for(ctx.guild.id)
+        accessors_ids = settings.access_all_rooms_role
+        accessors = []
+        for accessor_id in accessors_ids:
+            log(accessor_id)
+            accessor_player = ctx.guild.get_member(accessor_id)
+            accessor_role = ctx.guild.get_role(accessor_id)
+            if accessor_player:
+                accessors.append(accessor_player)
+            elif accessor_role:
+                accessors.append(accessor_role)
+        if len(accessors) < 1:
+            accessors = list(filter(filterBots, ctx.guild.members))
+
         overwrites = {
             player.guild.default_role: discord.PermissionOverwrite(read_messages=False),
             player.guild.me: discord.PermissionOverwrite(read_messages=True, manage_channels=True),
             role: discord.PermissionOverwrite(read_messages=True)
         }
-        for bot in bots:
-            overwrites[bot] = discord.PermissionOverwrite(read_messages=True)
+        for accessor in accessors:
+            overwrites[accessor] = discord.PermissionOverwrite(read_messages=True)
 
         category = await get_rooms_category(player.guild)
         channel = await player.guild.create_text_channel(
@@ -61,7 +74,6 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
             overwrites=overwrites
         )
         voice_channel = None
-        settings = Settings.get_for(ctx.guild.id)
         if settings.voice_channel:
             voice_channel = await player.guild.create_voice_channel(
                 activity,

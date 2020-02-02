@@ -26,9 +26,9 @@ class Admin(commands.Cog, name=strings['_cog']['admin']):
         settings = Settings.get_for(ctx.guild.id)
         if flags:
             for i, flag in enumerate(flags):
-                for field in Settings.format.values():
+                for field_name, field in Settings.format.items():
                     if flag in field['flags'] + [field['name']]:
-                        (success, message) = settings.set(field['name'], flag_args[i])
+                        (success, message) = settings.set(ctx, field_name, flag_args[i])
                         await ctx.send(message)
         else:
             embed = discord.Embed(
@@ -39,7 +39,7 @@ class Admin(commands.Cog, name=strings['_cog']['admin']):
                 if isinstance(field_value, bool): 
                     field_value = bool_to_text(field_value)
                 embed.add_field(
-                    name="***{}***  **{}**".format(field_name, field_value),
+                    name="***{}***  **{}**".format(field['name'], field_value),
                     value="**{}:** `-{}`\n{}".format(strings['flags'], "`, `-".join(field['flags']), '\n'.join(field['description']) ))
             await ctx.send(strings['settings_instructions'].format('r.'), embed=embed)
             

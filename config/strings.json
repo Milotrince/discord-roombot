@@ -101,6 +101,7 @@
         "prefix": "prefix",
         "timeout": "timeout",
         "role_restriction": "role_restriction",
+        "access_all_rooms_role": "access_all_rooms_role",
         "respond_to_invalid": "respond_to_invalid",
         "delete_command_message": "delete_command_message",
         "default_size": "default_size",
@@ -133,6 +134,7 @@
         "prefix": [],
         "timeout": [],
         "role_restriction": ["role", "rr"],
+        "access_all_rooms_role": ["accessors", "aarr"],
         "respond_to_invalid": ["rti"],
         "delete_command_message": ["dcm"],
         "default_size": ["size", "ds"],
@@ -223,6 +225,9 @@
         ],
         "role_restriction": [
             "Only these roles and administrators can use RoomBot. If there are no roles here, anyone can use RoomBot."
+        ],
+        "access_all_rooms_role": [
+            "Users with this role and administrators will be able to view all active rooms. If there are no roles set, all bots will be able to access all rooms."
         ],
         "respond_to_invalid": [
             "Whether or not to respond to a command with prefix that does not exist."

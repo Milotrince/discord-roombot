@@ -23,9 +23,6 @@ bot = commands.Bot(
     activity=discord.Game(strings['bot_presence']))
 bot.remove_command('help')
 
-def has_common_element(a, b):
-    return set(a) & set(b)
-
 @bot.check
 def passes_role_restriction(ctx):
     member = ctx.message.author
@@ -85,21 +82,32 @@ async def on_command_error(ctx, error):
 async def delete_inactive_rooms_db():
     await bot.wait_until_ready()
     while not bot.is_closed():
-        await asyncio.sleep(5 * 60) # check every 5 minutes
+        await asyncio.sleep(60) # check every minute
         for room_data in rooms_db.find():
             r = Room.from_query(room_data)
+            guild = bot.get_guild(r.guild)
+            birth_channel = guild.get_channel(r.birth_channel) if guild else None
+            channel = guild.get_channel(r.channel_id) if guild else None
+
+            last_message = (await channel.history(limit=1).flatten())[0]
+            last_message_datetime = last_message.created_at.replace(tzinfo=pytz.utc)
+            voice_channel = guild.get_channel(r.voice_channel_id) if guild else None
+            if voice_channel and len(voice_channel.members) > 0:
+                r.update_active()
+            if last_message_datetime > r.last_active.replace(tzinfo=pytz.utc):
+                r.update('last_active', last_message_datetime)
+
             time_diff = datetime.now(pytz.utc) - r.last_active.replace(tzinfo=pytz.utc)
+
             # timeout is in minutes
             if time_diff.total_seconds() / 60 >= r.timeout:
                 try:
-                    guild = bot.get_guild(r.guild)
-                    channel = guild.get_channel(r.birth_channel) if guild else None
-                    if guild and channel:
+                    if guild:
                         await r.disband(guild)
-                        await channel.send(strings['disband_from_inactivity'].format(r.activity))
+                        if birth_channel:
+                            await birth_channel.send(strings['disband_from_inactivity'].format(r.activity))
                     else:
                         rooms_db.delete(role_id=r.role_id)
-
                 except Exception as e:
                     log(e)
 
