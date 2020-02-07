@@ -1,12 +1,13 @@
 import discord
 import asyncio
-import dataset
-import json
 import pytz
 import re
 from random import choice
 from datetime import datetime, timedelta
+from globalvars import *
+
 # General helper functions
+
 def log(content):
     print('{} {}'.format(datetime.now(), content))
 
