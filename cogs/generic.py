@@ -23,6 +23,7 @@ class Generic(commands.Cog, name=strings['_cog']['generic']):
             color=discord.Color.blurple(),
             description='\n'.join([
                 ":shield: Serving {} servers".format(len(self.bot.guilds)),
+                ":robot: [Server](https://discord.gg/37kzrpr) Join my support server!",
                 ":cat: [GitHub](https://github.com/Milotrince/discord-roombot) Help improve me!",
                 ":mailbox: [Invite Link](https://discordapp.com/oauth2/authorize?client_id=592816310656696341&permissions=268437520&scope=bot) Invite me to another server!",
                 ":woman: [Profile](https://github.com/Milotrince) Contact my creator @Milotrince#0001",
@@ -30,6 +31,9 @@ class Generic(commands.Cog, name=strings['_cog']['generic']):
         embed.set_author(name="About RoomBot")
         return await ctx.send(embed=embed)
 
+    @commands.command(aliases=strings['_aliases']['support'])
+    async def support(self, ctx):
+        return await ctx.send(strings['support'])
 
     @commands.command(aliases=strings['_aliases']['help'])
     async def help(self, ctx, *args):

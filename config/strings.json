@@ -72,6 +72,7 @@
     "updated_field": "{2} updated {0} to {1} for room {3}.",
 
     "ping": "Pong! Latency: `{}`",
+    "support": "Join the support server: https://discord.gg/37kzrpr and ask away!",
 
     "settings_instructions": "To set an option(s), use `{}settings -flag value`",
     "invite_instructions": "React to accept or decline the invite.",
@@ -97,6 +98,7 @@
         "settings":"settings",
         "size":"size",
         "voice_channel":"voice_channel",
+        "support": "support",
 
         "prefix": "prefix",
         "timeout": "timeout",
@@ -130,6 +132,7 @@
         "settings": ["options", "config"],
         "size": ["s", "max", "players"],
         "voice_channel": ["vc", "voice", "voicechannel"],
+        "support": ["support", "report", "server"],
 
         "prefix": [],
         "timeout": [],
@@ -215,6 +218,9 @@
             "Set the color of your room.",
             "Possible colors are: teal, green, blue, purple, magenta/pink, gold/yellow, orange, and red.",
             "A random color is set if the specified color is not included above."
+        ],
+        "support": [
+            "Link to RoomBot's Discord support server"
         ],
 
         "prefix": [

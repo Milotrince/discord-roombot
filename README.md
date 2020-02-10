@@ -2,7 +2,11 @@
     <h1>RoomBot</h1>
     <img src="assets/icon.png" height="100" alt="RoomBot"/>
     <h3>Create your own rooms for games and more!</h3>
-    <a href="https://discordapp.com/api/oauth2/authorize?client_id=592816310656696341&permissions=268437520&scope=bot"><p>Invite RoomBot</p></a>
+    <p>
+        <a href="https://discordapp.com/api/oauth2/authorize?client_id=592816310656696341&permissions=268437520&scope=bot"> Invite RoomBot </a>
+        or
+        <a href="https://discord.gg/37kzrpr">join the server</a>!
+    </p>
     <img src="assets/demo.gif" alt="Demo"/>
 </div>
 
