@@ -24,21 +24,24 @@ def some_color():
         discord.Color.red() ])
 
 def get_color(color):
-    if color == 'teal':
+    hex_match = re.search('[0-9a-fA-F]{6}', color)
+    if hex_match and hex_match.group():
+        return discord.Color(int(hex_match.group(), 16))
+    if 'teal' in color:
         return discord.Color.teal()
-    elif color == 'green':
+    elif 'green' in color:
         return discord.Color.green()
-    elif color == 'blue':
+    elif 'blue' in color:
         return discord.Color.blue()
-    elif color == 'purple':
+    elif 'purple' in color:
         return discord.Color.purple()
-    elif color == 'magenta' or color == 'pink':
+    elif 'magenta' in color or 'pink' in color:
         return discord.Color.magenta()
-    elif color == 'gold' or color == 'yellow':
+    elif 'gold' in color or 'yellow' in color:
         return discord.Color.gold()
-    elif color == 'orange':
+    elif 'orange' in color:
         return discord.Color.orange()
-    elif color == 'red':
+    elif 'red' in color:
         return discord.Color.red()
     else:
         return some_color()

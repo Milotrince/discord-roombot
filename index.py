@@ -85,31 +85,32 @@ async def delete_inactive_rooms_db():
         await asyncio.sleep(60) # check every minute
         for room_data in rooms_db.find():
             r = Room.from_query(room_data)
-            guild = bot.get_guild(r.guild)
-            birth_channel = guild.get_channel(r.birth_channel) if guild else None
-            channel = guild.get_channel(r.channel_id) if guild else None
+            if (r.timeout):
+                guild = bot.get_guild(r.guild)
+                birth_channel = guild.get_channel(r.birth_channel) if guild else None
+                channel = guild.get_channel(r.channel_id) if guild else None
 
-            last_message = (await channel.history(limit=1).flatten())[0]
-            last_message_datetime = last_message.created_at.replace(tzinfo=pytz.utc)
-            voice_channel = guild.get_channel(r.voice_channel_id) if guild else None
-            if voice_channel and len(voice_channel.members) > 0:
-                r.update_active()
-            if last_message_datetime > r.last_active.replace(tzinfo=pytz.utc):
-                r.update('last_active', last_message_datetime)
+                last_message = (await channel.history(limit=1).flatten())[0]
+                last_message_datetime = last_message.created_at.replace(tzinfo=pytz.utc)
+                voice_channel = guild.get_channel(r.voice_channel_id) if guild else None
+                if voice_channel and len(voice_channel.members) > 0:
+                    r.update_active()
+                if last_message_datetime > r.last_active.replace(tzinfo=pytz.utc):
+                    r.update('last_active', last_message_datetime)
 
-            time_diff = datetime.now(pytz.utc) - r.last_active.replace(tzinfo=pytz.utc)
+                time_diff = datetime.now(pytz.utc) - r.last_active.replace(tzinfo=pytz.utc)
 
-            # timeout is in minutes
-            if time_diff.total_seconds() / 60 >= r.timeout:
-                try:
-                    if guild:
-                        await r.disband(guild)
-                        if birth_channel:
-                            await birth_channel.send(strings['disband_from_inactivity'].format(r.activity))
-                    else:
-                        rooms_db.delete(role_id=r.role_id)
-                except Exception as e:
-                    log(e)
+                # timeout is in minutes
+                if time_diff.total_seconds() / 60 >= r.timeout:
+                    try:
+                        if guild:
+                            await r.disband(guild)
+                            if birth_channel:
+                                await birth_channel.send(strings['disband_from_inactivity'].format(r.activity))
+                        else:
+                            rooms_db.delete(role_id=r.role_id)
+                    except Exception as e:
+                        log(e)
 
 bot.loop.create_task(delete_inactive_rooms_db())
 

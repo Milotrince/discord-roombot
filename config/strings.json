@@ -4,9 +4,11 @@
     "activity": "activity",
     "description": "description",
     "size": "size",
+    "timeout": "timeout",
     "color": "color",
     "flags": "flags",
     "host": "host",
+    "lock": "lock",
 
     "players": "Players",
     "inviter": "Inviter",
@@ -28,13 +30,19 @@
     "room_joined": "Room joined by",
     "request": "Request by",
 
-    "fatal_error": "Something went wrong. If this keeps happening, please message `Milotrince#0001` or post an issue at GitHub (https://github.com/Milotrince/discord-roombot/issues)",
+    "fatal_error": "Something went wrong. If this keeps happening, please ask in the support server https://discord.gg/37kzrpr",
     "retry_error": "Something went wrong. Please try again.",
     "missing_permission": "It seems I am missing permissions: `{}`",
     "invalid_command": "\"{0}\" is not a valid command. Try `{1}help`.",
 
     "room_status": "Waiting for {} more players",
-    "room_status_description": "Room will automatically disband from inactivity.",
+    "room_timeout_on": "Room will automatically disband after {} minutes of inactivity.",
+    "room_timeout_off": "Room will not disband from inactivity.",
+
+    "lock_room": "Room has been locked. Others will no longer be able to join.",
+    "unlock_room": "Room has been unlocked. Now others will be able to join.",
+    "join_locked_room": "Room is locked.",
+    "join_full_room": "Room is full.",
 
     "disband_room": "{0}'s room `{1}` has been disbanded.",
     "disband_from_inactivity": "{} has disbanded due to inactivity.",
@@ -69,7 +77,7 @@
     "new_host": "{1} is now the new host of {2}.",
     "new_voice_channel": "Created voice channel `#{}`.",
     "full_room_notification": "Hey {0}! {1} players have joined.",
-    "updated_field": "{2} updated {0} to {1} for room {3}.",
+    "updated_field": "{2} updated `{0}` to `{1}` for room {3}.",
 
     "ping": "Pong! Latency: `{}`",
     "support": "Join the support server: https://discord.gg/37kzrpr and ask away!",
@@ -97,6 +105,7 @@
         "purge":"purge",
         "settings":"settings",
         "size":"size",
+        "lock":"lock",
         "voice_channel":"voice_channel",
         "support": "support",
 
@@ -132,10 +141,11 @@
         "settings": ["options", "config"],
         "size": ["s", "max", "players"],
         "voice_channel": ["vc", "voice", "voicechannel"],
-        "support": ["support", "report", "server"],
+        "support": ["report", "server"],
 
         "prefix": [],
         "timeout": [],
+        "lock": ["private"],
         "role_restriction": ["role", "rr"],
         "access_all_rooms_role": ["accessors", "aarr"],
         "respond_to_invalid": ["rti"],
@@ -201,6 +211,9 @@
         "activity": [
             "Set the name of your room.",
             "This is what the channel and role will be named as."
+        ],
+        "lock": [
+            "Prevent people from joining your room."
         ],
         "help": [
             "Shows descriptions of all or specific commands.",

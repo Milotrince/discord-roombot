@@ -121,6 +121,10 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
                     
             if room_match:
                 room_match.update_active()
+                if (room_match.lock):
+                    return await ctx.send(strings['join_locked_room'])
+                if (room_match.size <= len(room_match.players)):
+                    return await ctx.send(strings['join_full_room'])
                 player = ctx.message.author
                 if await room_match.add_player(player):
                     await ctx.send(embed=room_match.get_embed(player, strings['room_joined']))
@@ -341,7 +345,7 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
 
             description = room.description if room.description else "{}: {}".format(strings['players'], ', '.join(room.players))
             embed.add_field(
-                name="{0} ({1}/{2})".format(room.activity, len(room.players), room.size),
+                name="{}{} ({}/{})".format(":lock: " if room.lock else "", room.activity, len(room.players), room.size),
                 value=description )
         if exists:
             await ctx.send(embed=embed)

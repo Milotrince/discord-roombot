@@ -109,6 +109,8 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
                         await self.host.callback(self, ctx, *tuple(flag_args))
                     elif field == 'colour':
                         await self.colour.callback(self, ctx, *tuple(flag_args))
+                    elif field == 'timeout':
+                        await self.timeout.callback(self, ctx, *tuple(flag_args))
                     valid = True
                     break
             if not valid:
@@ -157,6 +159,25 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
             return await ctx.send(strings['updated_field'].format(strings['size'], new_size, self.p['player'].display_name, self.p['channel'].mention))
         except ValueError:
             return await ctx.send(strings['need_integer'])
+
+
+    @commands.command(aliases=strings['_aliases']['timeout'])
+    async def timeout(self, ctx, *args):
+        new_timeout = args[0] if args else False 
+        try:
+            new_timeout = int(new_timeout)
+            self.p['room'].update('timeout', new_timeout)
+            return await ctx.send(strings['updated_field'].format(strings['timeout'], new_timeout, self.p['player'].display_name, self.p['channel'].mention))
+        except ValueError:
+            self.p['room'].update('timeout', False)
+            return await ctx.send(strings['updated_field'].format(strings['timeout'], False, self.p['player'].display_name, self.p['channel'].mention))
+
+
+    @commands.command(aliases=strings['_aliases']['lock'])
+    async def lock(self, ctx, *args):
+        new_lock = text_to_bool(args[0]) if args else not self.p['room'].lock
+        self.p['room'].update('lock', new_lock)
+        return await ctx.send(strings['lock_room'] if new_lock else strings['unlock_room'])
 
 
     @commands.command(aliases=strings['_aliases']['colour'])

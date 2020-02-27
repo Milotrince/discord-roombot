@@ -102,7 +102,12 @@ class Settings:
             max_char_length = 5
             if len(value) > max_char_length:
                 result = (False, strings['prefix_too_long'].format(max_char_length))
-        elif field == 'timeout' or field == 'default_size' or field == 'bitrate':
+        elif field == 'timeout':
+            try:
+                parsed_value = int(value)
+            except ValueError:
+                parsed_value = False
+        elif field == 'default_size' or field == 'bitrate':
             try:
                 parsed_value = int(value)
             except ValueError:
@@ -144,14 +149,15 @@ class Settings:
 
 
 class Room:
-    def __init__(self, role_id, channel_id, voice_channel_id, color, birth_channel,
-                 guild, activity, description, created, timeout, players, host, size, last_active):
+    def __init__(self, role_id, channel_id, voice_channel_id, color, birth_channel, guild,
+            lock, activity, description, created, timeout, players, host, size, last_active):
         self.role_id = role_id
         self.channel_id = channel_id
         self.voice_channel_id = voice_channel_id
         self.color = color
         self.birth_channel = birth_channel
         self.guild = guild
+        self.lock = lock
         self.activity = activity
         self.description = description
         self.created = created
@@ -168,6 +174,7 @@ class Room:
             color=color,
             birth_channel=birth_channel,
             guild=guild,
+            lock=lock,
             activity=activity,
             description=description,
             created=created,
@@ -184,6 +191,7 @@ class Room:
         voice_channel_id = voice_channel.id if voice_channel else 0
         color = role.color.value
         birth_channel = ctx.message.channel.id
+        lock = False
         description = choice(strings['default_room_descriptions'])
         created = datetime.now(pytz.utc)
         timeout = settings.timeout
@@ -191,8 +199,8 @@ class Room:
         host = ctx.message.author.id
         size = settings.default_size
         last_active = datetime.now(pytz.utc)
-        return cls(role.id, channel.id, voice_channel_id, color, birth_channel,
-                   guild, activity, description, created, timeout, players, host, size, last_active)
+        return cls(role.id, channel.id, voice_channel_id, color, birth_channel, guild, lock,
+                activity, description, created, timeout, players, host, size, last_active)
             
     @classmethod
     def from_query(cls, data):
@@ -203,6 +211,7 @@ class Room:
         color = data['color']
         birth_channel = data['birth_channel']
         guild = data['guild']
+        lock = data['lock']
         activity = data['activity']
         description = data['description']
         created = data['created']
@@ -211,8 +220,8 @@ class Room:
         host = data['host']
         size = data['size']
         last_active = data['last_active']
-        return cls(role_id, channel_id, voice_channel_id, color, birth_channel,
-                   guild, activity, description, created, timeout, players, host, size, last_active)
+        return cls(role_id, channel_id, voice_channel_id, color, birth_channel, guild, lock,
+                activity, description, created, timeout, players, host, size, last_active)
 
     @classmethod
     def get_hosted(cls, player_id, guild_id):
@@ -233,13 +242,13 @@ class Room:
             color=self.color,
             description=description,
             timestamp=self.created,
-            title=self.activity )
+            title="{}{}".format(":lock: " if self.lock else "", self.activity) )
         embed.add_field(
             name="{} ({}/{})".format(strings['players'], len(self.players), self.size),
             value="<@{}>".format(">, <@".join([str(id) for id in self.players])) )
         embed.add_field(
             name=room_status,
-            value=strings['room_status_description'] )
+            value=strings['room_timeout_on'].format(self.timeout) if self.timeout else strings['room_timeout_off'] )
         embed.add_field(
             name=strings['host'],
             value="<@{}>".format(self.host)),
