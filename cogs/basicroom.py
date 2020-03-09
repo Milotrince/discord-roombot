@@ -48,7 +48,6 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
         accessors_ids = settings.access_all_rooms_role
         accessors = []
         for accessor_id in accessors_ids:
-            log(accessor_id)
             accessor_player = ctx.guild.get_member(accessor_id)
             accessor_role = ctx.guild.get_role(accessor_id)
             if accessor_player:
