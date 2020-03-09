@@ -165,12 +165,14 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
     async def timeout(self, ctx, *args):
         new_timeout = args[0] if args else False 
         try:
-            new_timeout = int(new_timeout)
-            self.p['room'].update('timeout', new_timeout)
-            return await ctx.send(strings['updated_field'].format(strings['timeout'], new_timeout, self.p['player'].display_name, self.p['channel'].mention))
+            new_timeout = min(int(new_timeout), 999)
+            if (new_timeout < 0):
+                raise ValueError
         except ValueError:
-            self.p['room'].update('timeout', False)
-            return await ctx.send(strings['updated_field'].format(strings['timeout'], False, self.p['player'].display_name, self.p['channel'].mention))
+            new_timeout = -1
+        self.p['room'].timeout = new_timeout
+        self.p['room'].update('timeout', new_timeout)
+        return await ctx.send(strings['updated_field'].format(strings['timeout'], new_timeout, self.p['player'].display_name, self.p['channel'].mention))
 
 
     @commands.command(aliases=strings['_aliases']['lock'])

@@ -85,7 +85,7 @@ async def delete_inactive_rooms_db():
         await asyncio.sleep(60) # check every minute
         for room_data in rooms_db.find():
             r = Room.from_query(room_data)
-            if (r.timeout):
+            if (r.timeout >= 0):
                 guild = bot.get_guild(r.guild)
                 birth_channel = guild.get_channel(r.birth_channel) if guild else None
                 channel = guild.get_channel(r.channel_id) if guild else None

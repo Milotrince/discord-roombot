@@ -9,7 +9,7 @@ async def get_rooms_category(guild):
 class Settings:
     format = {
         'prefix': { "default_value": "r." },
-        'timeout': { "default_value": 300 },
+        'timeout': { "default_value": 120 },
         'role_restriction': { "default_value": [] },
         'access_all_rooms_role': { "default_value": [] },
         'respond_to_invalid': { "default_value": True },
@@ -111,14 +111,13 @@ class Settings:
             try:
                 parsed_value = int(value)
             except ValueError:
-                result = (False, strings['need_integer'])
+                parsed_value = -1
         elif field == 'respond_to_invalid' or field == 'delete_command_message' or field == 'voice_channel':
             parsed_value = text_to_bool(value)
         elif field == 'role_restriction' or field == 'access_all_rooms_role':
             roles = []
             for word in value.split():
                 role_id = int( ''.join(re.findall(r'\d*', word)) )
-                log(role_id)
                 roles.append(role_id)
             parsed_value = ids_to_str(roles) 
         elif field == 'category_name':
@@ -130,6 +129,8 @@ class Settings:
             parsed_value = clamp (parsed_value, 0, 100)
         elif field == 'bitrate':
             parsed_value = clamp (parsed_value, 8, int(ctx.guild.bitrate_limit/1000))
+        elif field == 'timeout':
+            parsed_value = clamp (parsed_value, -1, 999)
 
         (success, message) = result
         if (success):
@@ -211,7 +212,7 @@ class Room:
         color = data['color']
         birth_channel = data['birth_channel']
         guild = data['guild']
-        lock = data['lock']
+        lock = data['lock'] if 'lock' in data else False
         activity = data['activity']
         description = data['description']
         created = data['created']
@@ -248,7 +249,7 @@ class Room:
             value="<@{}>".format(">, <@".join([str(id) for id in self.players])) )
         embed.add_field(
             name=room_status,
-            value=strings['room_timeout_on'].format(self.timeout) if self.timeout else strings['room_timeout_off'] )
+            value=strings['room_timeout_on'].format(self.timeout) if self.timeout > 0 else strings['room_timeout_off'] )
         embed.add_field(
             name=strings['host'],
             value="<@{}>".format(self.host)),
