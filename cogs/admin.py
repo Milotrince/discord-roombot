@@ -42,7 +42,27 @@ class Admin(commands.Cog, name=strings['_cog']['admin']):
                     name="***{}***  **{}**".format(field['name'], field_value),
                     value="**{}:** `-{}`\n{}".format(strings['flags'], "`, `-".join(field['flags']), '\n'.join(field['description']) ))
             await ctx.send(strings['settings_instructions'].format('r.'), embed=embed)
-            
+
+
+    @commands.command(aliases=strings['_aliases']['force_disband'])
+    async def force_disband(self, ctx, *args):
+        rooms = rooms_db.find(guild=ctx.guild.id)
+        activity_filter = " ".join(args) if args else None
+        role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions else None
+
+        rooms = rooms_db.find(guild=ctx.guild.id)
+        if rooms:
+            for room_data in rooms:
+                r = Room.from_query(room_data)
+                if r.activity == activity_filter or r.role_id == role_mention_filter:
+                    await r.disband(ctx.guild)
+                    try:
+                        await ctx.send(strings['disband_room'].format('<@'+str(r.host)+'>', r.activity))
+                    except discord.errors.NotFound as e:
+                        log(e)
+                    return
+        return await ctx.send(strings['room_not_exist'])
+
 
     @commands.command(aliases=strings['_aliases']['purge'])
     async def purge(self, ctx, *args):

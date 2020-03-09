@@ -103,6 +103,7 @@
         "new":"new",
         "ping":"ping",
         "purge":"purge",
+        "force_disband":"force_disband",
         "settings":"settings",
         "size":"size",
         "lock":"lock",
@@ -138,6 +139,7 @@
         "new": ["n", "create", "start"],
         "ping": ["pong"],
         "purge": ["clear", "delete"],
+        "force_disband": ["fdisband", "fd", "fx"],
         "settings": ["options", "config"],
         "size": ["s", "max", "players"],
         "voice_channel": ["vc", "voice", "voicechannel"],
@@ -168,6 +170,10 @@
         "purge": [
             "Delete room(s) in this server.",
             "Use flags (`-a` for all active rooms, `-b` for all broken rooms).",
+            "For moderation purposes."
+        ],
+        "force_disband": [
+            "Force delete a room (specify room name or @role).",
             "For moderation purposes."
         ],
         "new": [
