@@ -36,10 +36,10 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
                 if player.id in r.players:
                     return await ctx.send(strings['already_in_room'])
                 if r.activity == activity:
-                    activity += " ({})".format(player.name)
+                    activity = "({}) {}".format(player.name, activity)
                     
         role = await player.guild.create_role(
-            name="(Room) " + activity,
+            name="({}) {}".format(strings['room'], activity)[0:99],
             color=some_color(),
             hoist=True,
             mentionable=True )
@@ -67,7 +67,7 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
 
         category = await get_rooms_category(player.guild)
         channel = await player.guild.create_text_channel(
-            activity,
+            activity[0:99],
             category=category,
             position=0,
             overwrites=overwrites
@@ -75,14 +75,14 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
         voice_channel = None
         if settings.voice_channel:
             voice_channel = await player.guild.create_voice_channel(
-                activity,
+                activity[0:99],
                 bitrate=settings.bitrate * 1000,
                 category=category,
                 position=0,
                 overwrites=overwrites
             )
 
-        new_room = Room.from_message(ctx, args, settings, activity, role, channel, voice_channel)
+        new_room = Room.from_message(ctx, args, settings, activity[0:99], role, channel, voice_channel)
         
         success = await new_room.add_player(player)
         if success:
