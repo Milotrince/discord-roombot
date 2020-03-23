@@ -2,8 +2,8 @@ from discord.ext import commands
 from room import *
 
 print("""
- _____               _____ _____ _____ 
-| __  |___ ___ _____| __  |     |_   _|
+._____               _____._____._____.
+| __  |___ ___ ____.| __  |     |_   _|
 |    -| . | . |     | __ -|  |  | | |  
 |__|__|___|___|_|_|_|_____|_____| |_|
 """)
@@ -81,36 +81,43 @@ async def on_command_error(ctx, error):
 # Periodically check for inactive rooms
 async def delete_inactive_rooms_db():
     await bot.wait_until_ready()
-    while not bot.is_closed():
-        await asyncio.sleep(60) # check every minute
-        for room_data in rooms_db.find():
-            r = Room.from_query(room_data)
-            if (r.timeout >= 0):
-                guild = bot.get_guild(r.guild)
-                birth_channel = guild.get_channel(r.birth_channel) if guild else None
-                channel = guild.get_channel(r.channel_id) if guild else None
+    try:
+        while not bot.is_closed():
+            await asyncio.sleep(60) # check every minute
+            for room_data in rooms_db.find():
+                r = Room.from_query(room_data)
+                if (r.timeout >= 0):
+                    guild = bot.get_guild(r.guild)
+                    birth_channel = guild.get_channel(r.birth_channel) if guild else None
+                    channel = guild.get_channel(r.channel_id) if guild else None
 
-                last_message = (await channel.history(limit=1).flatten())[0]
-                last_message_datetime = last_message.created_at.replace(tzinfo=pytz.utc)
-                voice_channel = guild.get_channel(r.voice_channel_id) if guild else None
-                if voice_channel and len(voice_channel.members) > 0:
-                    r.update_active()
-                if last_message_datetime > r.last_active.replace(tzinfo=pytz.utc):
-                    r.update('last_active', last_message_datetime)
+                    if (channel):
+                        last_message = (await channel.history(limit=1).flatten())[0]
+                        last_message_datetime = last_message.created_at.replace(tzinfo=pytz.utc)
+                        voice_channel = guild.get_channel(r.voice_channel_id) if guild else None
+                        if voice_channel and len(voice_channel.members) > 0:
+                            r.update_active()
+                        if last_message_datetime > r.last_active.replace(tzinfo=pytz.utc):
+                            r.update('last_active', last_message_datetime)
 
-                time_diff = datetime.now(pytz.utc) - r.last_active.replace(tzinfo=pytz.utc)
+                    time_diff = datetime.now(pytz.utc) - r.last_active.replace(tzinfo=pytz.utc)
 
-                # timeout is in minutes
-                if time_diff.total_seconds() / 60 >= r.timeout:
-                    try:
-                        if guild:
-                            await r.disband(guild)
-                            if birth_channel:
-                                await birth_channel.send(strings['disband_from_inactivity'].format(r.activity))
-                        else:
-                            rooms_db.delete(role_id=r.role_id)
-                    except Exception as e:
-                        log(e)
+                    # timeout is in minutes
+                    if time_diff.total_seconds() / 60 >= r.timeout:
+                        try:
+                            if guild:
+                                await r.disband(guild)
+                                if birth_channel:
+                                    await birth_channel.send(strings['disband_from_inactivity'].format(r.activity))
+                            else:
+                                rooms_db.delete(role_id=r.role_id)
+                        except Exception as e:
+                            log(e)
+    except Exception as e:
+        log(e)
+        log("Restarting delete inactive rooms task")
+        bot.loop.create_task(delete_inactive_rooms_db())
+
 
 bot.loop.create_task(delete_inactive_rooms_db())
 
