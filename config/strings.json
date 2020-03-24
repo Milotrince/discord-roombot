@@ -45,7 +45,7 @@
     "join_full_room": "Room is full.",
 
     "disband_room": "{0}'s room `{1}` has been disbanded.",
-    "disband_from_inactivity": "{} has disbanded due to inactivity.",
+    "disband_from_inactivity": "`{}` has disbanded due to inactivity.",
     "disband_empty_room": "There are no players left in the room. Room has been disbanded.",
     "left_room": "{0} has left `{1}`",
     "full_room": "Room is full",

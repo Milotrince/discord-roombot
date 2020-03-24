@@ -19,20 +19,32 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
         return target_player
 
     async def cog_before_invoke(self, ctx, *args):
+        r = Room.get_by_mention(ctx, args)
         self.p['player'] = ctx.message.author
-        r = Room.get_hosted(self.p['player'].id, ctx.guild.id)
-        r.update_active()
-        self.p['room'] = r
-        self.p['channel'] = ctx.guild.get_channel(r.channel_id)
-        self.p['voice_channel'] = ctx.guild.get_channel(r.voice_channel_id)
-        self.p['role'] = ctx.guild.get_role(r.role_id)
         self.p['mentioned_player'] = ctx.message.mentions[0] if ctx.message.mentions else None
+        is_admin = ctx.message.author.guild_permissions.administrator
+        if r and is_admin:
+            self.p['room'] = r
+        elif r and not is_admin:
+            raise commands.MissingPermissions([])
+        else:
+            self.p['room'] = Room.get_hosted(self.p['player'].id, ctx.guild.id)
+
+        if self.p['room'] != None:
+            self.p['room'].update_active()
+            self.p['channel'] = ctx.guild.get_channel(self.p['room'].channel_id)
+            self.p['voice_channel'] = ctx.guild.get_channel(self.p['room'].voice_channel_id)
+            self.p['role'] = ctx.guild.get_role(self.p['room'].role_id)
+
 
     async def cog_after_invoke(self, ctx):
         self.p = dict.fromkeys(self.p_keys)
 
     async def cog_check(self, ctx):
-        return Room.get_hosted(ctx.message.author.id, ctx.guild.id)
+        is_host = Room.get_hosted(ctx.message.author.id, ctx.guild.id)
+        is_admin = ctx.message.author.guild_permissions.administrator
+        searched_room = Room.get_by_mention(ctx, ctx.message.content.split(' ')[1:])
+        return is_host or is_admin and searched_room
 
     async def cog_command_error(self, ctx, error):
         if type(error) == discord.ext.commands.errors.CheckFailure:
@@ -123,9 +135,11 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
         Set the name of your room.
         This is what the channel and role will be named as.
         """
-        new_activity = ' '.join(args)
+        new_activity = remove_mentions(' '.join(args))
         await self.p['role'].edit(name="(Room) " + new_activity)
         await self.p['channel'].edit(name=new_activity)
+        if self.p['voice_channel']:
+            await self.p['voice_channel'].edit(name=new_activity)
         self.p['room'].activity = new_activity
         self.p['room'].update('activity', new_activity)
         return await ctx.send(strings['updated_field'].format(strings['activity'], new_activity, self.p['player'].display_name, self.p['channel'].mention))
@@ -137,7 +151,7 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
         Set the description of your room.
         The description is the little message that you will see in the room list.
         """
-        new_description = ' '.join(args)
+        new_description = remove_mentions(' '.join(args))
         self.p['room'].description = new_description
         self.p['room'].update('description', new_description)
         await self.p['channel'].edit(topic="({}/{}) {}".format(len(self.p['room'].players), self.p['room'].size, self.p['room'].description))
@@ -150,7 +164,7 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
         Set the max player size of your room.
         Once the room is full, I will ping the room.
         """
-        new_size = args[0] if args else None
+        new_size = remove_mentions(args)[0] if remove_mentions(args) else None
         try:
             if len(self.p['room'].players) > int(new_size):
                 return await ctx.send(strings['size_too_small'])
@@ -163,7 +177,7 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
 
     @commands.command(aliases=strings['_aliases']['timeout'])
     async def timeout(self, ctx, *args):
-        new_timeout = args[0] if args else False 
+        new_timeout = remove_mentions(args)[0] if remove_mentions(args) else False 
         try:
             new_timeout = min(int(new_timeout), 999)
             if (new_timeout < 0):
@@ -177,9 +191,18 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
 
     @commands.command(aliases=strings['_aliases']['lock'])
     async def lock(self, ctx, *args):
-        new_lock = text_to_bool(args[0]) if args else not self.p['room'].lock
+        new_lock = text_to_bool(remove_mentions(args)[0]) if remove_mentions(args) else not self.p['room'].lock 
         self.p['room'].update('lock', new_lock)
         return await ctx.send(strings['lock_room'] if new_lock else strings['unlock_room'])
+
+
+    # @commands.command(aliases=strings['_aliases']['public'])
+    # async def public(self, ctx, *args):
+    #     new_public = text_to_bool(remove_mentions(args)[0]) if remove_mentions(args) else not self.p['room'].public
+    #     self.p['room'].update('public', new_public)
+    #     if new_public:
+    #         self.p['channel'].edit(overwrites={})
+    #     return await ctx.send(strings['updated_field'].format(strings['public'], new_public, self.p['player'].display_name, self.p['channel'].mention))
 
 
     @commands.command(aliases=strings['_aliases']['colour'])
@@ -190,7 +213,7 @@ class RoomHost(commands.Cog, name=strings['_cog']['host']):
         gold/yellow, orange, and red.
         A random color is set if the specified color is not included above.
         """
-        color = get_color(args[0] if args else '')
+        color = get_color(remove_mentions(args)[0] if remove_mentions(args) else '') 
         await self.p['role'].edit(color=color)
         self.p['room'].update('color', color.value)
         return await ctx.send(strings['updated_field'].format(strings['color'], color, self.p['player'].display_name, self.p['channel'].mention))

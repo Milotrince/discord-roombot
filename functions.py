@@ -86,3 +86,10 @@ def clamp(n, min, max):
 
 def has_common_element(a, b):
     return set(a) & set(b)
+
+def remove_mentions(args):
+    log(type(args))
+    if isinstance(args, list) or isinstance(args, tuple):
+        return re.sub(r"<(@!|@&|#)[\d]*>", '', ' '.join(args)).split(' ')
+    else:
+        return re.sub(r"<(@!|@&|#)[\d]*>", '', args).strip()

@@ -54,6 +54,8 @@ async def on_command_error(ctx, error):
 
     if not passes_role_restriction(ctx):
         return
+    elif type(error) == commands.errors.MissingPermissions:
+        return await ctx.send(strings['not_admin'])
     elif type(error) == commands.errors.CheckFailure:
         return
     elif type(error) == commands.errors.CommandNotFound:
@@ -86,7 +88,7 @@ async def delete_inactive_rooms_db():
             await asyncio.sleep(60) # check every minute
             for room_data in rooms_db.find():
                 r = Room.from_query(room_data)
-                if (r.timeout >= 0):
+                if r.timeout and r.timeout >= 1:
                     guild = bot.get_guild(r.guild)
                     birth_channel = guild.get_channel(r.birth_channel) if guild else None
                     channel = guild.get_channel(r.channel_id) if guild else None

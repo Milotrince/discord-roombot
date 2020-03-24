@@ -234,6 +234,37 @@ class Room:
                 return r
         return None  
 
+    @classmethod
+    def get_by_mention(cls, ctx, args):
+        rooms = rooms_db.find(guild=ctx.guild.id)
+        player_filter = ctx.message.mentions[0].id if ctx.message.mentions else None
+        activity_filter = " ".join(args) if args else None
+        role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions else None
+
+        rooms = rooms_db.find(guild=ctx.guild.id)
+        if rooms:
+            for room_data in rooms:
+                r = Room.from_query(room_data)
+                if player_filter in r.players or r.activity == activity_filter or r.role_id == role_mention_filter:
+                    return r
+        return None
+
+    @classmethod
+    def get_by_any(cls, ctx, args):
+        rooms = rooms_db.find(guild=ctx.guild.id)
+        player_filter = ctx.message.mentions[0].id if ctx.message.mentions else ctx.message.author.id
+        activity_filter = " ".join(args) if args else None
+        role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions else None
+
+        rooms = rooms_db.find(guild=ctx.guild.id)
+        if rooms:
+            for room_data in rooms:
+                r = Room.from_query(room_data)
+                if player_filter in r.players or r.activity == activity_filter or r.role_id == role_mention_filter:
+                    return r
+        return None
+
+
     def get_embed(self, player, footer_action):
         """Generate a discord.Embed for this room"""
         description = discord.Embed.Empty if self.description == '' else self.description

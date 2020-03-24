@@ -20,7 +20,7 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
         player = ctx.message.author
 
         if args:
-            activity = " ".join(args)
+            activity = remove_mentions(" ".join(args))
         elif player.activity:
             activity = player.activity.name
         else:
@@ -335,18 +335,20 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
     async def ls(self, ctx):
         """List rooms in current guild."""
         rooms = rooms_db.find(guild=ctx.guild.id)
-        embed = discord.Embed(color=discord.Color.blurple(), title="Rooms")
-        exists = False
+        embed = discord.Embed(color=discord.Color.blurple())
+        count = 0
 
         for room_data in rooms:
-            exists = True
+            count += 1
             room = Room.from_query(room_data)
 
             description = room.description if room.description else "{}: {}".format(strings['players'], ', '.join(room.players))
             embed.add_field(
                 name="{}{} ({}/{})".format(":lock: " if room.lock else "", room.activity, len(room.players), room.size),
-                value=description )
-        if exists:
+                value=description,
+                inline=False )
+        if count > 0:
+            embed.title = "Rooms ({})".format(count)
             await ctx.send(embed=embed)
         else:
             await ctx.send(strings['no_rooms'])
@@ -355,23 +357,11 @@ class BasicRoom(commands.Cog, name=strings['_cog']['room']):
     @commands.command(aliases=strings['_aliases']['look'])
     async def look(self, ctx, *args):
         """Shows your current room (or look at another room by activity or player)."""
-        player_name = ctx.message.author.display_name
-        rooms = rooms_db.find(guild=ctx.guild.id)
-        player_filter = ctx.message.mentions[0].id if ctx.message.mentions else ctx.message.author.id
-        activity_filter = " ".join(args) if args else None
-        role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions else None
-
-        rooms = rooms_db.find(guild=ctx.guild.id)
-        if rooms:
-            for room_data in rooms:
-                r = Room.from_query(room_data)
-                if player_filter in r.players or r.activity == activity_filter or r.role_id == role_mention_filter:
-                    r.update_active()
-                    return await ctx.send(embed=r.get_embed(ctx.author, strings['request'])) 
+        r = Room.get_by_any(ctx, args)
+        if r:
+            return await ctx.send(embed=r.get_embed(ctx.author, strings['request'])) 
         else:
-            return await ctx.send(strings['no_rooms'])
-        
-        return await ctx.send(strings['no_room'])
+            return await ctx.send(strings['no_room'])
 
 
 def setup(bot):
