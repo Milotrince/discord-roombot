@@ -1,7 +1,7 @@
 from discord.ext import commands
-from utils.settings import *
-from utils.room import *
-from settings import *
+from database.settings import *
+from database.room import *
+import env
 
 print("""
 ._____               _____._____._____.
@@ -84,13 +84,13 @@ async def on_command_error(ctx, error):
 
         if missing_permissions:
             return await ctx.send(getText('missing_permission').format('`, `'.join(missing_permissions)))
-    log("===== ERROR RAISED FROM: " + ctx.message.content)
-    log(error)
+    await logc("===== Error raised from: " + ctx.message.content)
+    await logc(error)
     await ctx.send(getText('fatal_error'))
 
 
 # Periodically check for inactive rooms
-async def delete_inactive_rooms_db():
+async def delete_inactive_rooms():
     await bot.wait_until_ready()
     try:
         while not bot.is_closed():
@@ -125,14 +125,15 @@ async def delete_inactive_rooms_db():
                             else:
                                 rooms_db.delete(role_id=r.role_id)
                         except Exception as e:
-                            await logc(e, bot)
+                            await logc("===== Error raised from: delete_inactive_rooms")
+                            await logc(e)
     except Exception as e:
         await logc(e, bot)
         log("Restarting delete inactive rooms task")
-        bot.loop.create_task(delete_inactive_rooms_db())
+        bot.loop.create_task(delete_inactive_rooms())
 
 
-bot.loop.create_task(delete_inactive_rooms_db())
+bot.loop.create_task(delete_inactive_rooms())
 
 # init strings for settings
 Settings.set_text();

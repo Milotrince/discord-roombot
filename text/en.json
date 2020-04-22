@@ -74,6 +74,7 @@
 
     "purged_a": "{} rooms existing in the database have been deleted.",
     "purged_b": "{0} broken channels and {1} broken roles have been deleted.",
+    "purged_b_fail": "I missed {} channels and {} roles. Maybe grant me admin permission (temporarily!) and run the command so I can try again?",
     "kicked": "`{0}` kicked `{1}` from `{2}`.",
     "new_host": "{1} is now the new host of {2}.",
     "new_voice_channel": "Created voice channel `#{}`.",

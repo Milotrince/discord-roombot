@@ -1,4 +1,4 @@
-from utils.room import *
+from database.room import *
 from discord.ext import commands
 import discord
 
@@ -59,7 +59,8 @@ class Admin(commands.Cog, name=getText('_cog')['admin']):
                     try:
                         await ctx.send(getText('disband_room').format('<@'+str(r.host)+'>', r.activity))
                     except discord.errors.NotFound as e:
-                        log(e)
+                        pass
+                        # log(e)
                     return
         return await ctx.send(getText('room_not_exist'))
 
@@ -76,26 +77,7 @@ class Admin(commands.Cog, name=getText('_cog')['admin']):
         if 'a' not in flags and 'b' not in flags:
             return await ctx.send(getText('purge_missing_flag'))
 
-        if 'b' in flags:
-            deleted_channels = 0
-            deleted_roles = 0
-            category = discord.utils.get(player.guild.categories, name=settings.category_name)
-            if not category:
-                return await ctx.send(getText('no_category'))
-            for channel in category.channels:
-                if iter_len(rooms_db.find(guild=ctx.guild.id, channel_id=channel.id)) < 1:
-                    await channel.delete()
-                    deleted_channels += 1
-            for role in ctx.guild.roles:
-                if iter_len(rooms_db.find(guild=ctx.guild.id, role_id=role.id)) < 1 and role.name.startswith("(Room) "):
-                    await role.delete()
-                    deleted_roles += 1
-            try:
-                await ctx.send(getText('purged_b').format(deleted_channels, deleted_roles))
-            except discord.errors.NotFound as e:
-                log(e)
-
-        if 'a' in flags:
+        if 'a' in flags or 'active' in flags:
             rooms_db_data = rooms_db.find(guild=ctx.guild.id)
             count = 0
             for room_data in rooms_db_data:
@@ -103,10 +85,34 @@ class Admin(commands.Cog, name=getText('_cog')['admin']):
                 guild = self.bot.get_guild(r.guild)
                 await r.disband(guild)
                 count += 1
-            try:
-                await ctx.send(getText('purged_a').format(count))
-            except discord.errors.NotFound as e:
-                log(e)
+            await ctx.send(getText('purged_a').format(count))
+
+        if 'b' in flags or 'broken' in flags:
+            deleted_channels = 0
+            deleted_roles = 0
+            failed_channels = 0
+            failed_roles = 0
+            category = discord.utils.get(player.guild.categories, name=settings.category_name)
+            if not category:
+                return await ctx.send(getText('no_category'))
+            for channel in category.channels:
+                if iter_len(rooms_db.find(guild=ctx.guild.id, channel_id=channel.id)) < 1:
+                    try:
+                        await channel.delete()
+                        deleted_channels += 1
+                    except:
+                        failed_channels += 1
+            for role in ctx.guild.roles:
+                if iter_len(rooms_db.find(guild=ctx.guild.id, role_id=role.id)) < 1 and role.name.startswith("(Room) "):
+                    try:
+                        await role.delete()
+                        deleted_roles += 1
+                    except:
+                        failed_roles += 1
+
+            await ctx.send(getText('purged_b').format(deleted_channels, deleted_roles))
+            if failed_channels > 0 or failed_roles > 0:
+                await ctx.send(getText('purged_b_fail').format(failed_channels, failed_roles))
 
 
 def setup(bot):

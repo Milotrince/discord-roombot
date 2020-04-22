@@ -1,4 +1,4 @@
-from utils.room import *
+from database.room import *
 from discord.ext import commands
 import discord
 
@@ -136,6 +136,8 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
         This is what the channel and role will be named as.
         """
         new_activity = remove_mentions(' '.join(args))
+        if len(new_activity) < 1:
+            new_activity = choice(getText('default_room_names')).format(ctx.message.author.display_name)
         await self.p['role'].edit(name="(Room) " + new_activity)
         await self.p['channel'].edit(name=new_activity)
         if self.p['voice_channel']:

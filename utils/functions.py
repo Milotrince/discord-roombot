@@ -4,7 +4,7 @@ import pytz
 import re
 from random import choice
 from datetime import datetime, timedelta
-from utils.database import *
+from database.connect import *
 from utils.text import *
 
 # General helper functions

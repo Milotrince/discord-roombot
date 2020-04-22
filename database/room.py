@@ -1,5 +1,5 @@
 from utils.functions import *
-from utils.settings import *
+from database.settings import *
 
 async def get_rooms_category(guild):
     settings = Settings.get_for(guild.id)
