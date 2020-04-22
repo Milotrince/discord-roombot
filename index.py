@@ -84,8 +84,8 @@ async def on_command_error(ctx, error):
 
         if missing_permissions:
             return await ctx.send(getText('missing_permission').format('`, `'.join(missing_permissions)))
-    await logc("===== Error raised from: " + ctx.message.content)
-    await logc(error)
+    await logc("===== Error raised from: " + ctx.message.content, bot)
+    await logc(error, bot)
     await ctx.send(getText('fatal_error'))
 
 
@@ -125,8 +125,8 @@ async def delete_inactive_rooms():
                             else:
                                 rooms_db.delete(role_id=r.role_id)
                         except Exception as e:
-                            await logc("===== Error raised from: delete_inactive_rooms")
-                            await logc(e)
+                            await logc("===== Error raised from: delete_inactive_rooms", bot)
+                            await logc(e, bot)
     except Exception as e:
         await logc(e, bot)
         log("Restarting delete inactive rooms task")
