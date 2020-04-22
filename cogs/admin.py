@@ -1,8 +1,8 @@
-from room import *
+from utils.room import *
 from discord.ext import commands
 import discord
 
-class Admin(commands.Cog, name=strings['_cog']['admin']):
+class Admin(commands.Cog, name=getText('_cog')['admin']):
     def __init__(self, bot):
         self.bot = bot
         self._last_member = None
@@ -13,10 +13,10 @@ class Admin(commands.Cog, name=strings['_cog']['admin']):
 
     async def cog_command_error(self, ctx, error):
         if type(error) == discord.ext.commands.errors.CheckFailure:
-            await ctx.send(strings['not_admin'])
+            await ctx.send(getText('not_admin'))
 
 
-    @commands.command(aliases=strings['_aliases']['settings'])
+    @commands.command()
     async def settings(self, ctx, *args):
         """
         Set options for this server.
@@ -33,18 +33,18 @@ class Admin(commands.Cog, name=strings['_cog']['admin']):
         else:
             embed = discord.Embed(
                 color=discord.Color.blurple(),
-                title=strings['settings'])
+                title=getText('settings'))
             for field_name, field in Settings.format.items():
                 field_value = settings.get(field_name)
                 if isinstance(field_value, bool): 
                     field_value = bool_to_text(field_value)
                 embed.add_field(
                     name="***{}***  **{}**".format(field['name'], field_value),
-                    value="**{}:** `-{}`\n{}".format(strings['flags'], "`, `-".join(field['flags']), '\n'.join(field['description']) ))
-            await ctx.send(strings['settings_instructions'].format('r.'), embed=embed)
+                    value="**{}:** `-{}`\n{}".format(getText('flags'), "`, `-".join(field['flags']), '\n'.join(field['description']) ))
+            await ctx.send(getText('settings_instructions').format('r.'), embed=embed)
 
 
-    @commands.command(aliases=strings['_aliases']['force_disband'])
+    @commands.command()
     async def force_disband(self, ctx, *args):
         rooms = rooms_db.find(guild=ctx.guild.id)
         activity_filter = " ".join(args) if args else None
@@ -57,31 +57,31 @@ class Admin(commands.Cog, name=strings['_cog']['admin']):
                 if r.activity == activity_filter or r.role_id == role_mention_filter:
                     await r.disband(ctx.guild)
                     try:
-                        await ctx.send(strings['disband_room'].format('<@'+str(r.host)+'>', r.activity))
+                        await ctx.send(getText('disband_room').format('<@'+str(r.host)+'>', r.activity))
                     except discord.errors.NotFound as e:
                         log(e)
                     return
-        return await ctx.send(strings['room_not_exist'])
+        return await ctx.send(getText('room_not_exist'))
 
 
-    @commands.command(aliases=strings['_aliases']['purge'])
+    @commands.command()
     async def purge(self, ctx, *args):
         """Delete room(s) in this server (`-a` for all active rooms_db, `-b` for all broken rooms_db). For moderation purposes."""
         settings = Settings.get_for(ctx.guild.id)
         player = ctx.message.author
         if not player.guild_permissions.administrator:
-            return await ctx.send(strings['not_admin'])
+            return await ctx.send(getText('not_admin'))
 
         (flags, words) = pop_flags(args)
         if 'a' not in flags and 'b' not in flags:
-            return await ctx.send(strings['purge_missing_flag'])
+            return await ctx.send(getText('purge_missing_flag'))
 
         if 'b' in flags:
             deleted_channels = 0
             deleted_roles = 0
             category = discord.utils.get(player.guild.categories, name=settings.category_name)
             if not category:
-                return await ctx.send(strings['no_category'])
+                return await ctx.send(getText('no_category'))
             for channel in category.channels:
                 if iter_len(rooms_db.find(guild=ctx.guild.id, channel_id=channel.id)) < 1:
                     await channel.delete()
@@ -91,7 +91,7 @@ class Admin(commands.Cog, name=strings['_cog']['admin']):
                     await role.delete()
                     deleted_roles += 1
             try:
-                await ctx.send(strings['purged_b'].format(deleted_channels, deleted_roles))
+                await ctx.send(getText('purged_b').format(deleted_channels, deleted_roles))
             except discord.errors.NotFound as e:
                 log(e)
 
@@ -104,10 +104,10 @@ class Admin(commands.Cog, name=strings['_cog']['admin']):
                 await r.disband(guild)
                 count += 1
             try:
-                await ctx.send(strings['purged_a'].format(count))
+                await ctx.send(getText('purged_a').format(count))
             except discord.errors.NotFound as e:
                 log(e)
 
 
 def setup(bot):
-    bot.add_cog(Admin(bot))
+    load_cog(bot, Admin(bot))

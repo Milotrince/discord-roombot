@@ -1,0 +1,400 @@
+{
+    "bot_presence": "the waiting game",
+
+    "channel": "channel",
+    "activity": "activity",
+    "description": "description",
+    "size": "size",
+    "timeout": "timeout",
+    "color": "color",
+    "flags": "flags",
+    "host": "host",
+    "lock": "lock",
+
+    "players": "Players",
+    "inviter": "Inviter",
+    "server": "Server",
+    "room": "Room",
+    "command": "Command",
+    "commands": "Commands",
+    "settings": "Settings",
+    "invites_sent": "Invites Sent",
+    "invitees": "Invitees",
+    "failed_invites": "Failed invites",
+
+    "failed_invites_description": "I was unable to access these folks, probably because of their settings or because they are a bot.",
+    "already_joined": "Already joined",
+    "invite_accepted": "Invite accepted.",
+    "invite_declined": "Invite declined.",
+
+    "new_room": "New room made by",
+    "room_joined": "Room joined by",
+    "request": "Request by",
+
+    "fatal_error": "Something went wrong. If this keeps happening, please ask in the support server https://discord.gg/37kzrpr",
+    "retry_error": "Something went wrong. Please try again.",
+    "missing_permission": "It seems I am missing permissions: `{}`",
+    "invalid_command": "\"{0}\" is not a valid command. Try `{1}help`.",
+
+    "room_status": "Waiting for {} more players",
+    "room_timeout_on": "Room will automatically disband after {} minutes of inactivity.",
+    "room_timeout_off": "Room will not disband from inactivity.",
+
+    "lock_room": "Room has been locked. Others will no longer be able to join.",
+    "unlock_room": "Room has been unlocked. Now others will be able to join.",
+    "join_locked_room": "Room is locked.",
+    "join_full_room": "Room is full.",
+
+    "disband_room": "{0}'s room `{1}` has been disbanded.",
+    "disband_from_inactivity": "`{}` has disbanded due to inactivity.",
+    "disband_empty_room": "There are no players left in the room. Room has been disbanded.",
+    "left_room": "{0} has left `{1}`",
+    "full_room": "Room is full",
+    "already_in_room": "You are already in a room.",
+    "room_not_exist": "That room does not exist.",
+    "no_category": "Could not find channel category.",
+    "no_room": "Could not find room.",
+    "no_rooms": "No rooms exist yet.",
+    "not_in_room": "You are not in a room.",
+    "not_host": "You are not the host of a room.",
+    "not_admin": "You are not an administrator.",
+
+    "missing_target_room": "Please specify a room by activity or player.",
+    "missing_target": "Please @mention or type the name of the user.",
+    "missing_target_invitees": "Invite who? (Check if the username is correct?)",
+    "purge_missing_flag": "Please use flags `-a` or `-b`.",
+    "require_flags": "Please specify the field(s) using flags.",
+    "self_target": "You can't do that to yourself.",
+    "target_not_in_room": "{0} is not in your room {1}.",
+    "bad_field": "The field `{}` is not recognized.",
+    "need_integer": "The new value must be an integer",
+    "voice_channel_exists": "There is already a voice channel for this room.",
+    "size_too_small": "There are too many players.",
+    "prefix_too_long": "Prefix is too long. Should be less than {} characters.",
+
+    "purged_a": "{} rooms existing in the database have been deleted.",
+    "purged_b": "{0} broken channels and {1} broken roles have been deleted.",
+    "kicked": "`{0}` kicked `{1}` from `{2}`.",
+    "new_host": "{1} is now the new host of {2}.",
+    "new_voice_channel": "Created voice channel `#{}`.",
+    "full_room_notification": "Hey {0}! {1} players have joined.",
+    "updated_field": "{2} updated `{0}` to `{1}` for room {3}.",
+
+    "ping": "Ping?",
+    "pong": "Pong! Latency: `{}`ms",
+    "support": "Join the support server: https://discord.gg/37kzrpr and ask away!",
+
+    "settings_instructions": "To set an option(s), use `{}settings -flag value`",
+    "invite_instructions": "React to accept or decline the invite.",
+    "settings_success": "Set `{}` to `{}`.",
+
+    "_commands": {
+        "about": {
+            "_name": "about",
+            "_aliases": [ "info" ],
+            "_help": [
+                "All about me!",
+                "Shows the amount of servers I am in and links to my source and creator."
+            ]
+        },
+        "activity": {
+            "_name": "activity",
+            "_aliases": [ "a", "game", "name" ],
+            "_help": [
+                "Set the name of your room.",
+                "This is what the channel and role will be named as."
+            ]
+        },
+        "colour": {
+            "_name": "colour",
+            "_aliases": [ "c", "color" ],
+            "_help": [
+                "Set the color of your room.",
+                "Possible colors are: teal, green, blue, purple, magenta/pink, gold/yellow, orange, and red.",
+                "A random color is set if the specified color is not included above."
+            ]
+        },
+        "description": {
+            "_name": "description",
+            "_aliases": [ "d", "desc", "note" ],
+            "_help": [
+                "Set the description of your room.",
+                "The description is the little message that you will see in the room list."
+            ]
+        },
+        "donate": {
+            "_name": "donate",
+            "_aliases": ["iloveroombot"],
+            "_help": [
+                "Link to donation page for supporting RoomBot!"
+            ]
+        },
+        "edit": {
+            "_name": "edit",
+            "_aliases": [ "e" ],
+            "_help": [
+                "Edit room information using flags.",
+                "For example, `r.edit -activity myNewGame -size 4`.",
+                "You can use aliases (ex. `-a` for `-activity`)."
+            ]
+        },
+        "help": {
+            "_name": "help",
+            "_aliases": [ "commands", "command", "cmd" ],
+            "_help": [
+                "Shows descriptions of all or specific commands.",
+                "...Like this. Pretty meta."
+            ]
+        },
+        "host": {
+            "_name": "host",
+            "_aliases": [ "h", "bestow", "leader" ],
+            "_help": [
+                "Change the host of your room.",
+                "Can either mention or use the name of new host."
+            ]
+        },
+        "invite": {
+            "_name": "invite",
+            "_aliases": [ "i" ],
+            "_help": [
+                "Invite a player/players to your room (by name or mention)."
+            ]
+        },
+        "join": {
+            "_name": "join",
+            "_aliases": [ "j" ],
+            "_help": [
+                "Join a room (by activity or player)."
+            ]
+        },
+        "kick": {
+            "_name": "kick",
+            "_aliases": [ "k" ],
+            "_help": [
+                "Kick a player.",
+                "Can either mention or use the name of the kickee."
+            ]
+        },
+        "leave": {
+            "_name": "leave",
+            "_aliases": [ "x", "exit", "disband" ],
+            "_help": [
+                "Leave a room. If you are the host, the room will be disbanded."
+            ]
+        },
+        "look": {
+            "_name": "look",
+            "_aliases": [ "r", "room" ],
+            "_help": [
+                "Shows your current room (or look at another room by activity or player)."
+            ]
+        },
+        "ls": {
+            "_name": "ls",
+            "_aliases": [ "rooms", "list", "dir" ],
+            "_help": [
+                "List rooms in current guild."
+            ]
+        },
+        "new": {
+            "_name": "new",
+            "_aliases": [ "n", "create", "start" ],
+            "_help": [
+                "Make a new room (uses current activity or input)."
+            ]
+        },
+        "ping": {
+            "_name": "ping",
+            "_aliases": [ "pong" ],
+            "_help": [
+                "Pong! Shows latency."
+            ]
+        },
+        "purge": {
+            "_name": "purge",
+            "_aliases": [ "clear", "delete" ],
+            "_help": [
+                "Delete room(s) in this server.",
+                "Use flags (`-a` for all active rooms, `-b` for all broken rooms).",
+                "For moderation purposes."
+            ]
+        },
+        "force_disband": {
+            "_name": "force_disband",
+            "_aliases": [ "fdisband", "fd", "fx" ],
+            "_help": [
+                "Force delete a room (specify room name or @role).",
+                "For moderation purposes."
+            ]
+        },
+        "settings": {
+            "_name": "settings",
+            "_aliases": [ "options", "config" ],
+            "_help": [
+                "Set options for this server.",
+                "To set an option(s), use `-flag value`"
+            ]
+        },
+        "size": {
+            "_name": "size",
+            "_aliases": [ "s", "max", "players" ],
+            "_help": [
+                "Set the max player size of your room.",
+                "Once the room is full, I will ping the room."
+            ]
+        },
+        "lock": {
+            "_name": "lock",
+            "_aliases": [ "private" ],
+            "_help": [
+                "Prevent people from joining your room."
+            ]
+        },
+        "voice_channel": {
+            "_name": "voice_channel",
+            "_aliases": [ "vc", "voice", "voicechannel" ],
+            "_help": [
+                "Create a voice channel associated with this room.",
+                "Will not create if already exists."
+            ]
+        },
+        "support": {
+            "_name": "support",
+            "_aliases": [ "report", "server" ],
+            "_help": [
+                "Link to RoomBot's Discord support server"
+            ]
+        },
+        "prefix": {
+            "_name": "prefix",
+            "_aliases": ["pf"],
+            "_help": [
+                "Bot prefix; RoomBot won't respond unless this prefix is the first thing in your message!"
+            ]
+        },
+        "timeout": {
+            "_name": "timeout",
+            "_aliases": ["to"],
+            "_help": [
+                "After inactivity for this amount of minutes, the room will automatically be disbanded."
+            ]
+        },
+        "role_restriction": {
+            "_name": "role_restriction",
+            "_aliases": [ "role", "rr" ],
+            "_help": [
+                "Only these roles and administrators can use RoomBot. If there are no roles here, anyone can use RoomBot."
+            ]
+        },
+        "access_all_rooms_role": {
+            "_name": "access_all_rooms_role",
+            "_aliases": [ "accessors", "aarr" ],
+            "_help": [
+                "Users with this role and administrators will be able to view all active rooms. If there are no roles set, all bots will be able to access all rooms."
+            ]
+        },
+        "respond_to_invalid": {
+            "_name": "respond_to_invalid",
+            "_aliases": [ "rti" ],
+            "_help": [
+                "Whether or not to respond to a command with prefix that does not exist."
+            ]
+        },
+        "delete_command_message": {
+            "_name": "delete_command_message",
+            "_aliases": [ "dcm" ],
+            "_help": [
+                "Whether or not to delete the command message that the user sends."
+            ]
+        },
+        "default_size": {
+            "_name": "default_size",
+            "_aliases": [ "size", "ds" ],
+            "_help": [
+                "Default room size upon room creation"
+            ]
+        },
+        "create_voice_channel": {
+            "_name": "create_voice_channel",
+            "_aliases": [ "voice", "vc" ],
+            "_help": [
+                "Whether or not to create a voice channel upon room creation"
+            ]
+        },
+        "bitrate": {
+            "_name": "bitrate",
+            "_aliases": [ "br" ],
+            "_help": [
+                "Default bitrate of voice channel"
+            ]
+        },
+        "category_name": {
+            "_name": "category_name",
+            "_aliases": [ "category" ],
+            "_help": [
+                "The name of the category where all the rooms are grouped."
+            ]
+        }
+    },
+
+
+    "_cog":{
+        "generic":"Generic",
+        "room":"Basic Room",
+        "host":"Room Host",
+        "admin":"Admin"
+    },
+ 
+ 
+    "join_messages":[
+        "Do not fear! `{}` is here!",
+        "`{}` just stepped inside.",
+        "Be nice to `{}`, ok everyone?",
+        "The adventurer `{}` has joined your party.",
+        "A `{}` has spawned!",
+        "A wild `{}` appears!"
+    ],
+    "leave_messages":[
+        "Goodbye `{}`!",
+        "`{}` just skedaddled out.",
+        "Farewell `{}`... we will miss you, probably...",
+        "The adventurer `{}` has left your party."
+    ],
+    "new_room_welcomes":[
+        "Welcome to your room, `{}`.",
+        "`{}`, you are now the proud owner of this room.",
+        "Hi `{}`! A very cool room, this is.",
+        "A very nice and roomy room I made for you, `{}`.",
+        "So.. are you gonna have parties in this place `{}`?"
+    ],
+    "invite_messages":[
+        "You have been cordially invited to join `{1}`.",
+        "{0} wants YOU to join `{1}`.",
+        "A wild invite appeared!",
+        "Come join {0}'s room!",
+        "Hop into `{1}`!"
+    ],
+    "default_room_names":[
+        "{}'s room",
+        "{}'s epic party",
+        "Room of {}"
+    ],
+    "default_room_descriptions":[
+        "Let's do something together",
+        "Join me, I'm cool",
+        "Why not?",
+        "Let's play!"
+    ],
+
+    "True":[
+        "1",
+        "y",
+        "ye",
+        "yes",
+        "t",
+        "true",
+        "on"
+    ]
+}
+        

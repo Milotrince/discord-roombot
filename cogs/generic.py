@@ -1,19 +1,38 @@
-from room import *
+from utils.room import *
 from discord.ext import commands
 import discord
 
-class Generic(commands.Cog, name=strings['_cog']['generic']):
+class Generic(commands.Cog, name=getText('_cog')['generic']):
     def __init__(self, bot):
         self.bot = bot
         self._last_member = None
         self.color = discord.Color.greyple()
         
-    @commands.command(aliases=strings['_aliases']['ping'])
+    @commands.command()
     async def ping(self, ctx):
         """Pong! Shows latency."""
-        return await ctx.send(strings['ping'].format(round(self.bot.latency, 1)))
+        m = await ctx.send(getText('ping'))
+        ms = (m.created_at-ctx.message.created_at).total_seconds() * 1000
+        await m.edit(content=getText('pong').format(int(ms)))
+        # return await ctx.send(getText('ping').format(round(self.bot.latency, 1)))
 
-    @commands.command(aliases=strings['_aliases']['about'])
+    @commands.command()
+    async def donate(self, ctx):
+        embed = discord.Embed(
+            color=discord.Color.blurple(),
+            title=":heart: Support me through Ko-fi! :coffee:",
+            description="https://ko-fi.com/milotrince\nDonations help me stay motivated to continue updating and managing RoomBot, as well as pay hosting fees. So if RoomBot helps you out, please consider helping me out too! :blush:",
+            url="https://ko-fi.com/milotrince"
+        ).set_author(
+            name="Donate"
+        ).set_thumbnail(
+            url="https://storage.ko-fi.com/cdn/useruploads/6d456b7f-ed0f-4690-942a-8f2153e31602.png"
+        )
+        return await ctx.send(embed=embed)
+
+
+
+    @commands.command()
     async def about(self, ctx):
         """
         All about me!
@@ -21,21 +40,25 @@ class Generic(commands.Cog, name=strings['_cog']['generic']):
         """
         embed = discord.Embed(
             color=discord.Color.blurple(),
+            title="About Roombot",
             description='\n'.join([
                 ":shield: Serving {} servers".format(len(self.bot.guilds)),
                 ":robot: [Server](https://discord.gg/37kzrpr) Join my support server!",
                 ":cat: [GitHub](https://github.com/Milotrince/discord-roombot) Help improve me!",
                 ":mailbox: [Invite Link](https://discordapp.com/oauth2/authorize?client_id=592816310656696341&permissions=268437520&scope=bot) Invite me to another server!",
                 ":woman: [Profile](https://github.com/Milotrince) Contact my creator @Milotrince#0001",
-                ":heart: RoomBot was made for Discord Hack Week"]) )
-        embed.set_author(name="About RoomBot")
+                ":heart: [Ko-fi](https://ko-fi.com/milotrince) Donate :coffee:!",
+                ":purple_heart: RoomBot was made for Discord Hack Week"])
+            ).set_thumbnail(
+                url="https://raw.githubusercontent.com/Milotrince/discord-roombot/master/assets/icon.png"
+            )
         return await ctx.send(embed=embed)
 
-    @commands.command(aliases=strings['_aliases']['support'])
+    @commands.command()
     async def support(self, ctx):
-        return await ctx.send(strings['support'])
+        return await ctx.send(getText('support'))
 
-    @commands.command(aliases=strings['_aliases']['help'])
+    @commands.command()
     async def help(self, ctx, *args):
         """
         Shows descriptions of all or specific commands.
@@ -50,7 +73,7 @@ class Generic(commands.Cog, name=strings['_cog']['generic']):
             for command in filtered_commands:
                 embed = discord.Embed(
                     color=self.bot.cogs[command.cog_name].color,
-                    title="{} {}".format(command.cog_name, strings['command']) )
+                    title="{} {}".format(command.cog_name, getText('command')) )
                 embed.add_field(
                     name="**{}**    aka `{}`".format(command, "`, `".join(command.aliases)),
                     value=command.help,
@@ -61,7 +84,7 @@ class Generic(commands.Cog, name=strings['_cog']['generic']):
         for cog_name, cog in self.bot.cogs.items():
             embed = discord.Embed(
                 color=cog.color,
-                title="{} {}".format(cog_name, strings['commands']) )
+                title="{} {}".format(cog_name, getText('commands')) )
             for command in sorted(cog.get_commands(), key=lambda c:c.name):
                 embed.add_field(
                     name="**{}**    aka `{}`".format(command, "`, `".join(command.aliases)),
@@ -71,4 +94,4 @@ class Generic(commands.Cog, name=strings['_cog']['generic']):
 
 
 def setup(bot):
-    bot.add_cog(Generic(bot))
+    load_cog(bot, Generic(bot))

@@ -4,12 +4,34 @@ import pytz
 import re
 from random import choice
 from datetime import datetime, timedelta
-from globalvars import *
+from utils.database import *
+from utils.text import *
 
 # General helper functions
 
 def log(content):
     print('{} {}'.format(datetime.now(), content))
+
+async def logc(content, bot):
+    log(content)
+    channel_id = os.getenv('LOGGING_CHANNEL_ID')
+    guild_id = os.getenv('LOGGING_SERVER_ID')
+    if bot and channel_id and guild_id:
+        guild = bot.get_guild(int(guild_id))
+        if guild:
+            channel = guild.get_channel(int(channel_id))
+            if channel:
+                await channel.send(content)
+
+def load_cog(bot, cog):
+    for command in cog.get_commands():
+        text = getText('_commands')[command.name]
+        command.update(
+            name=text['_name'],
+            help='\n'.join(text['_help']),
+            aliases=text['_aliases'],
+            pass_context=True )
+    bot.add_cog(cog)
 
 def some_color():
     """Returns a random standard Discord color"""
@@ -60,7 +82,7 @@ def pop_flags(args):
     return (flags, flag_args)
 
 def text_to_bool(text):
-    return text.lower() in strings['True']
+    return text.lower() in getText('True')
 
 def bool_to_text(yes):
     return "Yes" if yes else "No"
@@ -88,7 +110,6 @@ def has_common_element(a, b):
     return set(a) & set(b)
 
 def remove_mentions(args):
-    log(type(args))
     if isinstance(args, list) or isinstance(args, tuple):
         return re.sub(r"<(@!|@&|#)[\d]*>", '', ' '.join(args)).split(' ')
     else:

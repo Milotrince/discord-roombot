@@ -1,5 +1,7 @@
 from discord.ext import commands
-from room import *
+from utils.settings import *
+from utils.room import *
+from settings import *
 
 print("""
 ._____               _____._____._____.
@@ -20,7 +22,7 @@ async def determine_prefix(bot, message):
 bot = commands.Bot(
     command_prefix=determine_prefix, 
     case_insensitive=True,
-    activity=discord.Game(strings['bot_presence']))
+    activity=discord.Game(getText('bot_presence')))
 bot.remove_command('help')
 
 @bot.check
@@ -46,6 +48,13 @@ async def on_command(ctx):
     if settings.delete_command_message:
         await ctx.message.delete()
 
+@bot.command(pass_context=True)
+async def reload(ctx):
+    if (str(ctx.message.author.id) == os.getenv('BOT_OWNER_USER_ID')):
+        log('reload cogs')
+        for cog_name in cogs:
+            bot.reload_extension('cogs.' + cog_name)
+
 # Disable for full stack trace
 @bot.event
 async def on_command_error(ctx, error):
@@ -55,12 +64,12 @@ async def on_command_error(ctx, error):
     if not passes_role_restriction(ctx):
         return
     elif type(error) == commands.errors.MissingPermissions:
-        return await ctx.send(strings['not_admin'])
+        return await ctx.send(getText('not_admin'))
     elif type(error) == commands.errors.CheckFailure:
         return
     elif type(error) == commands.errors.CommandNotFound:
         if settings.respond_to_invalid:
-            await ctx.send(strings['invalid_command'].format(ctx.message.content, settings.prefix))
+            await ctx.send(getText('invalid_command').format(ctx.message.content, settings.prefix))
         if settings.delete_command_message:
             await ctx.message.delete()
         return
@@ -74,10 +83,10 @@ async def on_command_error(ctx, error):
             missing_permissions.append("ManageMessages")
 
         if missing_permissions:
-            return await ctx.send(strings['missing_permission'].format('`, `'.join(missing_permissions)))
+            return await ctx.send(getText('missing_permission').format('`, `'.join(missing_permissions)))
     log("===== ERROR RAISED FROM: " + ctx.message.content)
     log(error)
-    await ctx.send(strings['fatal_error'])
+    await ctx.send(getText('fatal_error'))
 
 
 # Periodically check for inactive rooms
@@ -94,13 +103,15 @@ async def delete_inactive_rooms_db():
                     channel = guild.get_channel(r.channel_id) if guild else None
 
                     if (channel):
-                        last_message = (await channel.history(limit=1).flatten())[0]
-                        last_message_datetime = last_message.created_at.replace(tzinfo=pytz.utc)
-                        voice_channel = guild.get_channel(r.voice_channel_id) if guild else None
-                        if voice_channel and len(voice_channel.members) > 0:
-                            r.update_active()
-                        if last_message_datetime > r.last_active.replace(tzinfo=pytz.utc):
-                            r.update('last_active', last_message_datetime)
+                        history = (await channel.history(limit=1).flatten())
+                        if len(history) > 0:
+                            last_message = history[0]
+                            last_message_datetime = last_message.created_at.replace(tzinfo=pytz.utc)
+                            voice_channel = guild.get_channel(r.voice_channel_id) if guild else None
+                            if voice_channel and len(voice_channel.members) > 0:
+                                r.update_active()
+                            if last_message_datetime > r.last_active.replace(tzinfo=pytz.utc):
+                                r.update('last_active', last_message_datetime)
 
                     time_diff = datetime.now(pytz.utc) - r.last_active.replace(tzinfo=pytz.utc)
 
@@ -110,13 +121,13 @@ async def delete_inactive_rooms_db():
                             if guild:
                                 await r.disband(guild)
                                 if birth_channel:
-                                    await birth_channel.send(strings['disband_from_inactivity'].format(r.activity))
+                                    await birth_channel.send(getText('disband_from_inactivity').format(r.activity))
                             else:
                                 rooms_db.delete(role_id=r.role_id)
                         except Exception as e:
-                            log(e)
+                            await logc(e, bot)
     except Exception as e:
-        log(e)
+        await logc(e, bot)
         log("Restarting delete inactive rooms task")
         bot.loop.create_task(delete_inactive_rooms_db())
 
@@ -124,20 +135,12 @@ async def delete_inactive_rooms_db():
 bot.loop.create_task(delete_inactive_rooms_db())
 
 # init strings for settings
-Settings.set_strings();
+Settings.set_text();
 
 # add cogs (groups of commands)
-cogs_folder = 'cogs'
 cogs = [ 'generic', 'basicroom', 'roomhost', 'admin' ]
 for cog_name in cogs:
-    bot.load_extension(cogs_folder + '.' + cog_name)
-for cog in bot.cogs.values():
-    for command in cog.get_commands():
-        command.name = strings['_name'][command.name]
-        command.help = '\n'.join(strings['_help'][command.name])
-        # command.aliases = strings['_aliases'][command.name]
+    bot.load_extension('cogs.' + cog_name)
 
 # run bot
-with open('config/token.txt', 'r') as token_file:  
-    token = token_file.read()
-bot.run(token)
+bot.run(os.getenv('DISCORD_BOT_TOKEN'))
