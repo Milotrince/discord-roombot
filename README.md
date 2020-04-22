@@ -16,7 +16,8 @@ Sometimes you want to play something with a group, but everyone's busy at the mo
 
 ## Running Your Own RoomBot
 1. Clone this repository.
-2. Replace contents of `token` with bot token (from [Discord Developer Portal](https://discordapp.com/developers/applications/))
+2. Rename `example.env` to `.env` and update its contents
+    * `DISCORD_BOT_TOKEN` is bot token from [Discord Developer Portal](https://discordapp.com/developers/applications/)
 3. Install `pipenv`
     * macOS (Terminal) `brew install pipenv` or `pip3 install pipenv`
     * linux (Fedora 28) `sudo dnf install pipenv`
