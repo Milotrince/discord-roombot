@@ -10,14 +10,12 @@ Mako==1.1.2
 MarkupSafe==1.1.1
 multidict==4.7.5
 pathlib==1.0.1
-pip==20.0.2
+psycopg2-binary==2.8.5
 python-dateutil==2.8.1
 python-dotenv==0.13.0
 python-editor==1.0.4
 pytz==2019.3
-setuptools==46.1.3
 six==1.14.0
 SQLAlchemy==1.3.16
 websockets==8.1
-wheel==0.34.2
 yarl==1.4.2
