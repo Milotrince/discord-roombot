@@ -1,6 +1,7 @@
 from discord.ext import commands
 from database.settings import *
 from database.room import *
+import os
 import env
 
 print("""
@@ -46,7 +47,11 @@ async def on_disconnect():
 async def on_command(ctx):
     settings = Settings.get_for(ctx.guild.id)
     if settings.delete_command_message:
-        await ctx.message.delete()
+        try:
+            await ctx.message.delete()
+        except Exception as e:
+            log(e)
+            # pass
 
 @bot.command(pass_context=True)
 async def reload(ctx):
@@ -91,6 +96,7 @@ async def on_command_error(ctx, error):
 
 # Periodically check for inactive rooms
 async def delete_inactive_rooms():
+    log("Starting delete inactive rooms task")
     await bot.wait_until_ready()
     try:
         while not bot.is_closed():
