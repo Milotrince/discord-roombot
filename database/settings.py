@@ -97,12 +97,7 @@ class Settings:
             max_char_length = 5
             if len(value) > max_char_length:
                 result = (False, getText('prefix_too_long').format(max_char_length))
-        elif field == 'timeout':
-            try:
-                parsed_value = int(value)
-            except ValueError:
-                parsed_value = False
-        elif field == 'default_size' or field == 'bitrate':
+        elif field == 'default_size' or field == 'bitrate' or field == 'timeout':
             try:
                 parsed_value = int(value)
             except ValueError:
@@ -121,7 +116,7 @@ class Settings:
             result = (False, ['require_flags'])
 
         if field == 'default_size':
-            parsed_value = clamp (parsed_value, 0, 100)
+            parsed_value = clamp (parsed_value, 2, 100)
         elif field == 'bitrate':
             parsed_value = clamp (parsed_value, 8, int(ctx.guild.bitrate_limit/1000))
         elif field == 'timeout':
