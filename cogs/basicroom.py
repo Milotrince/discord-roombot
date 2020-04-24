@@ -308,7 +308,10 @@ class BasicRoom(commands.Cog, name=getText('_cog')['room']):
                 (room_found, response) = await self.try_leave(ctx, room, player)
                 if room_found:
                     if response:
-                        await ctx.send(response)
+                        try:
+                            await ctx.send(response)
+                        except:
+                            pass
                     return
         return await ctx.send(getText('not_in_room'))
 
@@ -378,7 +381,10 @@ class BasicRoom(commands.Cog, name=getText('_cog')['room']):
             (success, response) = await room.remove_player(player)
             if success:
                 if response:
-                    await ctx.send(response)
+                    try:
+                        await ctx.send(response)
+                    except:
+                        pass
                 return (True, getText('left_room').format(player.name, room.activity))
             else:
                 return (True, getText('retry_error'))
