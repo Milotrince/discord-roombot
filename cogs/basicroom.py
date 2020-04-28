@@ -16,15 +16,15 @@ class BasicRoom(commands.Cog, name=getText('_cog')['room']):
     @commands.command()
     async def new(self, ctx, *args):
         """Make a new room (uses current activity or input)."""
-        activity = None
         player = ctx.message.author
+        activity = choice(getText('default_room_names')).format(player.display_name)
 
         if args:
             activity = remove_mentions(" ".join(args))
-        elif player.activity:
+        if len(args) < 1 and player.activity and len(player.activity.name) > 1:
             activity = player.activity.name
-        else:
-            activity = choice(getText('default_room_names')).format(player.display_name)
+        # limit length
+        activity = activity[0:90].strip()
         
         if not ctx.guild.me.guild_permissions.manage_channels or not ctx.guild.me.guild_permissions.manage_roles:
             raise discord.ext.commands.errors.CommandInvokeError("Missing Permissons")
@@ -39,7 +39,7 @@ class BasicRoom(commands.Cog, name=getText('_cog')['room']):
                     activity = "({}) {}".format(player.name, activity)
                     
         role = await player.guild.create_role(
-            name="({}) {}".format(getText('room'), activity)[0:99],
+            name="({}) {}".format(getText('room'), activity),
             color=some_color(),
             hoist=True,
             mentionable=True )
@@ -67,7 +67,7 @@ class BasicRoom(commands.Cog, name=getText('_cog')['room']):
 
         category = await get_rooms_category(player.guild)
         channel = await player.guild.create_text_channel(
-            activity[0:99],
+            name=activity,
             category=category,
             position=0,
             overwrites=overwrites
@@ -75,14 +75,14 @@ class BasicRoom(commands.Cog, name=getText('_cog')['room']):
         voice_channel = None
         if settings.voice_channel:
             voice_channel = await player.guild.create_voice_channel(
-                activity[0:99],
+                name=activity,
                 bitrate=settings.bitrate * 1000,
                 category=category,
                 position=0,
                 overwrites=overwrites
             )
 
-        new_room = Room.from_message(ctx, args, settings, activity[0:99], role, channel, voice_channel)
+        new_room = Room.from_message(ctx, args, settings, activity, role, channel, voice_channel)
         
         success = await new_room.add_player(player)
         if success:

@@ -70,6 +70,11 @@ async def on_command_error(ctx, error):
         return
     elif type(error) == commands.errors.MissingPermissions:
         return await ctx.send(getText('not_admin'))
+    elif type(error) == discord.Forbidden:
+        return await ctx.send(getText('not_admin'))
+        await logc("===== FORBIDDEN Error raised from: " + ctx.message.content, bot)
+        await logc(error.text, bot)
+        # return await ctx.send(getText('missing_permission').format('`, `'.join(missing_permissions)))
     elif type(error) == commands.errors.CheckFailure:
         return
     elif type(error) == commands.errors.CommandNotFound:
@@ -134,15 +139,13 @@ async def delete_inactive_rooms():
                             await logc("===== Error raised from: delete_inactive_rooms", bot)
                             await logc(e, bot)
     except Exception as e:
-        await logc(e, bot)
-        log("Restarting delete inactive rooms task")
-        bot.loop.create_task(delete_inactive_rooms())
+        if not bot.is_closed:
+            await logc(e, bot)
+            log("Restarting delete inactive rooms task")
+            bot.loop.create_task(delete_inactive_rooms())
 
 
 bot.loop.create_task(delete_inactive_rooms())
-
-# init strings for settings
-Settings.set_text();
 
 # add cogs (groups of commands)
 cogs = [ 'generic', 'basicroom', 'roomhost', 'admin' ]

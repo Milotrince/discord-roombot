@@ -1,17 +1,17 @@
 from utils.functions import *
 
 class Settings:
-    format = {
-        'prefix': { "default_value": "r." },
-        'timeout': { "default_value": 120 },
-        'role_restriction': { "default_value": [] },
-        'access_all_rooms_role': { "default_value": [] },
-        'respond_to_invalid': { "default_value": True },
-        'delete_command_message': { "default_value": False },
-        'default_size': { "default_value": 4 },
-        'voice_channel': { "default_value": False },
-        'bitrate': { "default_value": 64 },
-        'category_name': { "default_value": getText('room') }
+    defaults = {
+        'prefix': "r.",
+        'timeout': 120,
+        'role_restriction': [],
+        'access_all_rooms_role': [],
+        'respond_to_invalid': True,
+        'delete_command_message': False,
+        'default_size': 4,
+        'voice_channel': False,
+        'bitrate': 64,
+        'category_name': getText('room')
     }
    
     def __init__(self, guild_id, prefix, timeout, role_restriction, access_all_rooms_role, respond_to_invalid,
@@ -44,16 +44,8 @@ class Settings:
         settings_db.upsert(self.dict, ['guild_id'])
 
     @classmethod
-    def set_text(cls):
-        for setting in cls.format.keys():
-            text = getText('_commands')[setting]
-            cls.format[setting]['name'] = text['_name']
-            cls.format[setting]['flags'] = text['_aliases']
-            cls.format[setting]['description'] = text['_help']
-
-    @classmethod
     def get_default_value(cls, key):
-        return cls.format[key]['default_value']
+        return cls.defaults[key]
 
     @classmethod
     def get_for(cls, guild_id):
@@ -97,14 +89,14 @@ class Settings:
             max_char_length = 5
             if len(value) > max_char_length:
                 result = (False, getText('prefix_too_long').format(max_char_length))
-        elif field == 'default_size' or field == 'bitrate' or field == 'timeout':
+        elif field in ['size', 'default_size', 'bitrate', 'timeout']:
             try:
                 parsed_value = int(value)
             except ValueError:
                 parsed_value = -1
-        elif field == 'respond_to_invalid' or field == 'delete_command_message' or field == 'voice_channel':
+        elif field in ['respond_to_invalid', 'delete_command_message', 'voice_channel']:
             parsed_value = text_to_bool(value)
-        elif field == 'role_restriction' or field == 'access_all_rooms_role':
+        elif field in ['role_restriction', 'access_all_rooms_role']:
             roles = []
             for word in value.split():
                 role_id = int( ''.join(re.findall(r'\d*', word)) )
@@ -115,8 +107,8 @@ class Settings:
         else:
             result = (False, ['require_flags'])
 
-        if field == 'default_size':
-            parsed_value = clamp (parsed_value, 2, 100)
+        if field in ['size', 'default_size']:
+            parsed_value = clamp (parsed_value, 2, 999)
         elif field == 'bitrate':
             parsed_value = clamp (parsed_value, 8, int(ctx.guild.bitrate_limit/1000))
         elif field == 'timeout':

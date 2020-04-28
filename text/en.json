@@ -106,9 +106,9 @@
                 "This is what the channel and role will be named as."
             ]
         },
-        "colour": {
-            "_name": "colour",
-            "_aliases": [ "c", "color" ],
+        "color": {
+            "_name": "color",
+            "_aliases": [ "c", "colour" ],
             "_help": [
                 "Set the color of your room.",
                 "Possible colors are: teal, green, blue, purple, magenta/pink, gold/yellow, orange, and red.",

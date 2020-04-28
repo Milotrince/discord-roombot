@@ -166,11 +166,11 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
         Set the max player size of your room.
         Once the room is full, I will ping the room.
         """
-        new_size = remove_mentions(args)[0] if remove_mentions(args) else None
         try:
-            if len(self.p['room'].players) > int(new_size):
+            new_size = clamp(int(remove_mentions(args)[0]), 2, 999) if remove_mentions(args) else None
+            if len(self.p['room'].players) > new_size:
                 return await ctx.send(getText('size_too_small'))
-            self.p['room'].size = min(abs(int(new_size)), 100) # Max room size is 100
+            self.p['room'].size = new_size
             self.p['room'].update('size', new_size)
             return await ctx.send(getText('updated_field').format(getText('size'), new_size, self.p['player'].display_name, self.p['channel'].mention))
         except ValueError:
@@ -193,7 +193,8 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
 
     @commands.command()
     async def lock(self, ctx, *args):
-        new_lock = text_to_bool(remove_mentions(args)[0]) if remove_mentions(args) else not self.p['room'].lock 
+        first_arg = remove_mentions(args)[0]
+        new_lock = text_to_bool(first_arg) if len(first_arg) > 0 else not self.p['room'].lock 
         self.p['room'].update('lock', new_lock)
         return await ctx.send(getText('lock_room') if new_lock else getText('unlock_room'))
 
@@ -208,17 +209,17 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
 
 
     @commands.command()
-    async def colour(self, ctx, *args):
+    async def color(self, ctx, *args):
         """
         Set the color of your room.
         Possible colors are: teal, green, blue, purple, magenta/pink,
         gold/yellow, orange, and red.
         A random color is set if the specified color is not included above.
         """
-        color = get_color(remove_mentions(args)[0] if remove_mentions(args) else '') 
-        await self.p['role'].edit(color=color)
-        self.p['room'].update('color', color.value)
-        return await ctx.send(getText('updated_field').format(getText('color'), color, self.p['player'].display_name, self.p['channel'].mention))
+        c = get_color(remove_mentions(args)[0] if remove_mentions(args) else '') 
+        await self.p['role'].edit(color=c)
+        self.p['room'].update('color', c.value)
+        return await ctx.send(getText('updated_field').format(getText('color'), c, self.p['player'].display_name, self.p['channel'].mention))
 
 
     @commands.command()

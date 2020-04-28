@@ -22,11 +22,20 @@ class Admin(commands.Cog, name=getText('_cog')['admin']):
         Set options for this server.
         To set an option(s), use `-flag value`
         """
+        settings_info = {}
+        for setting in Settings.defaults.keys():
+            text = getText('_commands')[setting]
+            settings_info[setting] = {
+                'name': text['_name'],
+                'flags': text['_aliases'],
+                'description': text['_help']
+            }
+
         (flags, flag_args) = pop_flags(args)
         settings = Settings.get_for(ctx.guild.id)
         if flags:
             for i, flag in enumerate(flags):
-                for field_name, field in Settings.format.items():
+                for field_name, field in settings_info.items():
                     if flag in field['flags'] + [field['name']]:
                         (success, message) = settings.set(ctx, field_name, flag_args[i])
                         await ctx.send(message)
@@ -34,7 +43,7 @@ class Admin(commands.Cog, name=getText('_cog')['admin']):
             embed = discord.Embed(
                 color=discord.Color.blurple(),
                 title=getText('settings'))
-            for field_name, field in Settings.format.items():
+            for field_name, field in settings_info.items():
                 field_value = settings.get(field_name)
                 if isinstance(field_value, bool): 
                     field_value = bool_to_text(field_value)
