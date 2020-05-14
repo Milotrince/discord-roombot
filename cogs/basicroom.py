@@ -21,7 +21,7 @@ class BasicRoom(commands.Cog, name=getText('_cog')['room']):
 
         if args:
             activity = remove_mentions(" ".join(args))
-        if len(args) < 1 and player.activity and len(player.activity.name) > 1:
+        if len(args) < 1 and player.activity and player.activity and player.activity.name and len(player.activity.name) > 1:
             activity = player.activity.name
         # limit length
         activity = activity[0:90].strip()
