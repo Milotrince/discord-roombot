@@ -31,7 +31,7 @@
     "room_joined": "Room joined by",
     "request": "Request by",
 
-    "fatal_error": "Something went wrong. If this keeps happening, please ask in the support server https://discord.gg/37kzrpr",
+    "fatal_error": "Something went wrong. If this keeps happening, please ask in the support server (`{}`)",
     "retry_error": "Something went wrong. Please try again.",
     "missing_permission": "It seems I am missing permissions: `{}`",
     "invalid_command": "\"{0}\" is not a valid command. Try `{1}help`.",

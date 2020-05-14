@@ -71,9 +71,9 @@ async def on_command_error(ctx, error):
     elif type(error) == commands.errors.MissingPermissions:
         return await ctx.send(getText('not_admin'))
     elif type(error) == discord.Forbidden:
-        return await ctx.send(getText('not_admin'))
         await logc("===== FORBIDDEN Error raised from: " + ctx.message.content, bot)
         await logc(error.text, bot)
+        return await ctx.send(getText('not_admin'))
         # return await ctx.send(getText('missing_permission').format('`, `'.join(missing_permissions)))
     elif type(error) == commands.errors.CheckFailure:
         return
@@ -96,7 +96,14 @@ async def on_command_error(ctx, error):
             return await ctx.send(getText('missing_permission').format('`, `'.join(missing_permissions)))
     await logc("===== Error raised from: " + ctx.message.content, bot)
     await logc(error, bot)
-    await ctx.send(getText('fatal_error'))
+
+    errorText = ''
+    try:
+        errorText = '```' + str(error) + '```'
+    except:
+        pass
+    finally:
+        await ctx.send(errorText + getText('fatal_error').format(settings.prefix+'support'))
 
 
 # Periodically check for inactive rooms
