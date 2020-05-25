@@ -25,7 +25,7 @@ async def logc(content, bot):
 
 def load_cog(bot, cog):
     for command in cog.get_commands():
-        text = getText('_commands')[command.name]
+        text = get_text('_commands')[command.name]
         command.update(
             name=text['_name'],
             help='\n'.join(text['_help']),
@@ -82,7 +82,7 @@ def pop_flags(args):
     return (flags, flag_args)
 
 def text_to_bool(text):
-    return text.lower() in getText('True')
+    return text.lower() in get_text('True')
 
 def bool_to_text(yes):
     return "Yes" if yes else "No"

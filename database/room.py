@@ -51,7 +51,7 @@ class Room:
         color = role.color.value
         birth_channel = ctx.message.channel.id
         lock = False
-        description = choice(getText('default_room_descriptions'))
+        description = choice(get_text('default_room_descriptions'))
         created = datetime.now(pytz.utc)
         timeout = settings.timeout
         players = []
@@ -151,7 +151,7 @@ class Room:
     def get_embed(self, player, footer_action):
         """Generate a discord.Embed for this room"""
         description = discord.Embed.Empty if self.description == '' else self.description
-        room_status = getText('room_status').format(self.size - len(self.players)) if len(self.players) < self.size else getText('full_room')
+        room_status = get_text('room_status').format(self.size - len(self.players)) if len(self.players) < self.size else get_text('full_room')
 
         embed = discord.Embed(
             color=self.color,
@@ -159,16 +159,16 @@ class Room:
             timestamp=self.created,
             title="{}{}".format(":lock: " if self.lock else "", self.activity) )
         embed.add_field(
-            name="{} ({}/{})".format(getText('players'), len(self.players), self.size),
+            name="{} ({}/{})".format(get_text('players'), len(self.players), self.size),
             value="<@{}>".format(">, <@".join([str(id) for id in self.players])) )
         embed.add_field(
             name=room_status,
-            value=getText('room_timeout_on').format(self.timeout) if self.timeout > 0 else getText('room_timeout_off') )
+            value=get_text('room_timeout_on').format(self.timeout) if self.timeout > 0 else get_text('room_timeout_off') )
         embed.add_field(
-            name=getText('host'),
+            name=get_text('host'),
             value="<@{}>".format(self.host)),
         embed.add_field(
-            name=getText('channel'),
+            name=get_text('channel'),
             value="<#{}>".format(self.channel_id)),
         embed.set_footer(
             text="{} : {}".format(footer_action, player.display_name),
@@ -194,9 +194,9 @@ class Room:
         role = player.guild.get_role(self.role_id)
         channel = player.guild.get_channel(self.channel_id)
         if not channel or not role:
-            return (False, getText('retry_error'))
+            return (False, get_text('retry_error'))
         if player.id in self.players:
-            return (False, getText('already_joined'))
+            return (False, get_text('already_joined'))
 
         await player.add_roles(role)
         self.players.append(player.id)
@@ -213,7 +213,7 @@ class Room:
             self.update('players', ids_to_str(self.players))
             if len(self.players) < 1:
                 await self.disband(player.guild)
-                return (True, getText('disband_empty_room'))
+                return (True, get_text('disband_empty_room'))
             return (True, None)
         return (False, None)
 

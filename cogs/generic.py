@@ -2,7 +2,7 @@ from database.room import *
 from discord.ext import commands
 import discord
 
-class Generic(commands.Cog, name=getText('_cog')['generic']):
+class Generic(commands.Cog, name=get_text('_cog')['generic']):
     def __init__(self, bot):
         self.bot = bot
         self._last_member = None
@@ -11,10 +11,10 @@ class Generic(commands.Cog, name=getText('_cog')['generic']):
     @commands.command()
     async def ping(self, ctx):
         """Pong! Shows latency."""
-        m = await ctx.send(getText('ping'))
+        m = await ctx.send(get_text('ping'))
         ms = (m.created_at-ctx.message.created_at).total_seconds() * 1000
-        await m.edit(content=getText('pong').format(int(ms)))
-        # return await ctx.send(getText('ping').format(round(self.bot.latency, 1)))
+        await m.edit(content=get_text('pong').format(int(ms)))
+        # return await ctx.send(get_text('ping').format(round(self.bot.latency, 1)))
 
     @commands.command()
     async def donate(self, ctx):
@@ -56,7 +56,7 @@ class Generic(commands.Cog, name=getText('_cog')['generic']):
 
     @commands.command()
     async def support(self, ctx):
-        return await ctx.send(getText('support'))
+        return await ctx.send(get_text('support'))
 
     @commands.command()
     async def help(self, ctx, *args):
@@ -73,7 +73,7 @@ class Generic(commands.Cog, name=getText('_cog')['generic']):
             for command in filtered_commands:
                 embed = discord.Embed(
                     color=self.bot.cogs[command.cog_name].color,
-                    title="{} {}".format(command.cog_name, getText('command')) )
+                    title="{} {}".format(command.cog_name, get_text('command')) )
                 embed.add_field(
                     name="**{}**    aka `{}`".format(command, "`, `".join(command.aliases)),
                     value=command.help,
@@ -84,7 +84,7 @@ class Generic(commands.Cog, name=getText('_cog')['generic']):
         for cog_name, cog in self.bot.cogs.items():
             embed = discord.Embed(
                 color=cog.color,
-                title="{} {}".format(cog_name, getText('commands')) )
+                title="{} {}".format(cog_name, get_text('commands')) )
             for command in sorted(cog.get_commands(), key=lambda c:c.name):
                 embed.add_field(
                     name="**{}**    aka `{}`".format(command, "`, `".join(command.aliases)),

@@ -11,7 +11,7 @@ class Settings:
         'default_size': 4,
         'voice_channel': False,
         'bitrate': 64,
-        'category_name': getText('room')
+        'category_name': get_text('room')
     }
    
     def __init__(self, guild_id, prefix, timeout, role_restriction, access_all_rooms_role, respond_to_invalid,
@@ -88,7 +88,7 @@ class Settings:
         if field == 'prefix':
             max_char_length = 5
             if len(value) > max_char_length:
-                result = (False, getText('prefix_too_long').format(max_char_length))
+                result = (False, get_text('prefix_too_long').format(max_char_length))
         elif field in ['size', 'default_size', 'bitrate', 'timeout']:
             try:
                 parsed_value = int(value)
@@ -116,7 +116,7 @@ class Settings:
 
         (success, message) = result
         if (success):
-            result = (True, getText('settings_success').format(field, parsed_value))
+            result = (True, get_text('settings_success').format(field, parsed_value))
             self.update(field, parsed_value)
         return result
 

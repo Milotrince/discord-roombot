@@ -23,7 +23,7 @@ async def determine_prefix(bot, message):
 bot = commands.Bot(
     command_prefix=determine_prefix, 
     case_insensitive=True,
-    activity=discord.Game(getText('bot_presence')))
+    activity=discord.Game(get_text('bot_presence')))
 bot.remove_command('help')
 
 @bot.check
@@ -69,17 +69,17 @@ async def on_command_error(ctx, error):
     if not passes_role_restriction(ctx):
         return
     elif type(error) == commands.errors.MissingPermissions:
-        return await ctx.send(getText('not_admin'))
+        return await ctx.send(get_text('not_admin'))
     elif type(error) == discord.Forbidden:
         await logc("===== FORBIDDEN Error raised from: " + ctx.message.content, bot)
         await logc(error.text, bot)
-        return await ctx.send(getText('not_admin'))
-        # return await ctx.send(getText('missing_permission').format('`, `'.join(missing_permissions)))
+        return await ctx.send(get_text('not_admin'))
+        # return await ctx.send(get_text('missing_permission').format('`, `'.join(missing_permissions)))
     elif type(error) == commands.errors.CheckFailure:
         return
     elif type(error) == commands.errors.CommandNotFound:
         if settings.respond_to_invalid:
-            await ctx.send(getText('invalid_command').format(ctx.message.content, settings.prefix))
+            await ctx.send(get_text('invalid_command').format(ctx.message.content, settings.prefix))
         if settings.delete_command_message:
             await ctx.message.delete()
         return
@@ -93,7 +93,7 @@ async def on_command_error(ctx, error):
             missing_permissions.append("ManageMessages")
 
         if missing_permissions:
-            return await ctx.send(getText('missing_permission').format('`, `'.join(missing_permissions)))
+            return await ctx.send(get_text('missing_permission').format('`, `'.join(missing_permissions)))
     await logc("===== Error raised from: " + ctx.message.content, bot)
     await logc(error, bot)
 
@@ -103,7 +103,7 @@ async def on_command_error(ctx, error):
     except:
         pass
     finally:
-        await ctx.send(errorText + getText('fatal_error').format(settings.prefix+'support'))
+        await ctx.send(errorText + get_text('fatal_error').format(settings.prefix+'support'))
 
 
 # Periodically check for inactive rooms
@@ -139,7 +139,7 @@ async def delete_inactive_rooms():
                             if guild:
                                 await r.disband(guild)
                                 if birth_channel:
-                                    await birth_channel.send(getText('disband_from_inactivity').format(r.activity))
+                                    await birth_channel.send(get_text('disband_from_inactivity').format(r.activity))
                             else:
                                 rooms_db.delete(role_id=r.role_id)
                         except Exception as e:

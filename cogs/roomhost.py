@@ -2,7 +2,7 @@ from database.room import *
 from discord.ext import commands
 import discord
 
-class RoomHost(commands.Cog, name=getText('_cog')['host']):
+class RoomHost(commands.Cog, name=get_text('_cog')['host']):
     def __init__(self):
         self._last_member = None
         self.color = discord.Color.blurple()
@@ -48,7 +48,7 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
 
     async def cog_command_error(self, ctx, error):
         if type(error) == discord.ext.commands.errors.CheckFailure:
-            await ctx.send(getText('not_host'))
+            await ctx.send(get_text('not_host'))
 
 
     @commands.command()
@@ -59,17 +59,17 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
         """
         kickee = self.get_target_player(ctx, args)
         if not kickee:
-            return await ctx.send(getText('missing_target'))
+            return await ctx.send(get_text('missing_target'))
         if self.p['player'].id == kickee.id:
-            return await ctx.send(getText('self_target').format(self.p['player'].display_name))
+            return await ctx.send(get_text('self_target').format(self.p['player'].display_name))
         if kickee.id in self.p['room'].players:
             await self.p['room'].remove_player(kickee)
-            await ctx.send(getText('kicked').format(self.p['player'].display_name, kickee.display_name, self.p['room'].activity))
+            await ctx.send(get_text('kicked').format(self.p['player'].display_name, kickee.display_name, self.p['room'].activity))
             if len(self.p['room'].players) < 1:
                 await self.p['room'].disband(self.p['player'].guild)
-                return await ctx.send(getText('disband_empty_room'))
+                return await ctx.send(get_text('disband_empty_room'))
         else:
-            return await ctx.send(getText('target_not_in_room').format(kickee.display_name, self.p['channel'].mention))
+            return await ctx.send(get_text('target_not_in_room').format(kickee.display_name, self.p['channel'].mention))
 
 
     @commands.command()
@@ -80,13 +80,13 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
         """
         new_host = self.get_target_player(ctx, args)
         if not new_host:
-            return await ctx.send(getText('missing_target'))
+            return await ctx.send(get_text('missing_target'))
         for p in self.p['room'].players:
             if p == new_host.id:
                 self.p['room'].host = new_host.id
                 self.p['room'].update('host', new_host.id)
-                return await ctx.send(getText('new_host').format(self.p['player'].display_name, new_host.mention, self.p['channel'].mention))
-        return await ctx.send(getText('target_not_in_room').format(new_host.display_name, self.p['channel'].mention))
+                return await ctx.send(get_text('new_host').format(self.p['player'].display_name, new_host.mention, self.p['channel'].mention))
+        return await ctx.send(get_text('target_not_in_room').format(new_host.display_name, self.p['channel'].mention))
 
 
     @commands.command()
@@ -105,7 +105,7 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
         (flags, flag_args) = pop_flags(args)
 
         if len(flags) < 2:
-            return await ctx.send(getText('require_flags'))
+            return await ctx.send(get_text('require_flags'))
 
         for i, flag in enumerate(flags):
             valid = False
@@ -126,7 +126,7 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
                     valid = True
                     break
             if not valid:
-                await ctx.send(getText('bad_field').format(flag))
+                await ctx.send(get_text('bad_field').format(flag))
 
 
     @commands.command()
@@ -137,14 +137,14 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
         """
         new_activity = remove_mentions(' '.join(args))
         if len(new_activity) < 1:
-            new_activity = choice(getText('default_room_names')).format(ctx.message.author.display_name)
+            new_activity = choice(get_text('default_room_names')).format(ctx.message.author.display_name)
         await self.p['role'].edit(name="(Room) " + new_activity)
         await self.p['channel'].edit(name=new_activity)
         if self.p['voice_channel']:
             await self.p['voice_channel'].edit(name=new_activity)
         self.p['room'].activity = new_activity
         self.p['room'].update('activity', new_activity)
-        return await ctx.send(getText('updated_field').format(getText('activity'), new_activity, self.p['player'].display_name, self.p['channel'].mention))
+        return await ctx.send(get_text('updated_field').format(get_text('activity'), new_activity, self.p['player'].display_name, self.p['channel'].mention))
 
 
     @commands.command()
@@ -157,7 +157,7 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
         self.p['room'].description = new_description
         self.p['room'].update('description', new_description)
         await self.p['channel'].edit(topic="({}/{}) {}".format(len(self.p['room'].players), self.p['room'].size, self.p['room'].description))
-        return await ctx.send(getText('updated_field').format(getText('description'), new_description, self.p['player'].display_name, self.p['channel'].mention))
+        return await ctx.send(get_text('updated_field').format(get_text('description'), new_description, self.p['player'].display_name, self.p['channel'].mention))
 
 
     @commands.command()
@@ -169,12 +169,12 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
         try:
             new_size = clamp(int(remove_mentions(args)[0]), 2, 999) if remove_mentions(args) else None
             if len(self.p['room'].players) > new_size:
-                return await ctx.send(getText('size_too_small'))
+                return await ctx.send(get_text('size_too_small'))
             self.p['room'].size = new_size
             self.p['room'].update('size', new_size)
-            return await ctx.send(getText('updated_field').format(getText('size'), new_size, self.p['player'].display_name, self.p['channel'].mention))
+            return await ctx.send(get_text('updated_field').format(get_text('size'), new_size, self.p['player'].display_name, self.p['channel'].mention))
         except ValueError:
-            return await ctx.send(getText('need_integer'))
+            return await ctx.send(get_text('need_integer'))
 
 
     @commands.command()
@@ -188,7 +188,7 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
             new_timeout = -1
         self.p['room'].timeout = new_timeout
         self.p['room'].update('timeout', new_timeout)
-        return await ctx.send(getText('updated_field').format(getText('timeout'), new_timeout, self.p['player'].display_name, self.p['channel'].mention))
+        return await ctx.send(get_text('updated_field').format(get_text('timeout'), new_timeout, self.p['player'].display_name, self.p['channel'].mention))
 
 
     @commands.command()
@@ -196,7 +196,7 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
         first_arg = remove_mentions(args)[0]
         new_lock = text_to_bool(first_arg) if len(first_arg) > 0 else not self.p['room'].lock 
         self.p['room'].update('lock', new_lock)
-        return await ctx.send(getText('lock_room') if new_lock else getText('unlock_room'))
+        return await ctx.send(get_text('lock_room') if new_lock else get_text('unlock_room'))
 
 
     # @commands.command()
@@ -205,7 +205,7 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
     #     self.p['room'].update('public', new_public)
     #     if new_public:
     #         self.p['channel'].edit(overwrites={})
-    #     return await ctx.send(getText('updated_field').format(getText('public'), new_public, self.p['player'].display_name, self.p['channel'].mention))
+    #     return await ctx.send(get_text('updated_field').format(get_text('public'), new_public, self.p['player'].display_name, self.p['channel'].mention))
 
 
     @commands.command()
@@ -219,7 +219,7 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
         c = get_color(remove_mentions(args)[0] if remove_mentions(args) else '') 
         await self.p['role'].edit(color=c)
         self.p['room'].update('color', c.value)
-        return await ctx.send(getText('updated_field').format(getText('color'), c, self.p['player'].display_name, self.p['channel'].mention))
+        return await ctx.send(get_text('updated_field').format(get_text('color'), c, self.p['player'].display_name, self.p['channel'].mention))
 
 
     @commands.command()
@@ -229,7 +229,7 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
         Will not create if already exists.
         """
         if self.p['voice_channel']:
-            return await ctx.send(getText('voice_channel_exists'))
+            return await ctx.send(get_text('voice_channel_exists'))
         category = await get_rooms_category(ctx.guild)
         settings = Settings.get_for(ctx.guild.id)
         voice_channel = await ctx.guild.create_voice_channel(
@@ -242,7 +242,7 @@ class RoomHost(commands.Cog, name=getText('_cog')['host']):
                 ctx.guild.me: discord.PermissionOverwrite(move_members=True),
                 self.p['role']: discord.PermissionOverwrite(read_messages=True) })
         self.p['room'].update('voice_channel_id', voice_channel.id)
-        return await ctx.send(getText('new_voice_channel').format(voice_channel.name))
+        return await ctx.send(get_text('new_voice_channel').format(voice_channel.name))
 
 
 def setup(bot):
