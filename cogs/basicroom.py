@@ -223,7 +223,7 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
         leave = reaction.emoji == '➡️'
         if leave and reaction.message.author.id == self.bot.user.id and not user.bot:
             for field in reaction.message.embeds[0].fields:
-                if field.name == "channel":
+                if field.name == get_text('channel'):
                     channel_id = field.value[2:-1] # remove mention
                     room_data = rooms_db.find_one(channel_id=channel_id)
                     if room_data:
@@ -235,7 +235,7 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
         join = reaction.emoji == '➡️'
         if join and reaction.message.author.id == self.bot.user.id and not user.bot:
             for field in reaction.message.embeds[0].fields:
-                if field.name == "channel":
+                if field.name == get_text('channel'):
                     channel_id = field.value[2:-1] # remove mention
                     room_data = rooms_db.find_one(channel_id=channel_id)
                     if room_data:
