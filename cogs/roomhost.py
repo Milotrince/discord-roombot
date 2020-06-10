@@ -136,15 +136,16 @@ class RoomHost(commands.Cog, name=get_text('_cog')['host']):
         This is what the channel and role will be named as.
         """
         new_activity = remove_mentions(' '.join(args))
+        player_name = self.p['player'] if self.p['player'] else ctx.message.author.display_name
         if len(new_activity) < 1:
-            new_activity = choice(get_text('default_room_names')).format(ctx.message.author.display_name)
+            new_activity = choice(get_text('default_room_names')).format(player_name)
         await self.p['role'].edit(name="(Room) " + new_activity)
         await self.p['channel'].edit(name=new_activity)
-        if self.p['voice_channel']:
+        if 'voice_channel' in self.p and self.p['voice_channel']:
             await self.p['voice_channel'].edit(name=new_activity)
         self.p['room'].activity = new_activity
         self.p['room'].update('activity', new_activity)
-        return await ctx.send(get_text('updated_field').format(get_text('activity'), new_activity, self.p['player'].display_name, self.p['channel'].mention))
+        return await ctx.send(get_text('updated_field').format(get_text('activity'), new_activity, player_name, self.p['channel'].mention))
 
 
     @commands.command()
