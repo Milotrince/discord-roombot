@@ -45,25 +45,23 @@ class Room:
             
     @classmethod
     def from_message(cls, ctx, args, settings, activity, role, channel, voice_channel):
-        """Create a Room from a message"""
         guild = ctx.guild.id
         voice_channel_id = voice_channel.id if voice_channel else 0
         color = role.color.value
         birth_channel = ctx.message.channel.id
-        lock = False
-        description = choice(get_text('default_room_descriptions'))
-        created = datetime.now(pytz.utc)
-        timeout = settings.timeout
+        lock = settings.room_defaults['lock']
+        description = choice(settings.room_defaults['descriptions'])
+        created = now()
+        timeout = settings.room_defaults['timeout']
         players = []
         host = ctx.message.author.id
-        size = settings.default_size
-        last_active = datetime.now(pytz.utc)
+        size = settings.room_defaults['size']
+        last_active = now()
         return cls(role.id, channel.id, voice_channel_id, color, birth_channel, guild, lock,
                 activity, description, created, timeout, players, host, size, last_active)
             
     @classmethod
     def from_query(cls, data):
-        """Create a Room from a query"""
         role_id = data['role_id']
         channel_id = data['channel_id']
         voice_channel_id = data['voice_channel_id']
@@ -84,7 +82,6 @@ class Room:
 
     @classmethod
     def get_hosted(cls, player_id, guild_id):
-        """Returns the player's hosted room if available."""
         rooms = rooms_db.find(guild=guild_id, host=player_id)
         if rooms:
             for room_data in rooms:
@@ -149,7 +146,6 @@ class Room:
 
 
     def get_embed(self, player, footer_action):
-        """Generate a discord.Embed for this room"""
         description = discord.Embed.Empty if self.description == '' else self.description
         room_status = get_text('room_status').format(self.size - len(self.players)) if len(self.players) < self.size else get_text('full_room')
 
@@ -186,11 +182,10 @@ class Room:
         rooms_db.update(new_dict, ['role_id'])
 
     def update_active(self):
-        self.last_active = datetime.now(pytz.utc)
+        self.last_active = now()
         self.update('last_active', self.last_active)
 
     async def add_player(self, player):
-        """Add a player to this room"""
         role = player.guild.get_role(self.role_id)
         channel = player.guild.get_channel(self.channel_id)
         if not channel or not role:
@@ -205,7 +200,6 @@ class Room:
         return True
 
     async def remove_player(self, player):
-        """Remove a player from this room"""
         if player.id in self.players:
             role = player.guild.get_role(self.role_id)
             await player.remove_roles(role)
@@ -218,7 +212,6 @@ class Room:
         return (False, None)
 
     async def disband(self, guild):
-        """Delete room"""
         role = guild.get_role(self.role_id)
         rooms_db.delete(role_id=self.role_id)
         await role.delete()

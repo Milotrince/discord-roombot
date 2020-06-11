@@ -1,12 +1,16 @@
 from database.room import *
-from discord.ext import commands
+from discord.ext import commands, tasks
+from utils.pagesembed import PagesEmbed
 import discord
 
 class Admin(commands.Cog, name=get_text('_cog')['admin']):
     def __init__(self, bot):
         self.bot = bot
-        self._last_member = None
         self.color = discord.Color.red()
+        self.destroy_pagesembed_instances.start()
+
+    def cog_unload(self):
+        self.destroy_pagesembed_instances.stop()
 
     async def cog_check(self, ctx):
         return ctx.message.author.guild_permissions.administrator
@@ -14,14 +18,20 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
     async def cog_command_error(self, ctx, error):
         if type(error) == discord.ext.commands.errors.CheckFailure:
             await ctx.send(get_text('not_admin'))
+        
+
+    @commands.Cog.listener()
+    async def on_reaction_add(self, reaction, user):
+        if user.id != self.bot.user.id:
+            await PagesEmbed.on_reaction_add(reaction, user)
+
+    @tasks.loop(seconds=60)
+    async def destroy_pagesembed_instances(self):
+        await PagesEmbed.destroy_old()
 
 
     @commands.command()
     async def settings(self, ctx, *args):
-        """
-        Set options for this server.
-        To set an option(s), use `-flag value`
-        """
         settings_info = {}
         for setting in Settings.defaults.keys():
             text = get_text('_commands')[setting]
@@ -34,23 +44,42 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
         (flags, flag_args) = pop_flags(args)
         settings = Settings.get_for(ctx.guild.id)
         if flags:
+            # set settings
             for i, flag in enumerate(flags):
                 for field_name, field in settings_info.items():
                     if flag in field['flags'] + [field['name']]:
                         (success, message) = settings.set(ctx, field_name, flag_args[i])
                         await ctx.send(message)
         else:
+            # show settings embed
             embed = discord.Embed(
                 color=discord.Color.blurple(),
-                title=get_text('settings'))
+                title=get_text('settings'),
+                description=get_text('settings_instructions').format(settings.prefix) )
             for field_name, field in settings_info.items():
                 field_value = settings.get(field_name)
                 if isinstance(field_value, bool): 
                     field_value = bool_to_text(field_value)
-                embed.add_field(
-                    name="***{}***  **{}**".format(field['name'], field_value),
-                    value="**{}:** `-{}`\n{}".format(get_text('flags'), "`, `-".join(field['flags']), '\n'.join(field['description']) ))
-            await ctx.send(get_text('settings_instructions').format('r.'), embed=embed)
+                elif isinstance(field_value, dict):
+                    field_value = '{`\n'+'\n'.join([f'  {k}: `{v}`' for k,v in field_value.items()])+'\n`}' if len(field_value) > 0 else '{}'
+                elif isinstance(field_value, list):
+                    field_value = '[`\n'+'\n'.join(['  `'+s.replace('`{}`', '__')+'`,' for s in field_value])+'\n`]' if len(field_value) > 0 else '[]'
+
+                embed_desc = "{}: `-{}`\n{}".format(get_text('flags'), "`, `-".join(field['flags']), '\n'.join(field['description']))
+                if isinstance(field_value, str) and len(field_value) > 200:
+                    field_value = field_value.replace('`', '')
+                    embed.add_field(
+                        inline=False,
+                        name="**{}** : `{}`".format(field['name'], get_text('see_below')),
+                        value=(f'{embed_desc}\n===\n```py\n{field_value}')[:1023-4]+'\n```' )
+                else:
+                    embed.add_field(
+                        inline=False,
+                        name="**{}** : `{}`".format(field['name'], field_value),
+                        value=embed_desc )
+
+            await PagesEmbed(ctx, embed).send()
+
 
 
     @commands.command()
@@ -76,7 +105,6 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
 
     @commands.command()
     async def purge(self, ctx, *args):
-        """Delete room(s) in this server (`-a` for all active rooms_db, `-b` for all broken rooms_db). For moderation purposes."""
         settings = Settings.get_for(ctx.guild.id)
         player = ctx.message.author
         if not player.guild_permissions.administrator:

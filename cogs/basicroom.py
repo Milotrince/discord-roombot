@@ -8,26 +8,29 @@ def filterBots(member):
 class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
     def __init__(self, bot):
         self.bot = bot
-        self._last_member = None
         self.color = discord.Color.blurple()
+        # TODO: invitee list to db
         # self.invitee_list = db.get_table('invitees', primary_id='id')
         self.invitee_list = []
 
     @commands.command()
     async def new(self, ctx, *args):
-        """Make a new room (uses current activity or input)."""
-        player = ctx.message.author
-        activity = choice(get_text('default_room_names')).format(player.display_name)
-
-        if args:
-            activity = remove_mentions(" ".join(args))
-        if len(args) < 1 and player.activity and player.activity and player.activity.name and len(player.activity.name) > 1:
-            activity = player.activity.name
-        # limit length
-        activity = activity[0:90].strip()
-        
         if not ctx.guild.me.guild_permissions.manage_channels or not ctx.guild.me.guild_permissions.manage_roles:
             raise discord.ext.commands.errors.CommandInvokeError("Missing Permissons")
+
+        player = ctx.message.author
+        settings = Settings.get_for(ctx.guild.id)
+
+        if len(args) < 1 and player.activity and player.activity and player.activity.name and len(player.activity.name) > 1:
+            activity = player.activity.name
+        elif args:
+            activity = remove_mentions(" ".join(args))
+        else:
+            activity = choice(settings.room_defaults['names']).format(player.display_name)
+
+        
+        # limit length
+        activity = activity[0:90].strip()
 
         rooms = rooms_db.find(guild=ctx.guild.id)
         if rooms:
@@ -40,11 +43,10 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
                     
         role = await player.guild.create_role(
             name="({}) {}".format(get_text('room'), activity),
-            color=some_color(),
+            color=discord.Color(choice(settings.room_defaults['colors'])),
             hoist=True,
             mentionable=True )
 
-        settings = Settings.get_for(ctx.guild.id)
         accessors_ids = settings.access_all_rooms_role
         accessors = []
         for accessor_id in accessors_ids:
@@ -73,7 +75,7 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
             overwrites=overwrites
         )
         voice_channel = None
-        if settings.voice_channel:
+        if settings.room_defaults['voice_channel']:
             voice_channel = await player.guild.create_voice_channel(
                 name=activity,
                 bitrate=settings.bitrate * 1000,
@@ -96,7 +98,6 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
 
     @commands.command()
     async def join(self, ctx, *args):
-        """Join a room (by activity or player)."""
         if len(args) < 1:
             return await ctx.send(get_text('missing_target_room'))
         room = Room.get_by_any(ctx, args)
@@ -114,7 +115,6 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
 
     @commands.command()
     async def invite(self, ctx, *args):
-        """Invite a player/players to your room (by name or mention)."""
         if len(args) < 1:
             return await ctx.send(get_text('missing_target'))
         user_mentions = ctx.message.mentions
@@ -159,7 +159,7 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
         room.update_active()
         embed = discord.Embed(
             color=discord.Color.blurple(),
-            timestamp=datetime.now(pytz.utc),
+            timestamp=now(),
             title=choice(get_text('invite_messages')).format(player.display_name, room.activity) )
         embed.add_field(
             name="{} ({}/{})".format(get_text('players'), len(room.players), room.size),
@@ -181,7 +181,7 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
         result_embed = discord.Embed(
             color=discord.Color.blurple(),
             description="{}: `{}`".format(get_text('room'), room.activity),
-            timestamp=datetime.now(pytz.utc),
+            timestamp=now(),
             title=get_text('invites_sent') )
         result_embed.set_footer(
             text="{}: {}".format(get_text('inviter'), player.display_name),
@@ -299,7 +299,6 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
 
     @commands.command()
     async def leave(self, ctx):
-        """Leave a room. If you are the host, the room will be disbanded."""
         player = ctx.message.author
         rooms = rooms_db.find(guild=ctx.guild.id)
         if rooms:
@@ -318,7 +317,6 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
 
     @commands.command()
     async def ls(self, ctx):
-        """List rooms in current guild."""
         rooms = rooms_db.find(guild=ctx.guild.id)
         embed = discord.Embed(color=discord.Color.blurple())
         count = 0
@@ -341,7 +339,6 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
 
     @commands.command()
     async def look(self, ctx, *args):
-        """Shows your current room (or look at another room by activity or player)."""
         r = Room.get_by_any(ctx, args)
         if r:
             message = await ctx.send(embed=r.get_embed(ctx.author, get_text('request'))) 

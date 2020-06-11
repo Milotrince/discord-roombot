@@ -5,16 +5,13 @@ import discord
 class Generic(commands.Cog, name=get_text('_cog')['generic']):
     def __init__(self, bot):
         self.bot = bot
-        self._last_member = None
         self.color = discord.Color.greyple()
         
     @commands.command()
     async def ping(self, ctx):
-        """Pong! Shows latency."""
         m = await ctx.send(get_text('ping'))
         ms = (m.created_at-ctx.message.created_at).total_seconds() * 1000
         await m.edit(content=get_text('pong').format(int(ms)))
-        # return await ctx.send(get_text('ping').format(round(self.bot.latency, 1)))
 
     @commands.command()
     async def donate(self, ctx):
@@ -34,10 +31,6 @@ class Generic(commands.Cog, name=get_text('_cog')['generic']):
 
     @commands.command()
     async def about(self, ctx):
-        """
-        All about me!
-        Shows the amount of servers I am in and links to my source and creator.
-        """
         embed = discord.Embed(
             color=discord.Color.blurple(),
             title="About Roombot",
@@ -60,10 +53,6 @@ class Generic(commands.Cog, name=get_text('_cog')['generic']):
 
     @commands.command()
     async def help(self, ctx, *args):
-        """
-        Shows descriptions of all or specific commands.
-        ...Like this. Pretty meta.
-        """
         filtered_commands = []
         for arg in args:
             for c in self.bot.commands:

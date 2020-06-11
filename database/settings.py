@@ -1,47 +1,100 @@
 from utils.functions import *
+from pprint import pprint
 
 class Settings:
     defaults = {
-        'prefix': "r.",
-        'timeout': 120,
+        'prefix': 'r.',
         'role_restriction': [],
         'access_all_rooms_role': [],
         'respond_to_invalid': True,
         'delete_command_message': False,
-        'default_size': 4,
-        'voice_channel': False,
         'bitrate': 64,
-        'category_name': get_text('room')
+        'category_name': '',
+        'room_defaults': {
+            'timeout': 120,
+            'size': 4,
+            'voice_channel': False,
+            'descriptions': [],
+            'names': [],
+            'colors': get_default_colors(),
+            'lock': False
+        },
+        'join_messages': [],
+        'leave_messages': [],
+        'allow_multiple_rooms': False,
+        'allowed_host_commands': [],
+        'language': 'en'
     }
    
-    def __init__(self, guild_id, prefix, timeout, role_restriction, access_all_rooms_role, respond_to_invalid,
-                 delete_command_message, default_size, voice_channel, bitrate, category_name):
-        self.guild_id = guild_id
-        self.prefix = prefix
-        self.timeout = timeout
-        self.role_restriction = role_restriction
-        self.access_all_rooms_role = access_all_rooms_role 
-        self.respond_to_invalid = respond_to_invalid
-        self.delete_command_message = delete_command_message
-        self.default_size = default_size
-        self.voice_channel = voice_channel
-        self.bitrate = bitrate 
-        self.category_name = category_name
+    def __init__(self, data):
+        _data = self.unpack_data(data, self.defaults)
+        _data['guild_id'] = data['guild_id']
+        self.set_programmatic_defaults(_data)
+        settings_db.upsert(self.pack_data(_data, self.defaults), ['guild_id'])
 
-        self.dict = dict(
-            guild_id=guild_id,
-            prefix=prefix,
-            timeout=timeout,
-            role_restriction=ids_to_str(role_restriction),
-            access_all_rooms_role=ids_to_str(access_all_rooms_role),
-            respond_to_invalid=respond_to_invalid,
-            delete_command_message=delete_command_message,
-            default_size=default_size,
-            voice_channel=voice_channel,
-            bitrate=bitrate,
-            category_name=category_name)
+    def set_programmatic_defaults(self, data):
+        for (key, value) in data.items():
+            self.__setattr__(key, value)
+        if self.room_defaults['descriptions'] == []:
+            self.room_defaults['descriptions'] = self.get_text('default_room_descriptions')
+        if self.room_defaults['names'] == []:
+            self.room_defaults['names'] = self.get_text('default_room_names')
+        if self.join_messages == []:
+            self.join_messages = self.get_text('join_messages')
+        if self.leave_messages == []:
+            self.leave_messages = self.get_text('leave_messages')
+        if self.category_name == '':
+            self.category_name = self.get_text('room')
+        if self.allowed_host_commands == []:
+            # TODO: allowed_host_commands
+            pass
 
-        settings_db.upsert(self.dict, ['guild_id'])
+    def get_text(self, key):
+        return get_text(key, self.language)
+
+
+    @classmethod
+    def unpack_data(cls, data, defaults):
+        unpacked = {}
+        for (key, default) in defaults.items():
+            value = default
+            if key in data and data[key] != None:
+                v = data[key]
+                if is_number(default):
+                    value = int(v)
+                elif isinstance(default, str):
+                    value = str(v)
+                elif isinstance(default, bool):
+                    value = text_to_bool(v) if isinstance(v, str) else bool(v)
+                elif isinstance(default, list):
+                    value = str_to_ids(v) if isinstance(v, str) else v
+                elif isinstance(default, dict):
+                    if isinstance(v, str):
+                        try:
+                            value = json.loads(v)
+                        except:
+                            pass
+            unpacked[key] = value
+        return unpacked
+
+    @classmethod
+    def pack_data(cls, data, defaults):
+        packed = {'guild_id': data['guild_id']}
+        for (key, default) in defaults.items():
+            value = default
+            if key in data:
+                v = data[key]
+                if isinstance(default, bool):
+                    value = bool(v)
+                elif isinstance(default, list):
+                    value = ids_to_str(v)
+                elif isinstance(default, dict):
+                    value = json.dumps(v)
+                else:
+                    value = str(v)
+            packed[key] = value
+        return packed
+
 
     @classmethod
     def get_default_value(cls, key):
@@ -54,65 +107,61 @@ class Settings:
 
     @classmethod
     def from_query(cls, data):
-        return cls(
-            data['guild_id'],
-            data['prefix'] if 'prefix' in data else cls.get_default_value('prefix'),
-            data['timeout'] if 'timeout' in data else int(cls.get_default_value('timeout')),
-            str_to_ids(data['role_restriction']) if 'role_restriction' in data else cls.get_default_value('role_restriction'),
-            str_to_ids(data['access_all_rooms_role']) if 'access_all_rooms_role' in data else cls.get_default_value('access_all_rooms_role'),
-            data['respond_to_invalid'] if 'respond_to_invalid' in data else text_to_bool(cls.get_default_value('respond_to_invalid')),
-            data['delete_command_message'] if 'delete_command_message' in data else text_to_bool(cls.get_default_value('delete_command_message')),
-            data['default_size'] if 'default_size' in data else int(cls.get_default_value('default_size')),
-            data['voice_channel'] if 'voice_channel' in data else text_to_bool(cls.get_default_value('voice_channel')),
-            data['bitrate'] if 'bitrate' in data else int(cls.get_default_value('bitrate')),
-            data['category_name'] if 'category_name' in data else cls.get_default_value('category_name')
-        )
+        return cls(data)
 
     @classmethod
     def make_default(cls, guild_id):
-        return cls(guild_id,
-            cls.get_default_value('prefix'),
-            cls.get_default_value('timeout'),
-            cls.get_default_value('role_restriction'),
-            cls.get_default_value('access_all_rooms_role'),
-            cls.get_default_value('respond_to_invalid'),
-            cls.get_default_value('delete_command_message'),
-            cls.get_default_value('default_size'),
-            cls.get_default_value('voice_channel'),
-            cls.get_default_value('bitrate'),
-            cls.get_default_value('category_name'))
+        return cls({ 'guild_id': guild_id })
 
     def set(self, ctx, field, value):
         result = (True, None)
         parsed_value = value
-        if field == 'prefix':
-            max_char_length = 5
-            if len(value) > max_char_length:
-                result = (False, get_text('prefix_too_long').format(max_char_length))
-        elif field in ['size', 'default_size', 'bitrate', 'timeout']:
+        if field not in self.defaults.keys():
+            return (False, get_text('require_flags'))
+        elif field in ['allowed_host_commands', 'language', 'room_defaults', 'allow_multiple_rooms', 'join_messages', 'leave_messages']:
+            return (False, get_text('coming_soon').format(self.prefix))
+        default = self.defaults[field]
+
+        if is_number(default):
             try:
                 parsed_value = int(value)
             except ValueError:
                 parsed_value = -1
-        elif field in ['respond_to_invalid', 'delete_command_message', 'voice_channel']:
-            parsed_value = text_to_bool(value)
-        elif field in ['role_restriction', 'access_all_rooms_role']:
-            roles = []
-            for word in value.split():
-                role_id = int( ''.join(re.findall(r'\d*', word)) )
-                roles.append(role_id)
-            parsed_value = ids_to_str(roles) 
-        elif field == 'category_name':
-            pass
-        else:
-            result = (False, ['require_flags'])
 
-        if field in ['size', 'default_size']:
-            parsed_value = clamp (parsed_value, 2, 999)
-        elif field == 'bitrate':
-            parsed_value = clamp (parsed_value, 8, int(ctx.guild.bitrate_limit/1000))
-        elif field == 'timeout':
-            parsed_value = clamp (parsed_value, -1, 999)
+            if field in ['size', 'default_size']:
+                parsed_value = clamp(parsed_value, 2, 999)
+            elif field == 'bitrate':
+                parsed_value = clamp(parsed_value, 8, int(ctx.guild.bitrate_limit/1000))
+            elif field == 'timeout':
+                parsed_value = clamp(parsed_value, -1, 999)
+
+        elif isinstance(default, bool):
+            parsed_value = text_to_bool(value)
+
+        elif isinstance(default, list):
+            if field in ['role_restriction', 'access_all_rooms_role']:
+                roles = []
+                for word in re.split('[,\w]*', value):
+                    try:
+                        role_id = int( ''.join(re.findall(r'\d*', word)) )
+                        roles.append(role_id)
+                    except ValueError:
+                        result = (False, get_text('should_use_mentions'))
+                parsed_value = ids_to_str(roles) 
+            else:
+                pass
+
+        elif isinstance(default, str):
+            if field == 'prefix':
+                max_char_length = 5
+                if len(value) > max_char_length:
+                    result = (False, get_text('prefix_too_long').format(max_char_length))
+            elif field == 'language':
+                parsed_value = value[:2].lower()
+                if parsed_value not in langs:
+                    result = (False, get_text('language_not_exist').format(parsed_value))
+            elif field == 'category_name':
+                parsed_value = value[:99]
 
         (success, message) = result
         if (success):
@@ -127,4 +176,4 @@ class Settings:
         settings_db.update(new_dict, ['guild_id'])
 
     def get(self, field):
-        return self.dict[field]
+        return getattr(self, field)

@@ -9,5 +9,5 @@ for lang in langs:
     with open(path, 'r', encoding='utf-8') as file:
         strings[lang] = json.load(file)
 
-def get_text(key):
-    return strings['en'][key]
+def get_text(key, lang='en'):
+    return strings[lang][key]

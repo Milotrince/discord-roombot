@@ -1,8 +1,8 @@
 from discord.ext import commands
 from database.settings import *
 from database.room import *
-import os
 import env
+import os
 
 print("""
 ._____               _____._____._____.
@@ -32,16 +32,17 @@ def passes_role_restriction(ctx):
     settings = Settings.get_for(ctx.guild.id)
     if len(settings.role_restriction) > 0:
         role_ids = [ role.id for role in member.roles ]
+        print(has_common_element(role_ids, settings.role_restriction) or member.guild_permissions.administrator)
         return has_common_element(role_ids, settings.role_restriction) or member.guild_permissions.administrator
     return True
 
 @bot.event
 async def on_ready():
-    print('{} is online!'.format(bot.user.name))
+    log('{} is online!'.format(bot.user.name))
 
 @bot.event
 async def on_disconnect():
-    print('{} has disconnected...'.format(bot.user.name))
+    log('{} has disconnected...'.format(bot.user.name))
 
 @bot.event
 async def on_command(ctx):
@@ -51,7 +52,6 @@ async def on_command(ctx):
             await ctx.message.delete()
         except Exception as e:
             log(e)
-            # pass
 
 @bot.command(pass_context=True)
 async def reload(ctx):
@@ -63,7 +63,6 @@ async def reload(ctx):
 # Disable for full stack trace
 @bot.event
 async def on_command_error(ctx, error):
-    """Sends a message when command error is encountered."""
     settings = Settings.get_for(ctx.guild.id)
 
     if not passes_role_restriction(ctx):
@@ -124,14 +123,14 @@ async def delete_inactive_rooms():
                         history = (await channel.history(limit=1).flatten())
                         if len(history) > 0:
                             last_message = history[0]
-                            last_message_datetime = last_message.created_at.replace(tzinfo=pytz.utc)
+                            last_message_datetime = utime(last_message.created_at)
                             voice_channel = guild.get_channel(r.voice_channel_id) if guild else None
                             if voice_channel and len(voice_channel.members) > 0:
                                 r.update_active()
-                            if last_message_datetime > r.last_active.replace(tzinfo=pytz.utc):
+                            if last_message_datetime > utime(r.last_active):
                                 r.update('last_active', last_message_datetime)
 
-                    time_diff = datetime.now(pytz.utc) - r.last_active.replace(tzinfo=pytz.utc)
+                    time_diff = now() - utime(r.last_active)
 
                     # timeout is in minutes
                     if time_diff.total_seconds() / 60 >= r.timeout:

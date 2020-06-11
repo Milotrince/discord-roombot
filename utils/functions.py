@@ -33,9 +33,16 @@ def load_cog(bot, cog):
             pass_context=True )
     bot.add_cog(cog)
 
-def some_color():
-    """Returns a random standard Discord color"""
-    return choice([
+
+def now():
+    return datetime.now(pytz.utc)
+
+def utime(d):
+    return d.replace(tzinfo=pytz.utc)
+
+
+def get_default_colors():
+    return [ c.value for c in [
         discord.Color.teal(),
         discord.Color.green(),
         discord.Color.blue(),
@@ -43,7 +50,10 @@ def some_color():
         discord.Color.magenta(),
         discord.Color.gold(),
         discord.Color.orange(),
-        discord.Color.red() ])
+        discord.Color.red()] ]
+
+def some_color():
+    return choice(get_default_colors())
 
 def get_color(color):
     hex_match = re.search('[0-9a-fA-F]{6}', color)
@@ -66,10 +76,9 @@ def get_color(color):
     elif 'red' in color:
         return discord.Color.red()
     else:
-        return some_color()
+        return discord.Color(some_color())
 
 def pop_flags(args):
-    """Returns (flags, args for flag). Flags are words starting with -"""
     split_on_flags = ' '.join(list(args)).split('-')
     del split_on_flags[0]
     flags = []
@@ -91,12 +100,13 @@ def iter_len(iterator):
     return sum(1 for _ in iterator)
 
 def ids_to_str(ids, seperator=','):
-    """Turn a list of ints into a database inputable string"""
-    return seperator.join([ str(id) for id in ids ])
+    return seperator.join([ str(id) for id in ids ]) if ids else ''
 
 def str_to_ids(s):
-    """Turn a string of comma seperated ints from a database into a list of ints"""
-    return [ int(id) for id in s.split(',') ] if s else []
+    try:
+        return [ int(id) for id in s.split(',') ] if s else []
+    except ValueError:
+        return s.split(',') if s else []
 
 def clamp(n, min, max):
     if n < min:
@@ -105,6 +115,9 @@ def clamp(n, min, max):
         return max
     else:
         return n
+
+def is_number(x):
+    return isinstance(x, (int, float)) and not isinstance(x, bool)
 
 def has_common_element(a, b):
     return set(a) & set(b)

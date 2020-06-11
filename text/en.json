@@ -30,6 +30,7 @@
     "new_room": "New room made by",
     "room_joined": "Room joined by",
     "request": "Request by",
+    "page": "Page {} of {}",
 
     "fatal_error": "Something went wrong. If this keeps happening, please ask in the support server (`{}`)",
     "retry_error": "Something went wrong. Please try again.",
@@ -59,6 +60,8 @@
     "not_host": "You are not the host of a room.",
     "not_admin": "You are not an administrator.",
 
+    "timed_out": "Timed out.",
+    "rate_limited": "Timed out trying to edit a channel/role. Discord is probably rate limiting me, sorry!",
     "missing_target_room": "Please specify a room by activity or player.",
     "missing_target": "Please @mention or type the name of the user.",
     "missing_target_invitees": "Invite who? (Check if the username is correct?)",
@@ -71,6 +74,8 @@
     "voice_channel_exists": "There is already a voice channel for this room.",
     "size_too_small": "There are too many players.",
     "prefix_too_long": "Prefix is too long. Should be less than {} characters.",
+    "should_use_mentions": "`{}` should be a list of ids/mentions.",
+    "language_not_exist": "`{}` is not a supported language.",
 
     "purged_a": "{} rooms existing in the database have been deleted.",
     "purged_b": "{0} broken channels and {1} broken roles have been deleted.",
@@ -85,9 +90,11 @@
     "pong": "Pong! Latency: `{}`ms",
     "support": "Join the support server: https://discord.gg/37kzrpr and ask away!",
 
-    "settings_instructions": "To set an option(s), use `{}settings -flag value`",
+    "coming_soon": "Implementation in progress! For updates, check the support server (`{}support`)",
+    "settings_instructions": "To set an option(s), use `{}settings -flag value`.\nThe following are currently a work in progress so you won't be able to set them, but it will be available soon. ```allowed_host_commands, language, join_messages, leave_messages, allow_multiple_rooms, room_defaults``` Check the support server for updates!\n===",
     "invite_instructions": "React to accept or decline the invite.",
     "settings_success": "Set `{}` to `{}`.",
+    "see_below": "see below",
 
     "_commands": {
         "about": {
@@ -316,13 +323,6 @@
                 "Default room size upon room creation"
             ]
         },
-        "create_voice_channel": {
-            "_name": "create_voice_channel",
-            "_aliases": [ "voice", "vc" ],
-            "_help": [
-                "Whether or not to create a voice channel upon room creation"
-            ]
-        },
         "bitrate": {
             "_name": "bitrate",
             "_aliases": [ "br" ],
@@ -335,6 +335,48 @@
             "_aliases": [ "category" ],
             "_help": [
                 "The name of the category where all the rooms are grouped."
+            ]
+        },
+        "room_defaults": {
+            "_name": "room_defaults",
+            "_aliases": [ "rd", "default", "defaults" ],
+            "_help": [
+                "Default room options."
+            ]
+        },
+        "join_messages": {
+            "_name": "join_messages",
+            "_aliases": [ "hm" ],
+            "_help": [
+                "Messages used for when a user joins a room."
+            ]
+        },
+        "leave_messages": {
+            "_name": "leave_messages",
+            "_aliases": [ "lm" ],
+            "_help": [
+                "Messages used for when a user leaves a room."
+            ]
+        },
+        "allow_multiple_rooms": {
+            "_name": "allow_multiple_rooms",
+            "_aliases": [ "multi_rooms", "amr" ],
+            "_help": [
+                "Allow members to join multiple rooms."
+            ]
+        },
+        "allowed_host_commands": {
+            "_name": "allowed_host_commands",
+            "_aliases": [ "host_commands", "ahc" ],
+            "_help": [
+                "Commands that the room host are allowed to use."
+            ]
+        },
+        "language": {
+            "_name": "language",
+            "_aliases": [ "lang" ],
+            "_help": [
+                "Language used for commands"
             ]
         }
     },
