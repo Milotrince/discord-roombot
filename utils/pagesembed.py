@@ -78,4 +78,4 @@ class PagesEmbed:
                 elif str(reaction) == LAST_EMOJI:
                     page = instance.pages
                 await instance.m.edit(embed=instance.make_page(page))
-        await reaction.remove(user)
+            await reaction.remove(user)
