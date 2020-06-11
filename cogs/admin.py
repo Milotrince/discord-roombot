@@ -67,7 +67,7 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
 
                 embed_desc = "{}: `-{}`\n{}".format(get_text('flags'), "`, `-".join(field['flags']), '\n'.join(field['description']))
                 if isinstance(field_value, str) and len(field_value) > 200:
-                    field_value = field_value.replace('`', '')
+                    field_value = str(field_value).replace('`', '')
                     embed.add_field(
                         inline=False,
                         name="**{}** : `{}`".format(field['name'], get_text('see_below')),

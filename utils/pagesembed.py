@@ -5,7 +5,8 @@ FIRST_EMOJI = '\u23EE'
 PREV_EMOJI = '\u2B05'
 NEXT_EMOJI = '\u27A1'
 LAST_EMOJI = '\u23ED'
-EMOJIS = [FIRST_EMOJI, PREV_EMOJI, NEXT_EMOJI, LAST_EMOJI]
+STOP_EMOJI = '\u23F9'
+EMOJIS = [FIRST_EMOJI, PREV_EMOJI, NEXT_EMOJI, LAST_EMOJI, STOP_EMOJI]
 
 class PagesEmbed:
     instances = {}
@@ -77,5 +78,11 @@ class PagesEmbed:
                     page += 1
                 elif str(reaction) == LAST_EMOJI:
                     page = instance.pages
-                await instance.m.edit(embed=instance.make_page(page))
+                elif str(reaction) == STOP_EMOJI:
+                    page = None
+
+                if page == None:
+                    await instance.self_destruct()
+                else:
+                    await instance.m.edit(embed=instance.make_page(page))
             await reaction.remove(user)
