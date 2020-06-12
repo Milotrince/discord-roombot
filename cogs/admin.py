@@ -60,7 +60,7 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
             for field_name, field in settings_info.items():
                 field_value = settings.get(field_name)
                 if isinstance(field_value, bool): 
-                    field_value = text_to_bool(field_value)
+                    field_value = bool_to_text(field_value)
                 elif isinstance(field_value, dict):
                     field_value = '{`\n'+'\n'.join([f'  {k}: `{v}`' for k,v in field_value.items()])+'\n`}' if len(field_value) > 0 else '{}'
                 elif isinstance(field_value, list):
