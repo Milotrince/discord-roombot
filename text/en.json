@@ -8,11 +8,13 @@
     "flags": "flags",
     "host": "host",
     "lock": "lock",
+    "alias": "aka",
 
     "players": "Players",
     "inviter": "Inviter",
     "server": "Server",
     "room": "Room",
+    "rooms": "Rooms",
     "command": "Command",
     "commands": "Commands",
     "settings": "Settings",
@@ -344,7 +346,7 @@
         },
         "join_messages": {
             "_name": "join_messages",
-            "_aliases": [ "hm" ],
+            "_aliases": [ "jm" ],
             "_help": [
                 "Messages used for when a user joins a room."
             ]
@@ -434,8 +436,11 @@
         "ye",
         "yes",
         "t",
+        "tru",
         "true",
-        "on"
+        "on",
+        "oui",
+        "si"
     ]
 }
         

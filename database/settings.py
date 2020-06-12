@@ -117,9 +117,9 @@ class Settings:
         result = (True, None)
         parsed_value = value
         if field not in self.defaults.keys():
-            return (False, get_text('require_flags'))
+            return (False, self.get_text('require_flags'))
         elif field in ['allowed_host_commands', 'language', 'room_defaults', 'allow_multiple_rooms', 'join_messages', 'leave_messages']:
-            return (False, get_text('coming_soon').format(self.prefix))
+            return (False, self.get_text('coming_soon').format(self.prefix))
         default = self.defaults[field]
 
         if is_number(default):
@@ -155,17 +155,19 @@ class Settings:
             if field == 'prefix':
                 max_char_length = 5
                 if len(value) > max_char_length:
-                    result = (False, get_text('prefix_too_long').format(max_char_length))
+                    result = (False, self.get_text('prefix_too_long').format(max_char_length))
             elif field == 'language':
                 parsed_value = value[:2].lower()
                 if parsed_value not in langs:
-                    result = (False, get_text('language_not_exist').format(parsed_value))
+                    result = (False, self.get_text('language_not_exist').format(parsed_value))
             elif field == 'category_name':
                 parsed_value = value[:99]
 
         (success, message) = result
         if (success):
-            result = (True, get_text('settings_success').format(field, parsed_value))
+            is_string = isinstance(parsed_value, str)
+            text_value = parsed_value if not is_string or (is_string and len(parsed_value) > 0) else 'None'
+            result = (True, self.get_text('settings_success').format(field, text_value))
             self.update(field, parsed_value)
         return result
 

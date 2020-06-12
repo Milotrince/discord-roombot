@@ -17,7 +17,8 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
 
     async def cog_command_error(self, ctx, error):
         if type(error) == discord.ext.commands.errors.CheckFailure:
-            await ctx.send(get_text('not_admin'))
+            settings = Settings.get_for(ctx.guild.id)
+            await ctx.send(settings.get_text('not_admin'))
         
 
     @commands.Cog.listener()
@@ -32,17 +33,17 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
 
     @commands.command()
     async def settings(self, ctx, *args):
+        settings = Settings.get_for(ctx.guild.id)
         settings_info = {}
-        for setting in Settings.defaults.keys():
-            text = get_text('_commands')[setting]
-            settings_info[setting] = {
+        for key in Settings.defaults.keys():
+            text = settings.get_text('_commands')[key]
+            settings_info[key] = {
                 'name': text['_name'],
                 'flags': text['_aliases'],
                 'description': text['_help']
             }
 
         (flags, flag_args) = pop_flags(args)
-        settings = Settings.get_for(ctx.guild.id)
         if flags:
             # set settings
             for i, flag in enumerate(flags):
@@ -54,23 +55,23 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
             # show settings embed
             embed = discord.Embed(
                 color=discord.Color.blurple(),
-                title=get_text('settings'),
-                description=get_text('settings_instructions').format(settings.prefix) )
+                title=settings.get_text('settings'),
+                description=settings.get_text('settings_instructions').format(settings.prefix) )
             for field_name, field in settings_info.items():
                 field_value = settings.get(field_name)
                 if isinstance(field_value, bool): 
-                    field_value = bool_to_text(field_value)
+                    field_value = text_to_bool(field_value)
                 elif isinstance(field_value, dict):
                     field_value = '{`\n'+'\n'.join([f'  {k}: `{v}`' for k,v in field_value.items()])+'\n`}' if len(field_value) > 0 else '{}'
                 elif isinstance(field_value, list):
                     field_value = '[`\n'+'\n'.join(['  `'+str(s).replace('`{}`', '__')+'`,' for s in field_value])+'\n`]' if len(field_value) > 0 else '[]'
 
-                embed_desc = "{}: `-{}`\n{}".format(get_text('flags'), "`, `-".join(field['flags']), '\n'.join(field['description']))
+                embed_desc = "{}: `-{}`\n{}".format(settings.get_text('flags'), "`, `-".join(field['flags']), '\n'.join(field['description']))
                 if isinstance(field_value, str) and len(field_value) > 200:
                     field_value = field_value.replace('`', '')
                     embed.add_field(
                         inline=False,
-                        name="**{}** : `{}`".format(field['name'], get_text('see_below')),
+                        name="**{}** : `{}`".format(field['name'], settings.get_text('see_below')),
                         value=(f'{embed_desc}\n===\n```py\n{field_value}')[:1023-4]+'\n```' )
                 else:
                     embed.add_field(
@@ -84,6 +85,7 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
 
     @commands.command()
     async def force_disband(self, ctx, *args):
+        settings = Settings.get_for(ctx.guild.id)
         rooms = rooms_db.find(guild=ctx.guild.id)
         activity_filter = " ".join(args) if args else None
         role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions else None
@@ -95,12 +97,12 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
                 if r.activity == activity_filter or r.role_id == role_mention_filter:
                     await r.disband(ctx.guild)
                     try:
-                        await ctx.send(get_text('disband_room').format('<@'+str(r.host)+'>', r.activity))
+                        await ctx.send(settings.get_text('disband_room').format('<@'+str(r.host)+'>', r.activity))
                     except discord.errors.NotFound as e:
                         pass
                         # log(e)
                     return
-        return await ctx.send(get_text('room_not_exist'))
+        return await ctx.send(settings.get_text('room_not_exist'))
 
 
     @commands.command()
@@ -108,11 +110,11 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
         settings = Settings.get_for(ctx.guild.id)
         player = ctx.message.author
         if not player.guild_permissions.administrator:
-            return await ctx.send(get_text('not_admin'))
+            return await ctx.send(settings.get_text('not_admin'))
 
         (flags, words) = pop_flags(args)
         if 'a' not in flags and 'b' not in flags:
-            return await ctx.send(get_text('purge_missing_flag'))
+            return await ctx.send(settings.get_text('purge_missing_flag'))
 
         if 'a' in flags or 'active' in flags:
             rooms_db_data = rooms_db.find(guild=ctx.guild.id)
@@ -122,7 +124,7 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
                 guild = self.bot.get_guild(r.guild)
                 await r.disband(guild)
                 count += 1
-            await ctx.send(get_text('purged_a').format(count))
+            await ctx.send(settings.get_text('purged_a').format(count))
 
         if 'b' in flags or 'broken' in flags:
             deleted_channels = 0
@@ -131,7 +133,7 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
             failed_roles = 0
             category = discord.utils.get(player.guild.categories, name=settings.category_name)
             if not category:
-                return await ctx.send(get_text('no_category'))
+                return await ctx.send(settings.get_text('no_category'))
             for channel in category.channels:
                 if iter_len(rooms_db.find(guild=ctx.guild.id, channel_id=channel.id)) < 1:
                     try:
@@ -147,9 +149,9 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
                     except:
                         failed_roles += 1
 
-            await ctx.send(get_text('purged_b').format(deleted_channels, deleted_roles))
+            await ctx.send(settings.get_text('purged_b').format(deleted_channels, deleted_roles))
             if failed_channels > 0 or failed_roles > 0:
-                await ctx.send(get_text('purged_b_fail').format(failed_channels, failed_roles))
+                await ctx.send(settings.get_text('purged_b_fail').format(failed_channels, failed_roles))
 
 
 def setup(bot):

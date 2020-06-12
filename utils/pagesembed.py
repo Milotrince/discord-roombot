@@ -1,4 +1,5 @@
 from utils.functions import *
+from database.settings import Settings
 from math import ceil
 
 FIRST_EMOJI = '\u23EE'
@@ -15,22 +16,26 @@ class PagesEmbed:
         self.m = None
         self.time = now()
         self.ctx = ctx
+        self.settings = Settings.get_for(ctx.guild.id)
         self.embed = embed
         self.per = fields_per_page
         self.pages = ceil(len(embed.fields)/fields_per_page) - 1
         self.page = 1
 
+    def get_text(self, key):
+        return self.settings.get_text(key)
+
     def embed_copy(self):
         return discord.Embed(**self.embed.to_dict())
 
     def get_req_text(self):
-        return get_text('request')+': '+self.ctx.author.display_name
+        return self.get_text('request')+': '+self.ctx.author.display_name
 
     def make_page(self, i):
         i = clamp(i, 1, self.pages)
         self.page = i
         embed = self.embed_copy()
-        page_text = get_text('page').format(i, self.pages)
+        page_text = self.get_text('page').format(i, self.pages)
         embed.set_footer(text=self.get_req_text()+' | '+page_text)
         for j in range(self.per):
             k = i * self.per + j - 1
@@ -49,7 +54,7 @@ class PagesEmbed:
         if self.m and self.m.id in PagesEmbed.instances:
             del PagesEmbed.instances[self.m.id]
         embed = self.embed_copy()
-        embed.set_footer(text=self.get_req_text()+' | '+get_text('timed_out'))
+        embed.set_footer(text=self.get_req_text()+' | '+self.get_text('timed_out'))
         await self.m.clear_reactions()
         await self.m.edit(embed=embed)
 

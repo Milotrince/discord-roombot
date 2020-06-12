@@ -9,9 +9,10 @@ class Generic(commands.Cog, name=get_text('_cog')['generic']):
         
     @commands.command()
     async def ping(self, ctx):
-        m = await ctx.send(get_text('ping'))
+        s = Settings.get_for(ctx.guild.id)
+        m = await ctx.send(s.get_text('ping'))
         ms = (m.created_at-ctx.message.created_at).total_seconds() * 1000
-        await m.edit(content=get_text('pong').format(int(ms)))
+        await m.edit(content=s.get_text('pong').format(int(ms)))
 
     @commands.command()
     async def donate(self, ctx):
@@ -49,10 +50,12 @@ class Generic(commands.Cog, name=get_text('_cog')['generic']):
 
     @commands.command()
     async def support(self, ctx):
-        return await ctx.send(get_text('support'))
+        s = Settings.get_for(ctx.guild.id)
+        return await ctx.send(s.get_text('support'))
 
     @commands.command()
     async def help(self, ctx, *args):
+        s = Settings.get_for(ctx.guild.id)
         filtered_commands = []
         for arg in args:
             for c in self.bot.commands:
@@ -62,9 +65,9 @@ class Generic(commands.Cog, name=get_text('_cog')['generic']):
             for command in filtered_commands:
                 embed = discord.Embed(
                     color=self.bot.cogs[command.cog_name].color,
-                    title="{} {}".format(command.cog_name, get_text('command')) )
+                    title="{} {}".format(command.cog_name, s.get_text('command')) )
                 embed.add_field(
-                    name="**{}**    aka `{}`".format(command, "`, `".join(command.aliases)),
+                    name="**{}**    {} `{}`".format(command, s.get_text('alias'), "`, `".join(command.aliases)),
                     value=command.help,
                     inline=False )
                 await ctx.send(embed=embed)
@@ -73,10 +76,10 @@ class Generic(commands.Cog, name=get_text('_cog')['generic']):
         for cog_name, cog in self.bot.cogs.items():
             embed = discord.Embed(
                 color=cog.color,
-                title="{} {}".format(cog_name, get_text('commands')) )
+                title="{} {}".format(cog_name, s.get_text('commands')) )
             for command in sorted(cog.get_commands(), key=lambda c:c.name):
                 embed.add_field(
-                    name="**{}**    aka `{}`".format(command, "`, `".join(command.aliases)),
+                    name="**{}**    {} `{}`".format(command, s.get_text('alias'), "`, `".join(command.aliases)),
                     value=command.short_doc,
                     inline=False )
             await ctx.send(embed=embed)
