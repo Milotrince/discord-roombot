@@ -63,11 +63,11 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
                 elif isinstance(field_value, dict):
                     field_value = '{`\n'+'\n'.join([f'  {k}: `{v}`' for k,v in field_value.items()])+'\n`}' if len(field_value) > 0 else '{}'
                 elif isinstance(field_value, list):
-                    field_value = '[`\n'+'\n'.join(['  `'+s.replace('`{}`', '__')+'`,' for s in field_value])+'\n`]' if len(field_value) > 0 else '[]'
+                    field_value = '[`\n'+'\n'.join(['  `'+str(s).replace('`{}`', '__')+'`,' for s in field_value])+'\n`]' if len(field_value) > 0 else '[]'
 
                 embed_desc = "{}: `-{}`\n{}".format(get_text('flags'), "`, `-".join(field['flags']), '\n'.join(field['description']))
                 if isinstance(field_value, str) and len(field_value) > 200:
-                    field_value = str(field_value).replace('`', '')
+                    field_value = field_value.replace('`', '')
                     embed.add_field(
                         inline=False,
                         name="**{}** : `{}`".format(field['name'], get_text('see_below')),
