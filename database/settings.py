@@ -141,12 +141,14 @@ class Settings:
         elif isinstance(default, list):
             if field in ['role_restriction', 'access_all_rooms_role']:
                 roles = []
-                for word in re.split('[,\w]*', value):
+                for word in re.split('[,\s]+', value):
                     try:
-                        role_id = int( ''.join(re.findall(r'\d*', word)) )
-                        roles.append(role_id)
+                        r = re.search(r'\d+', word)
+                        if r:
+                            role_id = int(r.group())
+                            roles.append(role_id)
                     except ValueError:
-                        result = (False, get_text('should_use_mentions'))
+                        result = (False, self.get_text('should_use_mentions'))
                 parsed_value = ids_to_str(roles) 
             else:
                 pass
