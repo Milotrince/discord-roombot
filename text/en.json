@@ -18,6 +18,7 @@
     "command": "Command",
     "commands": "Commands",
     "settings": "Settings",
+    "help": "Help",
     "invites_sent": "Invites Sent",
     "invitees": "Invitees",
     "failed_invites": "Failed invites",
@@ -383,8 +384,8 @@
 
 
     "_cog":{
-        "generic":"Generic",
-        "room":"Basic Room",
+        "general":"General",
+        "room":"Room",
         "host":"Room Host",
         "admin":"Admin"
     },

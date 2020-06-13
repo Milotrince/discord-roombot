@@ -155,7 +155,7 @@ async def delete_inactive_rooms():
 bot.loop.create_task(delete_inactive_rooms())
 
 # add cogs (groups of commands)
-cogs = [ 'generic', 'basicroom', 'roomhost', 'admin' ]
+cogs = [ 'general', 'basicroom', 'roomhost', 'admin' ]
 for cog_name in cogs:
     bot.load_extension('cogs.' + cog_name)
 

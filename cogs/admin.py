@@ -1,6 +1,6 @@
 from database.room import *
 from discord.ext import commands, tasks
-from utils.pagesembed import PagesEmbed
+from utils.pagesembed import FieldPagesEmbed
 import discord
 
 class Admin(commands.Cog, name=get_text('_cog')['admin']):
@@ -24,11 +24,11 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
         if user.id != self.bot.user.id:
-            await PagesEmbed.on_reaction_add(reaction, user)
+            await FieldPagesEmbed.on_reaction_add(reaction, user)
 
     @tasks.loop(seconds=60)
     async def destroy_pagesembed_instances(self):
-        await PagesEmbed.destroy_old()
+        await FieldPagesEmbed.destroy_old()
 
 
     @commands.command()
@@ -79,7 +79,7 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
                         name="**{}** : `{}`".format(field['name'], field_value),
                         value=embed_desc )
 
-            await PagesEmbed(ctx, embed).send()
+            await FieldPagesEmbed(ctx, embed).send()
 
 
 
@@ -100,7 +100,6 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
                         await ctx.send(settings.get_text('disband_room').format('<@'+str(r.host)+'>', r.activity))
                     except discord.errors.NotFound as e:
                         pass
-                        # log(e)
                     return
         return await ctx.send(settings.get_text('room_not_exist'))
 

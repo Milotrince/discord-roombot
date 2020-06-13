@@ -1,8 +1,9 @@
-from database.room import *
-from discord.ext import commands
 import discord
+from discord.ext import commands
+from database.room import *
+from utils.pagesembed import EmbedPagesEmbed
 
-class Generic(commands.Cog, name=get_text('_cog')['generic']):
+class General(commands.Cog, name=get_text('_cog')['general']):
     def __init__(self, bot):
         self.bot = bot
         self.color = discord.Color.greyple()
@@ -27,8 +28,6 @@ class Generic(commands.Cog, name=get_text('_cog')['generic']):
             url="https://storage.ko-fi.com/cdn/useruploads/6d456b7f-ed0f-4690-942a-8f2153e31602.png"
         )
         return await ctx.send(embed=embed)
-
-
 
     @commands.command()
     async def about(self, ctx):
@@ -65,7 +64,8 @@ class Generic(commands.Cog, name=get_text('_cog')['generic']):
             for command in filtered_commands:
                 embed = discord.Embed(
                     color=self.bot.cogs[command.cog_name].color,
-                    title="{} {}".format(command.cog_name, s.get_text('command')) )
+                    title=s.get_text('help'),
+                    description='**{} {}**'.format(command.cog_name, s.get_text('command')) )
                 embed.add_field(
                     name="**{}**    {} `{}`".format(command, s.get_text('alias'), "`, `".join(command.aliases)),
                     value=command.help,
@@ -73,17 +73,23 @@ class Generic(commands.Cog, name=get_text('_cog')['generic']):
                 await ctx.send(embed=embed)
             return
 
+        embeds = []
         for cog_name, cog in self.bot.cogs.items():
             embed = discord.Embed(
                 color=cog.color,
-                title="{} {}".format(cog_name, s.get_text('commands')) )
+                title=s.get_text('help'),
+                description='**{} {}**'.format(cog_name, s.get_text('commands')) )
             for command in sorted(cog.get_commands(), key=lambda c:c.name):
                 embed.add_field(
                     name="**{}**    {} `{}`".format(command, s.get_text('alias'), "`, `".join(command.aliases)),
                     value=command.short_doc,
                     inline=False )
-            await ctx.send(embed=embed)
+            embeds.append(embed)
+        timed_out_embed = discord.Embed(
+            color=discord.Color.blurple(),
+            title=s.get_text('help') )
+        await EmbedPagesEmbed(ctx, embeds, timed_out_embed).send()
 
 
 def setup(bot):
-    load_cog(bot, Generic(bot))
+    load_cog(bot, General(bot))
