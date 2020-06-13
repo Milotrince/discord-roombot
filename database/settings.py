@@ -118,7 +118,7 @@ class Settings:
         parsed_value = value
         if field not in self.defaults.keys():
             return (False, self.get_text('require_flags'))
-        elif field in ['allowed_host_commands', 'language', 'room_defaults', 'allow_multiple_rooms', 'join_messages', 'leave_messages']:
+        elif field in ['allowed_host_commands', 'language', 'room_defaults', 'allow_multiple_rooms']:
             return (False, self.get_text('coming_soon').format(self.prefix))
         default = self.defaults[field]
 
@@ -150,6 +150,13 @@ class Settings:
                     except ValueError:
                         result = (False, self.get_text('should_use_mentions'))
                 parsed_value = ids_to_str(roles) 
+            elif field in ['join_messages', 'leave_messages']:
+                messages = []
+                for s in re.split('[,]+', value):
+                    m = s.strip().replace('__', '{}')
+                    if len(m) > 0:
+                        messages.append(m)
+                parsed_value = ','.join(messages)
             else:
                 pass
 

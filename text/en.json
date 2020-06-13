@@ -92,7 +92,7 @@
     "support": "Join the support server: https://discord.gg/37kzrpr and ask away!",
 
     "coming_soon": "Implementation in progress! For updates, check the support server (`{}support`)",
-    "settings_instructions": "To set an option(s), use `{}settings -flag value`.\nThe following are currently a work in progress so you won't be able to set them, but it will be available soon. ```allowed_host_commands, language, join_messages, leave_messages, allow_multiple_rooms, room_defaults``` Check the support server for updates!\n===",
+    "settings_instructions": "To set an option(s), use `{}settings -flag value`.\nThe following are currently a work in progress so you won't be able to set them, but it will be available soon. ```allowed_host_commands, language, allow_multiple_rooms, room_defaults``` Check the support server for updates!\n===",
     "invite_instructions": "React to accept or decline the invite.",
     "settings_success": "Set `{}` to `{}`.",
     "see_below": "see below",
@@ -347,14 +347,14 @@
         },
         "join_messages": {
             "_name": "join_messages",
-            "_aliases": [ "jm" ],
+            "_aliases": [ "jm", "join" ],
             "_help": [
                 "Messages used for when a user joins a room."
             ]
         },
         "leave_messages": {
             "_name": "leave_messages",
-            "_aliases": [ "lm" ],
+            "_aliases": [ "lm", "leave" ],
             "_help": [
                 "Messages used for when a user leaves a room."
             ]
@@ -404,13 +404,6 @@
         "`{}` just skedaddled out.",
         "Farewell `{}`... we will miss you, probably...",
         "The adventurer `{}` has left your party."
-    ],
-    "new_room_welcomes":[
-        "Welcome to your room, `{}`.",
-        "`{}`, you are now the proud owner of this room.",
-        "Hi `{}`! A very cool room, this is.",
-        "A very nice and roomy room I made for you, `{}`.",
-        "So.. are you gonna have parties in this place `{}`?"
     ],
     "invite_messages":[
         "You have been cordially invited to join `{1}`.",
