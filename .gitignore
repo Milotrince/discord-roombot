@@ -3,3 +3,4 @@
 __pycache__
 database.db
 .env
+*.log

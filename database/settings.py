@@ -1,44 +1,46 @@
 from utils.functions import *
-from pprint import pprint
 
 class Settings:
     defaults = {
-        'prefix': 'r.',
-        'role_restriction': [],
-        'access_all_rooms_role': [],
+        'language': 'en',
+        'prefix': 't.' if os.getenv('ENV') == 'development' else 'r.',
+        'allow_multiple_rooms': False,
+        'allowed_host_commands': ['activity', 'color', 'description', 'host', 'kick', 'lock', 'size', 'timeout', 'voice_channel'],
         'respond_to_invalid': True,
         'delete_command_message': False,
+        'role_restriction': [],
+        'access_all_rooms_role': [],
         'bitrate': 64,
         'category_name': '',
-        'room_defaults': {
-            'timeout': 120,
-            'size': 4,
-            'voice_channel': False,
-            'descriptions': [],
-            'names': [],
-            'colors': get_default_colors(),
-            'lock': False
-        },
+        'default_names': [],
+        'default_descriptions': [],
+        'default_colors': get_default_colors(),
+        'default_timeout': 120,
+        'default_size': 4,
+        'default_voice_channel': False,
+        'default_lock': False,
         'join_messages': [],
         'leave_messages': [],
-        'allow_multiple_rooms': False,
-        'allowed_host_commands': [],
-        'language': 'en'
     }
    
-    def __init__(self, data):
+    def __init__(self, data={}, **kwargs):
+        data.update(kwargs)
         _data = self.unpack_data(data, self.defaults)
-        _data['guild_id'] = data['guild_id']
+        self.guild_id = data['guild_id']
+        _data['guild_id'] = self.guild_id
         self.set_programmatic_defaults(_data)
         settings_db.upsert(self.pack_data(_data, self.defaults), ['guild_id'])
 
     def set_programmatic_defaults(self, data):
         for (key, value) in data.items():
-            self.__setattr__(key, value)
-        if self.room_defaults['descriptions'] == []:
-            self.room_defaults['descriptions'] = self.get_text('default_room_descriptions')
-        if self.room_defaults['names'] == []:
-            self.room_defaults['names'] = self.get_text('default_room_names')
+            if key in self.defaults.keys():
+                if isinstance(self.defaults[key], list):
+                    value = strip_list(value)
+                self.__setattr__(key, value)
+        if self.default_descriptions == []:
+            self.default_descriptions = self.get_text('default_room_descriptions')
+        if self.default_names == []:
+            self.default_names = self.get_text('default_room_names')
         if self.join_messages == []:
             self.join_messages = self.get_text('join_messages')
         if self.leave_messages == []:
@@ -46,8 +48,7 @@ class Settings:
         if self.category_name == '':
             self.category_name = self.get_text('room')
         if self.allowed_host_commands == []:
-            # TODO: allowed_host_commands
-            pass
+            self.allowed_host_commands = self.defaults['allowed_host_commands']
 
     def get_text(self, key):
         return get_text(key, self.language)
@@ -66,8 +67,11 @@ class Settings:
                     value = str(v)
                 elif isinstance(default, bool):
                     value = text_to_bool(v) if isinstance(v, str) else bool(v)
-                elif isinstance(default, list):
-                    value = str_to_ids(v) if isinstance(v, str) else v
+                elif isinstance(default, list) and isinstance(v, str):
+                    if key in ['role_restriction', 'access_all_rooms_role']:
+                        value = str_to_ids(v)
+                    else:
+                        value = re.split('[,]+', v)
                 elif isinstance(default, dict):
                     if isinstance(v, str):
                         try:
@@ -111,15 +115,13 @@ class Settings:
 
     @classmethod
     def make_default(cls, guild_id):
-        return cls({ 'guild_id': guild_id })
+        return cls(guild_id=guild_id)
 
     def set(self, ctx, field, value):
         result = (True, None)
         parsed_value = value
         if field not in self.defaults.keys():
             return (False, self.get_text('require_flags'))
-        elif field in ['allowed_host_commands', 'language', 'room_defaults', 'allow_multiple_rooms']:
-            return (False, self.get_text('coming_soon').format(self.prefix))
         default = self.defaults[field]
 
         if is_number(default):
@@ -150,15 +152,33 @@ class Settings:
                     except ValueError:
                         result = (False, self.get_text('should_use_mentions'))
                 parsed_value = ids_to_str(roles) 
-            elif field in ['join_messages', 'leave_messages']:
+            elif field == 'default_colors':
+                colors = []
+                for s in re.split('[,\s]+', value):
+                    color = get_color(s, return_default=False)
+                    if color:
+                        colors.append(str(color.value))
+                parsed_value = ','.join(colors)
+            elif field == 'allowed_host_commands':
+                commands = []
+                for c in re.split('[,\s]+', value):
+                    if c in default and c not in commands:
+                        commands.append(c)
+                if commands == []:
+                    commands = default
+                parsed_value = ','.join(commands)
+            else:
                 messages = []
                 for s in re.split('[,]+', value):
                     m = s.strip().replace('__', '{}')
                     if len(m) > 0:
                         messages.append(m)
                 parsed_value = ','.join(messages)
-            else:
-                pass
+
+        elif isinstance(default, dict):
+            args = re.split('\w+', value)
+            if args[0] not in default:
+                result = (False, self.get_text('value not found'))
 
         elif isinstance(default, str):
             if field == 'prefix':
@@ -176,15 +196,17 @@ class Settings:
         if (success):
             is_string = isinstance(parsed_value, str)
             text_value = parsed_value if not is_string or (is_string and len(parsed_value) > 0) else 'None'
-            result = (True, self.get_text('settings_success').format(field, text_value))
             self.update(field, parsed_value)
+            result = (True, self.get_text('settings_success').format(field, text_value))
         return result
 
     def update(self, field, value):
-        new_dict = {}
-        new_dict['guild_id'] = self.guild_id
-        new_dict[field] = value
-        settings_db.update(new_dict, ['guild_id'])
+        if field in self.defaults.keys():
+            self.__setattr__(field, value)
+            new_dict = {}
+            new_dict['guild_id'] = self.guild_id
+            new_dict[field] = value
+            settings_db.update(new_dict, ['guild_id'])
 
     def get(self, field):
         return getattr(self, field)

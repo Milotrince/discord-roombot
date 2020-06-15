@@ -16,14 +16,17 @@ class RoomHost(commands.Cog, name=get_text('_cog')['host']):
         self.color = discord.Color.blurple()
 
     async def cog_check(self, ctx):
+        s = Settings.get_for(ctx.guild.id)
+        is_enabled_command = ctx.command.name in s.allowed_host_commands
         is_host = Room.get_hosted(ctx.message.author.id, ctx.guild.id)
         is_admin = ctx.message.author.guild_permissions.administrator
         searched_room = Room.get_by_mention(ctx, ctx.message.content.split(' ')[1:])
-        return is_host or (is_admin and searched_room)
+        return (is_host and is_enabled_command) or (is_admin and searched_room)
 
     async def cog_command_error(self, ctx, error):
+        s = Settings.get_for(ctx.guild.id)
         if type(error) == discord.ext.commands.errors.CheckFailure:
-            await ctx.send(Settings.get_for(ctx.guild.id).get_text('not_host'))
+            await ctx.send(s.get_text('host_command_fail'))
 
     def get_context(self, ctx, *args):
         is_admin = ctx.message.author.guild_permissions.administrator
@@ -90,53 +93,18 @@ class RoomHost(commands.Cog, name=get_text('_cog')['host']):
         return await ctx.send(c.settings.get_text('target_not_in_room').format(new_host.display_name, c.channel.mention))
 
 
-    # @commands.command()
-    # async def edit(self, ctx, *args):
-    #     fields = {
-    #         'activity': self.activity.aliases,
-    #         'description': self.description.aliases,
-    #         'size': self.size.aliases,
-    #         'host': self.host.aliases,
-    #         'colour': self.colour.aliases }
-    #     (flags, flag_args) = pop_flags(args)
-
-    #     if len(flags) < 2:
-    #         return await ctx.send(get_text('require_flags'))
-
-    #     for i, flag in enumerate(flags):
-    #         valid = False
-    #         for field, aliases in fields.items():
-    #             if flag == field or flag in aliases:
-    #                 if field == 'activity':
-    #                     await self.activity.callback(self, ctx, *tuple(flag_args))
-    #                 elif field == 'description':
-    #                     await self.description.callback(self, ctx, *tuple(flag_args))
-    #                 elif field == 'size':
-    #                     await self.size.callback(self, ctx, *tuple(flag_args))
-    #                 elif field == 'host':
-    #                     await self.host.callback(self, ctx, *tuple(flag_args))
-    #                 elif field == 'colour':
-    #                     await self.colour.callback(self, ctx, *tuple(flag_args))
-    #                 elif field == 'timeout':
-    #                     await self.timeout.callback(self, ctx, *tuple(flag_args))
-    #                 valid = True
-    #                 break
-    #         if not valid:
-    #             await ctx.send(get_text('bad_field').format(flag))
-
-
     @commands.command()
     async def activity(self, ctx, *args):
         c = self.get_context(ctx, args)
         new_activity = remove_mentions(' '.join(args))
         player_name = c.player.display_name
         if len(new_activity) < 1:
-            new_activity = choice(c.settings.get_text('default_room_names')).format(player_name)
+            new_activity = choice(c.settings.default_names).format(player_name)
         try:
             await asyncio.wait_for(c.channel.edit(name=new_activity), timeout=3.0)
         except asyncio.TimeoutError:
             return await ctx.send(c.settings.get_text('rate_limited'))
-        await c.role.edit(name="(Room) " + new_activity)
+        await c.role.edit(name="({}) {}".format(c.settings.get_text('room'), new_activity))
         if c.voice_channel:
             await c.voice_channel.edit(name=new_activity)
         c.room.activity = new_activity

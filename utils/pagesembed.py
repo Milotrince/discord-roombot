@@ -18,7 +18,7 @@ class PagesEmbed(metaclass=ABCMeta):
         self.ctx = ctx
         self.settings = Settings.get_for(ctx.guild.id)
         self.per = per
-        self.pages = ceil(total/per) - 1
+        self.pages = ceil(total/per)
         self.page = 1
         self.m = None
         self.time = now()
@@ -104,7 +104,7 @@ class FieldPagesEmbed(PagesEmbed):
         i = self.page
         embed = self.embed_copy()
         for j in range(self.per):
-            k = i * self.per + j - 1
+            k = (i-1) * self.per + j
             if k < len(self.embed.fields):
                 field = self.embed.fields[k]
                 embed.add_field(inline=field.inline, name=field.name, value=field.value)
@@ -120,7 +120,7 @@ class FieldPagesEmbed(PagesEmbed):
 class EmbedPagesEmbed(PagesEmbed):
 
     def __init__(self, ctx, embeds, timed_out_embed):
-        super().__init__(ctx, len(embeds)+1, 1)
+        super().__init__(ctx, len(embeds), 1)
         self.embeds = embeds
         self.timed_out_embed = timed_out_embed
 

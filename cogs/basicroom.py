@@ -2,9 +2,6 @@ from database.room import *
 from discord.ext import commands
 import discord
 
-def filterBots(member):
-    return member.bot
-
 class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
     def __init__(self, bot):
         self.bot = bot
@@ -17,36 +14,38 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
     async def new(self, ctx, *args):
         if not ctx.guild.me.guild_permissions.manage_channels or not ctx.guild.me.guild_permissions.manage_roles:
             raise discord.ext.commands.errors.CommandInvokeError("Missing Permissons")
-
-        player = ctx.message.author
+   
         settings = Settings.get_for(ctx.guild.id)
+        player = ctx.message.author
 
+        # check if able to make room
+        if settings.allow_multiple_rooms and Room.get_hosted(player.id, ctx.guild.id):
+            return await ctx.send(settings.get_text('already_is_host'))
+        elif not settings.allow_multiple_rooms and Room.player_is_in_any(player.id, ctx.guild.id):
+            return await ctx.send(settings.get_text('already_in_room'))
+
+        # activity (room name)
         if len(args) < 1 and player.activity and player.activity and player.activity.name and len(player.activity.name) > 1:
             activity = player.activity.name
         elif args:
             activity = remove_mentions(" ".join(args))
         else:
-            activity = choice(settings.room_defaults['names']).format(player.display_name)
-
-        
-        # limit length
+            activity = choice(settings.default_names).format(player.display_name)
         activity = activity[0:90].strip()
+        # color
+        if player.top_role.color != discord.Color.default():
+            color = player.top_role.color
+        else:
+            color = discord.Color(int(choice(settings.default_colors)))
 
-        rooms = rooms_db.find(guild=ctx.guild.id)
-        if rooms:
-            for room_data in rooms:
-                r = Room.from_query(room_data)
-                if player.id in r.players:
-                    return await ctx.send(settings.get_text('already_in_room'))
-                if r.activity == activity:
-                    activity = "({}) {}".format(player.name, activity)
-                    
-        role = await player.guild.create_role(
+        # role
+        role = await ctx.guild.create_role(
             name="({}) {}".format(settings.get_text('room'), activity),
-            color=discord.Color(choice(settings.room_defaults['colors'])),
+            color=color,
             hoist=True,
             mentionable=True )
 
+        # overwrites
         accessors_ids = settings.access_all_rooms_role
         accessors = []
         for accessor_id in accessors_ids:
@@ -57,26 +56,28 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
             elif accessor_role:
                 accessors.append(accessor_role)
         if len(accessors) < 1:
-            accessors = list(filter(filterBots, ctx.guild.members))
+            accessors = list(filter(lambda m : m.bot, ctx.guild.members))
 
         overwrites = {
-            player.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            player.guild.me: discord.PermissionOverwrite(read_messages=True, manage_channels=True),
+            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            ctx.guild.me: discord.PermissionOverwrite(read_messages=True, manage_channels=True),
             role: discord.PermissionOverwrite(read_messages=True)
         }
         for accessor in accessors:
             overwrites[accessor] = discord.PermissionOverwrite(read_messages=True)
 
-        category = await get_rooms_category(player.guild)
-        channel = await player.guild.create_text_channel(
+        # channel
+        category = await get_rooms_category(ctx.guild)
+        channel = await ctx.guild.create_text_channel(
             name=activity,
             category=category,
             position=0,
             overwrites=overwrites
         )
+
         voice_channel = None
-        if settings.room_defaults['voice_channel']:
-            voice_channel = await player.guild.create_voice_channel(
+        if settings.default_voice_channel:
+            voice_channel = await ctx.guild.create_voice_channel(
                 name=activity,
                 bitrate=settings.bitrate * 1000,
                 category=category,
@@ -84,16 +85,30 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
                 overwrites=overwrites
             )
 
-        new_room = Room.from_message(ctx, args, settings, activity, role, channel, voice_channel)
-        
-        success = await new_room.add_player(player)
-        if success:
-            await channel.send(choice(settings.join_messages).format(player.display_name))
-            embed = new_room.get_embed(player, settings.get_text('new_room'))
-            message = await ctx.send(embed=embed)
-            await message.add_reaction('➡️')
-            return
-        return await ctx.send(settings.get_text('retry_error'))
+        # new room
+        room = Room(
+            role_id=role.id,
+            channel_id=channel.id,
+            voice_channel_id=voice_channel.id if voice_channel else 0,
+            guild=ctx.guild.id,
+            birth_channel=ctx.message.channel.id,
+            host=player.id,
+            players=[player.id],
+            activity=activity,
+            color=color,
+            lock=settings.default_lock,
+            description=choice(settings.default_descriptions),
+            size=settings.default_size,
+            timeout=settings.default_timeout,
+            created=now(),
+            last_active=now()
+        )
+        await player.add_roles(role)
+        await channel.edit(topic="({}/{}) {}".format(len(room.players), room.size, room.description))
+        await channel.send(choice(settings.join_messages).format(player.display_name))
+        embed = room.get_embed(player, settings.get_text('new_room'))
+        message = await ctx.send(embed=embed)
+        await message.add_reaction('➡️')
 
 
     @commands.command()
@@ -168,7 +183,7 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
             value="<@{}>".format(">, <@".join([str(id) for id in room.players])) )
         embed.add_field(
             name=settings.get_text('inviter') + ": " + player.display_name,
-            value=settings.get_text('server') + ": " + player.guild.name )
+            value=settings.get_text('server') + ": " + ctx.guild.name )
         embed.add_field(
             name=settings.get_text('room') + ": " + room.activity,
             value=settings.get_text('description') + ": " + room.description )
@@ -285,22 +300,38 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
                 
 
     @commands.command()
-    async def leave(self, ctx):
-        player = ctx.message.author
-        rooms = rooms_db.find(guild=ctx.guild.id)
-        if rooms:
-            for room_data in rooms:
-                room = Room.from_query(room_data)
-                (room_found, response) = await self.try_leave(ctx, room, player)
-                if room_found:
-                    if response:
-                        try:
-                            await ctx.send(response)
-                        except:
-                            pass
-                    return
+    async def leave(self, ctx, *args):
         settings = Settings.get_for(ctx.guild.id)
-        return await ctx.send(settings.get_text('not_in_room'))
+        player = ctx.message.author
+        rooms = Room.get_player_rooms(player.id, ctx.guild.id)
+        room = None
+        if len(rooms) > 1:
+            role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions else None
+            text_filter = ' '.join(args).lower() if args else None
+            for r in rooms:
+                match_channel = ctx.channel.id == r.channel_id
+                match_text = text_filter and text_filter in r.activity.lower()
+                match_role = role_mention_filter == r.role_id
+                if match_channel or match_text or match_role:
+                    room = r
+                    break
+            if not room:
+                return await ctx.send(settings.get_text('in_multiple_rooms'))
+            
+        elif len(rooms) == 1:
+            room = rooms[0]
+        else:
+            return await ctx.send(settings.get_text('not_in_room'))
+
+        if room:
+            (success, response) = await self.try_leave(ctx, room, player)
+            if success and response and ctx.channel.id != room.channel_id:
+                try:
+                    await ctx.send(response)
+                except:
+                    pass
+        else:
+            return await ctx.send(settings.get_text('no_room'))
 
 
     @commands.command()
@@ -341,7 +372,7 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
     async def try_join(self, ctx, room, player):
         settings = Settings.get_for(ctx.guild.id)
         room.update_active()
-        if Room.player_is_in_any(player.id, ctx.guild.id):
+        if not settings.allow_multiple_rooms and Room.player_is_in_any(player.id, ctx.guild.id):
             return (False, settings.get_text('already_in_room'))
         if room.lock:
             return (False, settings.get_text('join_locked_room'))
@@ -353,7 +384,7 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
             room_channel = ctx.guild.get_channel(room.channel_id)
             await room_channel.send(choice(settings.join_messages).format(player.display_name))
             if len(room.players) >= room.size:
-                role = player.guild.get_role(room.role_id)
+                role = ctx.guild.get_role(room.role_id)
                 await ctx.send(settings.get_text('full_room_notification').format(role.mention, len(room.players)))
             return (True, embed)
         else:
@@ -363,8 +394,8 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
         settings = Settings.get_for(ctx.guild.id)
         room.update_active()
         if room.host == player.id:
-            role = player.guild.get_role(room.role_id)
-            await room.disband(player.guild)
+            role = ctx.guild.get_role(room.role_id)
+            await room.disband(ctx.guild)
             return (True, settings.get_text('disband_room').format(player.display_name, room.activity))
         elif player.id in room.players:
             (success, response) = await room.remove_player(player)

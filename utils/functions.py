@@ -55,7 +55,7 @@ def get_default_colors():
 def some_color():
     return choice(get_default_colors())
 
-def get_color(color):
+def get_color(color, return_default=True):
     hex_match = re.search('[0-9a-fA-F]{6}', color)
     if hex_match and hex_match.group():
         return discord.Color(int(hex_match.group(), 16))
@@ -75,8 +75,10 @@ def get_color(color):
         return discord.Color.orange()
     elif 'red' in color:
         return discord.Color.red()
-    else:
+    elif return_default:
         return discord.Color(some_color())
+    else:
+        return None
 
 def pop_flags(args):
     split_on_flags = ' '.join(list(args)).split('-')
@@ -121,6 +123,15 @@ def is_number(x):
 
 def has_common_element(a, b):
     return set(a) & set(b)
+
+def strip_list(_list):
+    l = []
+    for el in _list:
+        if isinstance(el, str) and len(el) < 1:
+            pass
+        else:
+            l.append(el)
+    return l
 
 def remove_mentions(args):
     if isinstance(args, list) or isinstance(args, tuple):

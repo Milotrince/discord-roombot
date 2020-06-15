@@ -30,6 +30,15 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
     async def destroy_pagesembed_instances(self):
         await FieldPagesEmbed.destroy_old()
 
+    @commands.command()
+    async def reset_settings(self, ctx):
+        settings = Settings.get_for(ctx.guild.id)
+        settings = Settings(Settings.defaults,
+            guild_id=ctx.guild.id,
+            language=settings.language,
+            prefix=settings.prefix )
+        await ctx.send(settings.get_text('reset_settings'))
+
 
     @commands.command()
     async def settings(self, ctx, *args):
@@ -141,12 +150,13 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
                     except:
                         failed_channels += 1
             for role in ctx.guild.roles:
-                if iter_len(rooms_db.find(guild=ctx.guild.id, role_id=role.id)) < 1 and role.name.startswith("(Room) "):
-                    try:
-                        await role.delete()
-                        deleted_roles += 1
-                    except:
-                        failed_roles += 1
+                if iter_len(rooms_db.find(guild=ctx.guild.id, role_id=role.id)) < 1:
+                    if any([ role.name.startswith('({})'.format(get_text('room', lang=l))) for l in langs ]):
+                        try:
+                            await role.delete()
+                            deleted_roles += 1
+                        except:
+                            failed_roles += 1
 
             await ctx.send(settings.get_text('purged_b').format(deleted_channels, deleted_roles))
             if failed_channels > 0 or failed_roles > 0:

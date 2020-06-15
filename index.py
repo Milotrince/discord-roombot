@@ -1,7 +1,8 @@
 from discord.ext import commands
 from database.settings import *
 from database.room import *
-import env
+import discord
+import logging
 import os
 
 print("""
@@ -10,6 +11,15 @@ print("""
 |    -| . | . |     | __ -|  |  | | |  
 |__|__|___|___|_|_|_|_____|_____| |_|
 """)
+
+# logging
+if os.getenv('ENV') == 'development':
+    logger = logging.getLogger('discord')
+    logger.setLevel(logging.DEBUG)
+    handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+    handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+    logger.addHandler(handler)
+
 
 async def determine_prefix(bot, message):
     guild = message.guild

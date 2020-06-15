@@ -8,77 +8,64 @@ async def get_rooms_category(guild):
 
 
 class Room:
-    def __init__(self, role_id, channel_id, voice_channel_id, color, birth_channel, guild,
-            lock, activity, description, created, timeout, players, host, size, last_active):
-        self.role_id = role_id
-        self.channel_id = channel_id
-        self.voice_channel_id = voice_channel_id
-        self.color = color
-        self.birth_channel = birth_channel
-        self.guild = guild
-        self.lock = lock
-        self.activity = activity
-        self.description = description
-        self.created = created
-        self.timeout = timeout
-        self.players = players
-        self.host = host
-        self.size = int(size)
-        self.last_active = last_active
+    props = {
+        'role_id': 0,
+        'channel_id': 0,
+        'voice_channel_id': 0,
+        'birth_channel': 0,
+        'guild': 0,
+        'host': 0,
+        'players': [],
+        'size': 1,
+        'color': discord.Color.blurple(),
+        'lock': False,
+        'activity': '',
+        'description': '',
+        'timeout': 0,
+        'created': now(),
+        'last_active': now(),
+    }
 
-        rooms_db.upsert(dict(
-            role_id=role_id,
-            channel_id=channel_id,
-            voice_channel_id=voice_channel_id,
-            color=color,
-            birth_channel=birth_channel,
-            guild=guild,
-            lock=lock,
-            activity=activity,
-            description=description,
-            created=created,
-            timeout=timeout,
-            players=ids_to_str(players),
-            host=host,
-            size=size,
-            last_active=last_active ), ['role_id'])
-            
-    @classmethod
-    def from_message(cls, ctx, args, settings, activity, role, channel, voice_channel):
-        guild = ctx.guild.id
-        voice_channel_id = voice_channel.id if voice_channel else 0
-        color = role.color.value
-        birth_channel = ctx.message.channel.id
-        lock = settings.room_defaults['lock']
-        description = choice(settings.room_defaults['descriptions'])
-        created = now()
-        timeout = settings.room_defaults['timeout']
-        players = []
-        host = ctx.message.author.id
-        size = settings.room_defaults['size']
-        last_active = now()
-        return cls(role.id, channel.id, voice_channel_id, color, birth_channel, guild, lock,
-                activity, description, created, timeout, players, host, size, last_active)
+    def __init__(self, data={}, **kwargs):
+        data.update(kwargs)
+        self.unpack_data(data)
+        rooms_db.upsert(self.pack_data(), ['role_id'])
+    
+    def unpack_data(self, data):
+        for (key, value) in self.props.items():
+            if key in data and data[key] != None:
+                v = data[key]
+                if isinstance(value, list) and isinstance(v, str):
+                    v = str_to_ids(v)
+                elif isinstance(value, int) and not isinstance(v, int):
+                    v = int(v)
+                elif isinstance(value, discord.Color) and isinstance(v, discord.Color):
+                    v = v.value
+            else:
+                v = value
+            self.__setattr__(key, v)
+    
+    def pack_data(self):
+        data = {}
+        for (key, value) in self.props.items():
+            s = self.__getattribute__(key)
+            if s == None:
+                s = value
+            elif isinstance(value, list) and isinstance(s, list):
+                s = ids_to_str(s)
+            elif isinstance(value, int) and not isinstance(s, int):
+                s = int(s)
+            elif isinstance(value, discord.Color) and isinstance(s, discord.Color):
+                s = s.value
+            data[key] = s
+        return data
+       
+         
+
             
     @classmethod
     def from_query(cls, data):
-        role_id = data['role_id']
-        channel_id = data['channel_id']
-        voice_channel_id = data['voice_channel_id']
-        color = data['color']
-        birth_channel = data['birth_channel']
-        guild = data['guild']
-        lock = data['lock'] if 'lock' in data else False
-        activity = data['activity']
-        description = data['description']
-        created = data['created']
-        timeout = data['timeout']
-        players = str_to_ids(data['players'])
-        host = data['host']
-        size = data['size']
-        last_active = data['last_active']
-        return cls(role_id, channel_id, voice_channel_id, color, birth_channel, guild, lock,
-                activity, description, created, timeout, players, host, size, last_active)
+        return cls(data)
 
     @classmethod
     def get_hosted(cls, player_id, guild_id):
@@ -136,13 +123,18 @@ class Room:
 
     @classmethod
     def player_is_in_any(cls, player_id, guild_id):
-        rooms = rooms_db.find(guild=guild_id)
-        if rooms:
-            for room_data in rooms:
+        return len(cls.get_player_rooms(player_id, guild_id)) > 0
+
+    @classmethod
+    def get_player_rooms(cls, player_id, guild_id):
+        rooms = []
+        rooms_query = rooms_db.find(guild=guild_id)
+        if rooms_query:
+            for room_data in rooms_query:
                 r = Room.from_query(room_data)
                 if player_id in r.players or player_id == r.host:
-                    return True
-        return False
+                    rooms.append(r)
+        return rooms
 
 
     def get_embed(self, player, footer_action):
@@ -219,6 +211,7 @@ class Room:
         channel = guild.get_channel(self.channel_id)
         await channel.delete()
 
-        voice_channel = guild.get_channel(int(self.voice_channel_id))
-        if voice_channel:
-            await voice_channel.delete()
+        if self.voice_channel_id:
+            voice_channel = guild.get_channel(self.voice_channel_id)
+            if voice_channel:
+                await voice_channel.delete()

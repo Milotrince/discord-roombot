@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 strings = {}
-langs = ['en']
+langs = ['en', 'fr']
 
 for lang in langs:
     path = Path(__file__).parent.parent.joinpath('text', f'{lang}.json')
