@@ -2,7 +2,7 @@ from database.room import *
 from discord.ext import commands
 import discord
 
-class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
+class BasicRoom(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.color = discord.Color.blurple()
@@ -385,6 +385,8 @@ class BasicRoom(commands.Cog, name=get_text('_cog')['room']):
             await room_channel.send(choice(settings.join_messages).format(player.display_name))
             if len(room.players) >= room.size:
                 role = ctx.guild.get_role(room.role_id)
+                # TODO: check for all possible None errors
+                # if role:
                 await ctx.send(settings.get_text('full_room_notification').format(role.mention, len(room.players)))
             return (True, embed)
         else:

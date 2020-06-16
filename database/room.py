@@ -138,8 +138,9 @@ class Room:
 
 
     def get_embed(self, player, footer_action):
+        s = Settings.get_for(self.guild)
         description = discord.Embed.Empty if self.description == '' else self.description
-        room_status = get_text('room_status').format(self.size - len(self.players)) if len(self.players) < self.size else get_text('full_room')
+        room_status = s.get_text('room_status').format(self.size - len(self.players)) if len(self.players) < self.size else s.get_text('full_room')
 
         embed = discord.Embed(
             color=self.color,
@@ -147,16 +148,16 @@ class Room:
             timestamp=self.created,
             title="{}{}".format(":lock: " if self.lock else "", self.activity) )
         embed.add_field(
-            name="{} ({}/{})".format(get_text('players'), len(self.players), self.size),
+            name="{} ({}/{})".format(s.get_text('players'), len(self.players), self.size),
             value="<@{}>".format(">, <@".join([str(id) for id in self.players])) )
         embed.add_field(
             name=room_status,
-            value=get_text('room_timeout_on').format(self.timeout) if self.timeout > 0 else get_text('room_timeout_off') )
+            value=s.get_text('room_timeout_on').format(self.timeout) if self.timeout > 0 else s.get_text('room_timeout_off') )
         embed.add_field(
-            name=get_text('host'),
+            name=s.get_text('host'),
             value="<@{}>".format(self.host)),
         embed.add_field(
-            name=get_text('channel'),
+            name=s.get_text('channel'),
             value="<#{}>".format(self.channel_id)),
         embed.set_footer(
             text="{} : {}".format(footer_action, player.display_name),
@@ -178,12 +179,13 @@ class Room:
         self.update('last_active', self.last_active)
 
     async def add_player(self, player):
+        s = Settings.get_for(self.guild)
         role = player.guild.get_role(self.role_id)
         channel = player.guild.get_channel(self.channel_id)
         if not channel or not role:
-            return (False, get_text('retry_error'))
+            return (False, s.get_text('retry_error'))
         if player.id in self.players:
-            return (False, get_text('already_joined'))
+            return (False, s.get_text('already_joined'))
 
         await player.add_roles(role)
         self.players.append(player.id)
@@ -192,6 +194,7 @@ class Room:
         return True
 
     async def remove_player(self, player):
+        s = Settings.get_for(self.guild)
         if player.id in self.players:
             role = player.guild.get_role(self.role_id)
             await player.remove_roles(role)
@@ -199,7 +202,7 @@ class Room:
             self.update('players', ids_to_str(self.players))
             if len(self.players) < 1:
                 await self.disband(player.guild)
-                return (True, get_text('disband_empty_room'))
+                return (True, s.get_text('disband_empty_room'))
             return (True, None)
         return (False, None)
 

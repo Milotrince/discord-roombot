@@ -31,7 +31,7 @@
     "new_room": "New room made by",
     "room_joined": "Room joined by",
     "request": "Request by",
-    "page": "Page {} of {}",
+    "page": "Page {}/{}",
 
     "fatal_error": "Something went wrong. If this keeps happening, please ask in the support server (`{}`)",
     "retry_error": "Something went wrong. Please try again.",
@@ -140,15 +140,6 @@
             "_aliases": ["iloveroombot"],
             "_help": [
                 "Link to donation page for supporting RoomBot!"
-            ]
-        },
-        "edit": {
-            "_name": "edit",
-            "_aliases": [ "e" ],
-            "_help": [
-                "Edit room information using flags.",
-                "For example, `r.edit -activity myNewGame -size 4`.",
-                "You can use aliases (ex. `-a` for `-activity`)."
             ]
         },
         "help": {
@@ -430,10 +421,10 @@
 
 
     "_cog":{
-        "general":"General",
-        "room":"Room",
-        "host":"Room Host",
-        "admin":"Admin"
+        "General":"General",
+        "BasicRoom":"Room",
+        "RoomHost":"Room Host",
+        "Admin":"Admin"
     },
  
  
@@ -476,11 +467,12 @@
         "ye",
         "yes",
         "t",
-        "tru",
         "true",
         "on",
         "oui",
-        "si"
+        "si",
+        "vrai",
+        "v"
     ]
 
 }

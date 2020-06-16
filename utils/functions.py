@@ -25,11 +25,14 @@ async def logc(content, bot):
 
 def load_cog(bot, cog):
     for command in cog.get_commands():
-        text = get_text('_commands')[command.name]
+        aliases = []
+        for lang in langs:
+            text = get_text('_commands', lang=lang)[command.name]
+            aliases += text['_aliases']
         command.update(
-            name=text['_name'],
-            help='\n'.join(text['_help']),
-            aliases=text['_aliases'],
+            # name=text['_name'],
+            # help='\n'.join(text['_help']),
+            aliases=list(set(aliases)),
             pass_context=True )
     bot.add_cog(cog)
 

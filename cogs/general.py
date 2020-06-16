@@ -3,7 +3,7 @@ from discord.ext import commands
 from database.room import *
 from utils.pagesembed import EmbedPagesEmbed
 
-class General(commands.Cog, name=get_text('_cog')['general']):
+class General(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.color = discord.Color.greyple()
@@ -61,28 +61,29 @@ class General(commands.Cog, name=get_text('_cog')['general']):
                 if (c.name == arg or arg in c.aliases) and c not in filtered_commands:
                     filtered_commands.append(c)
         if len(filtered_commands) > 0:
+            embed = discord.Embed(
+                color=discord.Color.blurple(),
+                title=s.get_text('help') )
             for command in filtered_commands:
-                embed = discord.Embed(
-                    color=self.bot.cogs[command.cog_name].color,
-                    title=s.get_text('help'),
-                    description='**{} {}**'.format(command.cog_name, s.get_text('command')) )
+                text = s.get_text('_commands')[command.name]
                 embed.add_field(
-                    name="**{}**    {} `{}`".format(command, s.get_text('alias'), "`, `".join(command.aliases)),
-                    value=command.help,
+                    name="**{}**    {} `{}`".format(text['_name'], s.get_text('alias'), "`, `".join(text['_aliases'])),
+                    value='\n'.join(text['_help']),
                     inline=False )
-                await ctx.send(embed=embed)
-            return
+            return await ctx.send(embed=embed)
 
         embeds = []
         for cog_name, cog in self.bot.cogs.items():
+            cog_text = s.get_text('_cog')
             embed = discord.Embed(
                 color=cog.color,
                 title=s.get_text('help'),
-                description='**{} {}**'.format(cog_name, s.get_text('commands')) )
+                description='**{} {}**'.format(cog_text[cog_name], s.get_text('commands')) )
             for command in sorted(cog.get_commands(), key=lambda c:c.name):
+                text = s.get_text('_commands')[command.name]
                 embed.add_field(
-                    name="**{}**    {} `{}`".format(command, s.get_text('alias'), "`, `".join(command.aliases)),
-                    value=command.short_doc,
+                    name="**{}**    {} `{}`".format(text['_name'], s.get_text('alias'), "`, `".join(text['_aliases'])),
+                    value='\n'.join(text['_help']),
                     inline=False )
             embeds.append(embed)
         timed_out_embed = discord.Embed(

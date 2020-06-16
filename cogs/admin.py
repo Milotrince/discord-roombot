@@ -3,7 +3,7 @@ from discord.ext import commands, tasks
 from utils.pagesembed import FieldPagesEmbed
 import discord
 
-class Admin(commands.Cog, name=get_text('_cog')['admin']):
+class Admin(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.color = discord.Color.red()
@@ -70,18 +70,15 @@ class Admin(commands.Cog, name=get_text('_cog')['admin']):
                 field_value = settings.get(field_name)
                 if isinstance(field_value, bool): 
                     field_value = bool_to_text(field_value)
-                elif isinstance(field_value, dict):
-                    field_value = '{`\n'+'\n'.join([f'  {k}: `{v}`' for k,v in field_value.items()])+'\n`}' if len(field_value) > 0 else '{}'
                 elif isinstance(field_value, list):
                     field_value = '[`\n'+'\n'.join(['  `'+str(s).replace('`{}`', '__')+'`,' for s in field_value])+'\n`]' if len(field_value) > 0 else '[]'
 
                 embed_desc = "{}: `-{}`\n{}".format(settings.get_text('flags'), "`, `-".join(field['flags']), '\n'.join(field['description']))
                 if isinstance(field_value, str) and len(field_value) > 200:
-                    field_value = field_value.replace('`', '')
                     embed.add_field(
                         inline=False,
                         name="**{}** : `{}`".format(field['name'], settings.get_text('see_below')),
-                        value=(f'{embed_desc}\n===\n```py\n{field_value}')[:1023-4]+'\n```' )
+                        value=(f'{embed_desc}\n`{field_value}')[:1023-4]+'`' )
                 else:
                     embed.add_field(
                         inline=False,

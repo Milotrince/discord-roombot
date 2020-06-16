@@ -11,7 +11,7 @@ class RoomContext(object):
             setattr(self, key, kwargs[key])
 
 
-class RoomHost(commands.Cog, name=get_text('_cog')['host']):
+class RoomHost(commands.Cog):
     def __init__(self):
         self.color = discord.Color.blurple()
 
