@@ -78,7 +78,7 @@ class General(commands.Cog):
             embed = discord.Embed(
                 color=cog.color,
                 title=s.get_text('help'),
-                description='**{} {}**'.format(cog_text[cog_name], s.get_text('commands')) )
+                description='**{}**'.format(cog_text[cog_name]) )
             for command in sorted(cog.get_commands(), key=lambda c:c.name):
                 text = s.get_text('_commands')[command.name]
                 embed.add_field(

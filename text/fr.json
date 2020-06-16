@@ -15,7 +15,7 @@
     "inviter": "hôte",
     "server": "Server",
     "room": "Salon",
-    "rooms": "Rooms",
+    "rooms": "Salons",
     "command": "Commande",
     "commands": "Commandes",
     "settings": "Réglages",
@@ -145,7 +145,7 @@
         },
         "help": {
             "_name": "aide",
-            "_aliases": [ "aide", "commandes", "commande", "cmd" ],
+            "_aliases": [ "aide", "aides", "commandes", "commande", "cmd" ],
             "_help": [
                 "Montre les descriptions de toutes les commandes spécifiques.",
                 "...Comme ça! Sympa n’est ce pas?"
