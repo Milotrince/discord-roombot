@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+
+  <title>RoomBot for Discord</title>
+  <meta name="description" content="Create rooms for any purpose.">
+
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com/">
+  <link rel="dns-prefetch" href="https://api.github.com/">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inconsolata&family=Lato:wght@300;400;700&display=swap">
+
+  <link rel="stylesheet" href="./css/main.css">
+
+  <link rel="icon" href="./assets/icons/icon-36.png" sizes="36x36" type="image/png">
+  <link rel="icon" href="./assets/icons/icon-12.png" sizes="12x12" type="image/png">
+
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <div class="center-children">
+      <img class="logo" src="./assets/icons/icon-96.png" alt="RoomBot Logo" width="96" height="96">
+      <h1 class="title">RoomBot</h1>
+      <div class="subtitle">Create rooms for any purpose.</div>
+
+      <ul class="buttons">
+        <li>
+          <a class="button" href="https://discord.com/api/oauth2/authorize?client_id=592816310656696341&permissions=285224016&scope=bot" target="_blank">
+            Invite me!
+          </a>
+        </li>
+        <li>
+          <a class="button" href="https://ko-fi.com/milotrince" target="_blank">
+            Donate!
+            <img src="./assets/kofi.png"/ height=24>
+          </a>
+        </li>
+        <li>
+          <a href="https://discord.gg/37kzrpr" target="_blank" title="Join the support server">
+            <img class="shield" src="https://discordapp.com/api/guilds/676305529592741909/widget.png?style=shield" alt="discord">
+          </a>
+        </li>
+        <li>
+          <a class="github-button" href="https://github.com/milotrince/discord-roombot" data-icon="star" data-size="large" data-show-count="true" aria-label="Star milotrince/discord-roombot on GitHub">
+            GitHub
+          </a>
+        </li>
+        <li>
+          <a href="https://discord.com" target="_blank">
+            <img class="discord-logo" src="./assets/discord-logo.svg" alt="Discord Logo" width="48" height="48">
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="center-children">
+      Jump to...
+      <br/>
+      <a href="#features">Features</a>
+      •
+      <a href="#commands">Commands</a>
+      •
+      <a href="#demos">Demos</a>
+      •
+      <a href="#support-me">Support Me</a>
+    </div>
+
+    <hr/>
+
+    <section class="text-section">
+      <h1 id="features">Features</h1>
+      <ul>
+        <li>⏲️ Automatically disband inactive rooms</li>
+        <li>🎨 Create a colorful hoisted role</li>
+        <li>🔔 Notifies you when room is full</li>
+        <li>💬 Customize join/leave messages</li>
+        <li>⛔ Restrict some room host commands</li>
+        <li>🔒 Lock rooms for privacy</li>
+        <li>🇫🇷 French language is supported (help me translate others!)</li>
+        <li>...and more! 😊</li>
+      </ul>
+    </section>
+
+    <section class="text-section">
+      <h1 id="commands">Commands</h1>
+
+      <div class="center-children">Room Commands</div>
+      <hr class="blurple"/>
+      <table class="commands">
+        <tr>
+          <th>Command</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>invite</td>
+          <td>Invite a player/players to your room (by name or mention).</td>
+        </tr>
+        <tr>
+          <td>join</td>
+          <td>Join a room (by activity or player).</td>
+        </tr>
+        <tr>
+          <td>leave</td>
+          <td>Leave a room. If you are the host, the room will be disbanded.</td>
+        </tr>
+        <tr>
+          <td>look</td>
+          <td>Shows your current room (or look at another room by activity or player).</td>
+        </tr>
+        <tr>
+          <td>ls</td>
+          <td>List rooms in current guild.</td>
+        </tr>
+        <tr>
+          <td>new</td>
+          <td>Make a new room (uses current activity or input).</td>
+        </tr>
+      </table>
+
+      <div class="center-children">Room Host Commands</div>
+      <hr class="blurple"/>
+      <table class="commands">
+        <tr>
+          <th>Command</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>activity</td>
+          <td>Set the name of your room. This is what the channel and role will be named as.</td>
+        </tr>
+        <tr>
+          <td>color</td>
+          <td>Set the color of your room. Possible colors are: teal, green, blue, purple, magenta/pink, gold/yellow, orange, and red. A random color is set if the specified color is not included above.</td>
+        </tr>
+        <tr>
+          <td>description</td>
+          <td>Set the description of your room. The description is the little message that you will see in the room list.</td>
+        </tr>
+        <tr>
+          <td>host</td>
+          <td>Change the host of your room. Can either mention or use the name of new host.</td>
+        </tr>
+        <tr>
+          <td>kick</td>
+          <td>Kick a player.
+            Can either mention or use the name of the kickee.</td>
+        </tr>
+        <tr>
+          <td>lock</td>
+          <td>Prevent people from joining your room.</td>
+        </tr>
+        <tr>
+          <td>size</td>
+          <td>Set the max player size of your room.
+            Once the room is full, I will ping the room.</td>
+        </tr>
+        <tr>
+          <td>timeout</td>
+          <td>After inactivity for this amount of minutes, the room will automatically be disbanded.</td>
+        </tr>
+        <tr>
+          <td>voice_channel</td>
+          <td>Create a voice channel associated with this room. Will not create if already exists.</td>
+        </tr>
+      </table>
+
+      <div class="center-children">Admin Commands</div>
+      <hr class="red"/>
+      <table class="commands">
+        <tr>
+          <th>Command</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>force_disband</td>
+          <td>Force delete a room (specify room name or @roomrole.</td>
+        </tr>
+        <tr>
+          <td>purge</td>
+          <td>Delete rooms in this server. Use flags <code>-a</code> for all active rooms, <code>-b</code> for all broken rooms.</td>
+        </tr>
+        <tr>
+          <td>reset_settings</td>
+          <td>Reset the sttings for this server.</td>
+        </tr>
+        <tr>
+          <td>settings</td>
+          <td>Set options for this server. To set an option(s), use <code>-flag value.</code></td>
+        </tr>
+      </table>
+
+
+      <div class="center-children">General Commands</div>
+      <hr/>
+      <table class="commands">
+        <tr>
+          <th>Command</th>
+          <th>Description</th>
+        </tr>
+        <tr>
+          <td>about</td>
+          <td>Shows the amount of servers I am in and links to my source and creator.</td>
+        </tr>
+        <tr>
+          <td>donate</td>
+          <td>Link to donation page for supporting RoomBot!</td>
+        </tr>
+        <tr>
+          <td>help</td>
+          <td>Shows descriptions of all or specific commands.</td>
+        </tr>
+        <tr>
+          <td>ping</td>
+          <td>Pong! Shows latency.</td>
+        </tr>
+        <tr>
+          <td>support</td>
+          <td>Link to RoomBot's Discord support server</td>
+        </tr>
+      </table>
+
+    </section>
+
+    <section class="text-section">
+      <h1 id="demos">Demos</h1>
+      <h3>A RoomBot Room</h3>
+      <img class="gif" src="./assets/gifs/new-room.gif" alt="New Room Demo">
+      <h3>Settings</h3>
+      <img class="gif" src="./assets/gifs/settings.gif" alt="Settings Demo">
+      <h3>Room and Voice Channel Creation</h3>
+      <img class="side-gif" src="./assets/gifs/creation-channels.gif" alt="Creation Channel Demo">
+    </section>
+
+    <section class="text-section">
+      <h1 id="support-me">Support Me</h1>
+      <h3>Help RoomBot grow!</h3>
+      <div style="font-weight:300">
+        <p>
+          Any suggestions for improvement or feature requests are always welcome!
+          Send me a message or ping me in the <a href="https://discord.gg/37kzrpr" target="_blank"><strong>support server</strong></a> and I will answer within 24 hours.
+        </p>
+        <p>
+          If RoomBot helps you, please consider helping RoomBot!
+          RoomBot is my hobby and I enjoy working on it, and your support enables me to continue to improve RoomBot. 😊
+          You can make donations through <a href="https://ko-fi.com/milotrince" target="_blank"><strong>ko-fi</strong></a> or even just send me a message of thanks! 💖
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <div class="center-children"> 
+        <h3 style="margin-bottom:0">Made for Discord Hack Week 2019.</h3>
+        <h4 style="margin-top:0">1st place Social Bot!</h4>
+      </div>
+
+      <a href="https://blog.discord.com/discord-community-hack-week-category-winners-bd0364360f92" b="_blank">
+        <img class="full-width-img" src="./assets/discord-hack-week.jpeg" alt="Discord Hack Week">
+      </a>
+    </section>
+
+  </div>
+
+  <footer>
+    <section class="credits">
+      <p>
+        <a href="https://trinitymade.me/" rel="noopener" target="_blank">
+          Made by Trinity Chung
+        </a>
+        <br/>
+        <span style="font-size:14px">Milotrince#0001</span>
+      </p>
+    </section>
+  </footer>
+
+</body>
+
+</html>

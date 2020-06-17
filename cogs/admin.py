@@ -30,6 +30,7 @@ class Admin(commands.Cog):
     async def destroy_pagesembed_instances(self):
         await FieldPagesEmbed.destroy_old()
 
+
     @commands.command()
     async def reset_settings(self, ctx):
         settings = Settings.get_for(ctx.guild.id)
@@ -38,6 +39,12 @@ class Admin(commands.Cog):
             language=settings.language,
             prefix=settings.prefix )
         await ctx.send(settings.get_text('reset_settings'))
+
+
+    # TODO: create_on_react
+    # @commands.command()
+    # async def create_on_react(self, ctx, *args):
+    #     settings = Settings.get_for(ctx.guild.id)
 
 
     @commands.command()

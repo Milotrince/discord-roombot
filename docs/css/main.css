@@ -1,0 +1,150 @@
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    font-family: "Lato", sans-serif;
+    background-color: #2c2f33;
+    color: #ffffff;
+    font-size: 18px;
+}
+
+header {
+    text-align: center;
+}
+
+footer {
+    padding: 20px 0;
+    min-height: 200px;
+    background-color: #23272a;
+}
+
+section {
+    margin-top: 64px;
+}
+
+hr {
+    width: 50%;
+    border-color: #99aab5;
+}
+
+.title {
+    font-size: 48px;
+    margin: 12px 0 4px;
+}
+.subtitle {
+    font-size: 24px;
+}
+
+.buttons {
+    height: 100%;
+    margin: 40px 0;
+    padding: 0;
+}
+.buttons li {
+    margin-bottom: 20px;
+    list-style: none;
+}
+.button {
+    display: inline-block;
+    background-color: #7289da;
+    color: #ffffff !important;
+    border-radius: 3px;
+    padding: 10px 20px;
+}
+.button * {
+    vertical-align: middle;
+}
+
+
+.blurple {
+    color: #7289da;
+    border-color: #7289da;
+}
+.red {
+    color: #d65258;
+    border-color: #d65258;
+}
+
+code {
+    color: #cccccc;
+    background: #23272a;
+    font-family: "Inconsolata", monospace;
+    border-radius: 3px;
+    padding: 4px;
+}
+
+
+.commands {
+    width: 100%;
+    margin-bottom: 40px;
+    border-collapse: collapse;
+}
+.commands th {
+    color: #99aab5;
+    text-align: left;
+    padding: 12px 0;
+    border-bottom: 2px solid #424852;
+}
+.commands td {
+    border-bottom: 2px solid #3c3f44;
+}
+.commands td:nth-child(1) {
+    width: 20%;
+}
+.commands td:nth-child(2) {
+    font-weight: 300;
+    padding: 10px 0;
+}
+
+.container {
+    margin-top: 100px;
+}
+
+.text-section {
+    width: 80%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.center-children {
+    text-align: center;
+}
+
+.gif {
+    width: 640px;
+}
+.side-gif {
+    width: 400px;
+}
+@media (max-width: 800px) {
+    .gif {
+        width: 100%;
+    }
+    .side-gif {
+        width: 80%;
+    }
+}
+
+.full-width-img {
+    width: 100%;
+    max-height: 400px;
+    object-fit: cover;
+}
+
+.credits {
+    color: #99aab5;
+    text-align: center;
+}
+
+a {
+    text-decoration: none;
+    color: #99aab5;
+}
+
+a:visited {
+    color: #99aab5;
+}
+
+a:hover {
+    color: #ffffff;
+}
