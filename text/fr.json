@@ -34,7 +34,7 @@
     "request": "Demande de",
     "page": "Page {}/{}",
 
-    "fatal_error": "Il y a eu un problème. Si ce problème persiste, vous pouvez demander de l'aide au support https://discord.gg/37kzrpr",
+    "fatal_error": "Il y a eu un problème. Si ce problème persiste, vous pouvez demander de l'aide au support (`{}`).",
     "retry_error": "Il y a eu un problème. Veuillez réessayer.",
     "missing_permission": "Je n'ai pas la permission : `{}`",
     "invalid_command": "\"{0}\" n'est pas définie comme commande. Essayez `{1}help`.",

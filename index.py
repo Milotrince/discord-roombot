@@ -138,7 +138,8 @@ async def on_command_error(ctx, error):
     except:
         pass
     finally:
-        await ctx.send(errorText + settings.get_text('fatal_error').format(settings.prefix+'support'))
+        await ctx.send(errorText + settings.get_text('fatal_error').format(
+            settings.prefix + settings.get_text('_commands')['support']['_name']) )
 
 
 # Periodically check for inactive rooms

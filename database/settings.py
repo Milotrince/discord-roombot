@@ -1,4 +1,5 @@
 from utils.functions import *
+from collections import OrderedDict
 
 class Settings:
     defaults = {
@@ -26,16 +27,16 @@ class Settings:
     }
    
     def __init__(self, data={}, **kwargs):
-        data.update(kwargs)
-        _data = self.unpack_data(data, self.defaults)
+        data = { **data, **kwargs}
+        _data = self.unpack_data(data)
+        self.set_programmatic_defaults(_data)
         self.guild_id = data['guild_id']
         _data['guild_id'] = self.guild_id
-        self.set_programmatic_defaults(_data)
-        settings_db.upsert(self.pack_data(_data, self.defaults), ['guild_id'])
+        settings_db.upsert(self.pack_data(_data), ['guild_id'])
 
     def set_programmatic_defaults(self, data):
         for (key, value) in data.items():
-            if key in self.defaults.keys():
+            if key in self.defaults.keys() and key != 'guild_id':
                 if isinstance(self.defaults[key], list):
                     value = strip_list(value)
                 self.__setattr__(key, value)
@@ -57,9 +58,9 @@ class Settings:
 
 
     @classmethod
-    def unpack_data(cls, data, defaults):
+    def unpack_data(cls, data):
         unpacked = {}
-        for (key, default) in defaults.items():
+        for (key, default) in cls.defaults.items():
             value = default
             if key in data and data[key] != None:
                 v = data[key]
@@ -74,19 +75,13 @@ class Settings:
                         value = str_to_ids(v)
                     else:
                         value = re.split('[,]+', v)
-                elif isinstance(default, dict):
-                    if isinstance(v, str):
-                        try:
-                            value = json.loads(v)
-                        except:
-                            pass
             unpacked[key] = value
         return unpacked
 
     @classmethod
-    def pack_data(cls, data, defaults):
+    def pack_data(cls, data):
         packed = {'guild_id': data['guild_id']}
-        for (key, default) in defaults.items():
+        for (key, default) in cls.defaults.items():
             value = default
             if key in data:
                 v = data[key]
@@ -94,8 +89,6 @@ class Settings:
                     value = bool(v)
                 elif isinstance(default, list):
                     value = ids_to_str(v)
-                elif isinstance(default, dict):
-                    value = json.dumps(v)
                 else:
                     value = str(v)
             packed[key] = value
@@ -183,11 +176,6 @@ class Settings:
                         messages.append(m)
                 parsed_value = ','.join(messages)
 
-        elif isinstance(default, dict):
-            args = re.split('\w+', value)
-            if args[0] not in default:
-                result = (False, self.get_text('value not found'))
-
         elif isinstance(default, str):
             if field == 'prefix':
                 max_char_length = 5
@@ -211,8 +199,7 @@ class Settings:
     def update(self, field, value):
         if field in self.defaults.keys():
             self.__setattr__(field, value)
-            new_dict = {}
-            new_dict['guild_id'] = self.guild_id
+            new_dict = {'guild_id': self.guild_id}
             new_dict[field] = value
             settings_db.update(new_dict, ['guild_id'])
 
