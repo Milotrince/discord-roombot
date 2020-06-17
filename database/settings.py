@@ -5,6 +5,8 @@ class Settings:
         'language': 'en',
         'prefix': 't.' if os.getenv('ENV') == 'development' else 'r.',
         'allow_multiple_rooms': False,
+        'creation_channel': 0,
+        'voice_creation_channel': 0,
         'allowed_host_commands': ['activity', 'color', 'description', 'host', 'kick', 'lock', 'size', 'timeout', 'voice_channel'],
         'respond_to_invalid': True,
         'delete_command_message': False,
@@ -124,7 +126,13 @@ class Settings:
             return (False, self.get_text('require_flags'))
         default = self.defaults[field]
 
-        if is_number(default):
+        if field in ['voice_creation_channel', 'creation_channel']:
+            parsed_value = 0
+            channels = ctx.guild.voice_channels
+            for c in channels:
+                if len(value) > 1 and value in c.name or value == str(c.id):
+                    parsed_value = c.id
+        elif is_number(default):
             try:
                 parsed_value = int(value)
             except ValueError:

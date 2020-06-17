@@ -175,11 +175,20 @@ class RoomHost(commands.Cog):
         c.room.update('color', color.value)
         return await ctx.send(c.settings.get_text('updated_field').format(c.settings.get_text('color'), color, c.player.display_name, c.channel.mention))
 
+    # TODO: set view/send perms
+    # @commands.command()
+    # async def view_permission(self, ctx, *args):
+    #     pass
+
+    # @commands.command()
+    # async def send_permission(self, ctx, *args):
+    #     pass
 
     @commands.command()
     async def voice_channel(self, ctx, *args):
         c = self.get_context(ctx, args)
         if c.voice_channel:
+            # TODO: calling vc again destroys the vc
             return await ctx.send(c.settings.get_text('voice_channel_exists'))
         category = await get_rooms_category(ctx.guild)
         settings = Settings.get_for(ctx.guild.id)

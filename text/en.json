@@ -403,6 +403,20 @@
                 "Allow members to join multiple rooms."
             ]
         },
+        "creation_channel": {
+            "_name": "creation_channel",
+            "_aliases": [ "cc" ],
+            "_help": [
+                "Join this voice channel to create a new room."
+            ]
+        },
+        "voice_creation_channel": {
+            "_name": "voice_creation_channel",
+            "_aliases": [ "vcc" ],
+            "_help": [
+                "Join this voice channel to create a new voice channel."
+            ]
+        },
         "allowed_host_commands": {
             "_name": "allowed_host_commands",
             "_aliases": [ "host_commands", "ahc" ],
@@ -414,7 +428,7 @@
             "_name": "language",
             "_aliases": [ "lang" ],
             "_help": [
-                "Language used for commands. Currently `en` is fully supported. Help add more languages by contacting the developer!"
+                "Language used for commands. Currently `en` and `fr` are supported. Help add more languages by contacting the developer!"
             ]
         }
     },

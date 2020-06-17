@@ -63,6 +63,28 @@ async def on_command(ctx):
         except Exception as e:
             log(e)
 
+@bot.event
+async def on_voice_state_update(member, before, after):
+    s = Settings.get_for(member.guild.id)
+    joined = not before.channel and after.channel
+    left = before.channel and not after.channel
+    if joined:
+        if after.channel.id == s.creation_channel:
+            await member.move_to(None)
+            await Room.create(member)
+        elif after.channel.id == s.voice_creation_channel:
+            voice_channel = await member.guild.create_voice_channel(
+                name='\u231b '+member.display_name,
+                bitrate=s.bitrate * 1000,
+                category=after.channel.category,
+                position=0
+            )
+            await member.move_to(voice_channel)
+    elif left and len(before.channel.members) < 1 and before.channel.name.startswith('\u231b'):
+        await before.channel.delete()
+
+
+
 @bot.command(pass_context=True)
 async def reload(ctx):
     if (str(ctx.message.author.id) == os.getenv('BOT_OWNER_USER_ID')):

@@ -61,6 +61,113 @@ class Room:
         return data
        
          
+    @classmethod
+    async def create(cls, member, ctx=None, args=None):
+        player = member
+        guild = member.guild
+        settings = Settings.get_for(guild.id)
+
+        if not guild.me.guild_permissions.manage_channels or not guild.me.guild_permissions.manage_roles:
+            raise discord.ext.commands.errors.CommandInvokeError("Missing Permissons")
+
+        # check if able to make room
+        if settings.allow_multiple_rooms and cls.get_hosted(player.id, guild.id):
+            if ctx:
+                await ctx.send(settings.get_text('already_is_host'))
+            return
+        elif not settings.allow_multiple_rooms and cls.player_is_in_any(player.id, guild.id):
+            if ctx:
+                await ctx.send(settings.get_text('already_in_room'))
+            return
+
+        # activity (room name)
+        activity = choice(settings.default_names).format(player.display_name)
+        if ctx:
+            print(args)
+            if len(args) < 1 and player.activity and player.activity and player.activity.name and len(player.activity.name) > 1:
+                activity = player.activity.name
+            elif args:
+                activity = remove_mentions(" ".join(args))
+        activity = activity[0:90].strip()
+
+        # color
+        if player.top_role.color != discord.Color.default():
+            color = player.top_role.color
+        else:
+            color = discord.Color(int(choice(settings.default_colors)))
+
+        # role
+        role = await guild.create_role(
+            name="({}) {}".format(settings.get_text('room'), activity),
+            color=color,
+            hoist=True,
+            mentionable=True )
+
+        # overwrites
+        accessors_ids = settings.access_all_rooms_role
+        accessors = []
+        for accessor_id in accessors_ids:
+            accessor_player = guild.get_member(accessor_id)
+            accessor_role = guild.get_role(accessor_id)
+            if accessor_player:
+                accessors.append(accessor_player)
+            elif accessor_role:
+                accessors.append(accessor_role)
+        if len(accessors) < 1:
+            accessors = list(filter(lambda m : m.bot, guild.members))
+
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            guild.me: discord.PermissionOverwrite(read_messages=True, manage_channels=True),
+            role: discord.PermissionOverwrite(read_messages=True)
+        }
+        for accessor in accessors:
+            overwrites[accessor] = discord.PermissionOverwrite(read_messages=True)
+
+        # channel
+        category = await get_rooms_category(guild)
+        channel = await guild.create_text_channel(
+            name=activity,
+            category=category,
+            position=0,
+            overwrites=overwrites
+        )
+
+        voice_channel = None
+        if settings.default_voice_channel:
+            voice_channel = await guild.create_voice_channel(
+                name=activity,
+                bitrate=settings.bitrate * 1000,
+                category=category,
+                position=0,
+                overwrites=overwrites
+            )
+
+        # new room
+        room = Room(
+            role_id=role.id,
+            channel_id=channel.id,
+            voice_channel_id=voice_channel.id if voice_channel else 0,
+            guild=guild.id,
+            birth_channel=ctx.message.channel.id if ctx else 0,
+            host=player.id,
+            players=[player.id],
+            activity=activity,
+            color=color,
+            lock=settings.default_lock,
+            description=choice(settings.default_descriptions),
+            size=settings.default_size,
+            timeout=settings.default_timeout,
+            created=now(),
+            last_active=now()
+        )
+        await player.add_roles(role)
+        await channel.edit(topic="({}/{}) {}".format(len(room.players), room.size, room.description))
+        await channel.send(choice(settings.join_messages).format(player.display_name))
+        embed = room.get_embed(player, settings.get_text('new_room'))
+        if ctx:
+            message = await ctx.send(embed=embed)
+            await message.add_reaction('➡️')
 
             
     @classmethod
@@ -72,7 +179,7 @@ class Room:
         rooms = rooms_db.find(guild=guild_id, host=player_id)
         if rooms:
             for room_data in rooms:
-                r = Room.from_query(room_data)
+                r = cls.from_query(room_data)
                 return r
         return None  
 
@@ -86,7 +193,7 @@ class Room:
         rooms = rooms_db.find(guild=ctx.guild.id)
         if rooms:
             for room_data in rooms:
-                r = Room.from_query(room_data)
+                r = cls.from_query(room_data)
                 if player_filter in r.players or r.activity == activity_filter or r.role_id == role_mention_filter:
                     return r
         return None
@@ -95,7 +202,7 @@ class Room:
     def get_by_role(cls, role_id):
         room_data = rooms_db.find_one(role_id=role_id)
         if room_data:
-            return Room.from_query(room_data)
+            return cls.from_query(room_data)
         return None
 
     @classmethod
@@ -108,7 +215,7 @@ class Room:
         rooms = rooms_db.find(guild=ctx.guild.id)
         if rooms:
             for room_data in rooms:
-                r = Room.from_query(room_data)
+                r = cls.from_query(room_data)
 
                 # for filtering by target player display name
                 player_names = []
@@ -131,7 +238,7 @@ class Room:
         rooms_query = rooms_db.find(guild=guild_id)
         if rooms_query:
             for room_data in rooms_query:
-                r = Room.from_query(room_data)
+                r = cls.from_query(room_data)
                 if player_id in r.players or player_id == r.host:
                     rooms.append(r)
         return rooms
