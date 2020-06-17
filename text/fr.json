@@ -408,14 +408,14 @@
             "_name": "salon_de_création",
             "_aliases": [ "sc" ],
             "_help": [
-                "Rejoins cette salon vocal pour créer une nouvelle salon."
+                "Rejoins ce salon vocal pour créer un nouveau salon."
             ]
         },
         "voice_creation_channel": {
             "_name": "vocal_salon_de_création",
             "_aliases": [ "vsc" ],
             "_help": [
-                "Rejoins cette salon vocal pour créer une nouvelle vocal salon."
+                "Rejoins ce salon vocal pour créer un nouveau salon vocal."
             ]
         },
         "allowed_host_commands": {
