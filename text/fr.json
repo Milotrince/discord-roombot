@@ -82,8 +82,8 @@
     "should_use_mentions": "`{}` doit être une liste de ids/mentions.",
     "language_not_exist": "`{}` Ce langage n’est pas supporté.",
 
-    "purged_a": "{} Les salons enregistrés dans la base de données ont étés supprimés.",
-    "purged_b": "{0} salon(s) cassés, et {1} rôle(s) cassé(s) ont été supprimés.",
+    "purged_a": "{} Les salons enregistrés dans la base de données ont été supprimés.",
+    "purged_b": "{0} salon(s) cassé(s), et {1} rôle(s) cassé(s) ont été supprimés.",
     "purged_b_fail": "J’ai raté {} salon(s) et {} rôle(s). Il faudrait peut être les permissions d’administrateur (temporairement!) et lancer la commande pour que je puisse réessayer?",
     "kicked": "`{0}` expulsé `{1}` de `{2}`.",
     "new_host": "{1} est maintenant le nouvel hôte de {2}.",
@@ -95,7 +95,7 @@
     "pong": "Pong! Latence: `{}`ms",
     "support": "Rejoins le serveur : https://discord.gg/37kzrpr et pose tes questions !",
 
-    "coming_soon": "Implémentation en cours ! Pour les mise à jours, go regarder sur le serveur support (`{}support`)",
+    "coming_soon": "Implémentation en cours ! Pour les mises à jour, go regarder sur le serveur support ({}sup)",
     "see_below": "voir ci-dessous",
     "settings_instructions": "Pour mettre en place une option, faite `{}settings -flag value`",
     "invite_instructions": "Réagis pour accepter ou refuser l'invitation.",
@@ -380,7 +380,7 @@
             "_name": "fermer_par_défaut",
             "_aliases": [ "lock_def" ],
             "_help": [
-                "Créer uniquement des salles privés."
+                "Créer uniquement des salles privées."
             ]
         },
         "join_messages": {
