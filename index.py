@@ -42,7 +42,6 @@ def passes_role_restriction(ctx):
     settings = Settings.get_for(ctx.guild.id)
     if len(settings.role_restriction) > 0:
         role_ids = [ role.id for role in member.roles ]
-        print(has_common_element(role_ids, settings.role_restriction) or member.guild_permissions.administrator)
         return has_common_element(role_ids, settings.role_restriction) or member.guild_permissions.administrator
     return True
 
