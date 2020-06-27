@@ -4,7 +4,7 @@ import discord
 
 ACCEPT_EMOJI = '\u2705'
 DECLINE_EMOJI= '\u274c'
-JOIN_EMOJI = '\u27a1'
+JOIN_EMOJI = '\u27a1\ufe0f'
 LANGUAGE_EMOJI = u'\U0001f310'
 ID_EMOJI = u'\U0001f194'
 
@@ -156,7 +156,7 @@ class BasicRoom(commands.Cog):
         leave = str(reaction.emoji) == JOIN_EMOJI
         if leave and reaction.message.author.id == self.bot.user.id and not user.bot:
             for field in reaction.message.embeds[0].fields:
-                if field.name == get_all_text('channel'):
+                if field.name in get_all_text('channel'):
                     channel_id = field.value[2:-1] # remove mention
                     room_data = rooms_db.find_one(channel_id=channel_id)
                     if room_data:
@@ -168,7 +168,7 @@ class BasicRoom(commands.Cog):
         join = str(reaction.emoji) == JOIN_EMOJI
         if join and reaction.message.author.id == self.bot.user.id and not user.bot:
             for field in reaction.message.embeds[0].fields:
-                if field.name == settings.get_all_text('channel'):
+                if field.name in get_all_text('channel'):
                     channel_id = field.value[2:-1] # remove mention
                     room_data = rooms_db.find_one(channel_id=channel_id)
                     if room_data:
