@@ -30,8 +30,6 @@ def load_cog(bot, cog):
             text = get_text('_commands', lang=lang)[command.name]
             aliases += text['_aliases']
         command.update(
-            # name=text['_name'],
-            # help='\n'.join(text['_help']),
             aliases=list(set(aliases)),
             pass_context=True )
     bot.add_cog(cog)

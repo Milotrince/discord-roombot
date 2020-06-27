@@ -11,3 +11,6 @@ for lang in langs:
 
 def get_text(key, lang='en'):
     return strings[lang][key]
+
+def get_all_text(key):
+    return [ strings[s][key] for s in langs ]

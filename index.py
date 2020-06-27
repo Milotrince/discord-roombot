@@ -110,6 +110,8 @@ async def on_command_error(ctx, error):
         await logc(error.text, bot)
         return await ctx.send(settings.get_text('not_admin'))
         # return await ctx.send(settings.get_text('missing_permission').format('`, `'.join(missing_permissions)))
+    elif type(error) == commands.NoPrivateMessage:
+        return
     elif type(error) == commands.errors.CheckFailure:
         return
     elif type(error) == commands.errors.CommandNotFound:

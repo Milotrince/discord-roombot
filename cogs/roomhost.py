@@ -61,6 +61,7 @@ class RoomHost(commands.Cog):
     
 
     @commands.command()
+    @commands.guild_only()
     async def kick(self, ctx, *args):
         c = self.get_context(ctx, args)
         kickee = self.get_target_player(c)
@@ -79,6 +80,7 @@ class RoomHost(commands.Cog):
 
 
     @commands.command()
+    @commands.guild_only()
     async def host(self, ctx, *args):
         c = self.get_context(ctx, args)
         new_host = self.get_target_player(c)
@@ -94,6 +96,7 @@ class RoomHost(commands.Cog):
 
 
     @commands.command()
+    @commands.guild_only()
     async def activity(self, ctx, *args):
         c = self.get_context(ctx, args)
         new_activity = remove_mentions(' '.join(args))
@@ -113,6 +116,7 @@ class RoomHost(commands.Cog):
 
 
     @commands.command()
+    @commands.guild_only()
     async def description(self, ctx, *args):
         c = self.get_context(ctx, args)
         new_description = remove_mentions(' '.join(args))
@@ -127,6 +131,7 @@ class RoomHost(commands.Cog):
 
 
     @commands.command()
+    @commands.guild_only()
     async def size(self, ctx, *args):
         c = self.get_context(ctx, args)
         try:
@@ -141,6 +146,7 @@ class RoomHost(commands.Cog):
 
 
     @commands.command()
+    @commands.guild_only()
     async def timeout(self, ctx, *args):
         c = self.get_context(ctx, args)
         new_timeout = remove_mentions(args)[0] if remove_mentions(args) else False 
@@ -156,6 +162,7 @@ class RoomHost(commands.Cog):
 
 
     @commands.command()
+    @commands.guild_only()
     async def lock(self, ctx, *args):
         c = self.get_context(ctx, args)
         first_arg = remove_mentions(args)[0]
@@ -165,6 +172,7 @@ class RoomHost(commands.Cog):
 
 
     @commands.command()
+    @commands.guild_only()
     async def color(self, ctx, *args):
         c = self.get_context(ctx, args)
         color = get_color(remove_mentions(args)[0] if remove_mentions(args) else '') 
@@ -177,6 +185,7 @@ class RoomHost(commands.Cog):
 
     # TODO: set view/send perms
     # @commands.command()
+    # @commands.guild_only()
     # async def view_permission(self, ctx, *args):
     #     pass
 
@@ -185,6 +194,7 @@ class RoomHost(commands.Cog):
     #     pass
 
     @commands.command()
+    @commands.guild_only()
     async def voice_channel(self, ctx, *args):
         c = self.get_context(ctx, args)
         if c.voice_channel:

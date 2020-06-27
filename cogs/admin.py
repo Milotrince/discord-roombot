@@ -32,6 +32,7 @@ class Admin(commands.Cog):
 
 
     @commands.command()
+    @commands.guild_only()
     async def reset_settings(self, ctx):
         settings = Settings.get_for(ctx.guild.id)
         settings = Settings(Settings.defaults,
@@ -48,6 +49,7 @@ class Admin(commands.Cog):
 
 
     @commands.command()
+    @commands.guild_only()
     async def settings(self, ctx, *args):
         settings = Settings.get_for(ctx.guild.id)
         settings_info = {}
@@ -97,6 +99,7 @@ class Admin(commands.Cog):
 
 
     @commands.command()
+    @commands.guild_only()
     async def force_disband(self, ctx, *args):
         settings = Settings.get_for(ctx.guild.id)
         rooms = rooms_db.find(guild=ctx.guild.id)
@@ -118,6 +121,7 @@ class Admin(commands.Cog):
 
 
     @commands.command()
+    @commands.guild_only()
     async def purge(self, ctx, *args):
         settings = Settings.get_for(ctx.guild.id)
         player = ctx.message.author

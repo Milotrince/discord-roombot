@@ -2,6 +2,12 @@ from database.room import *
 from discord.ext import commands
 import discord
 
+ACCEPT_EMOJI = '\u2705'
+DECLINE_EMOJI= '\u274c'
+JOIN_EMOJI = '\u27a1'
+LANGUAGE_EMOJI = u'\U0001f310'
+ID_EMOJI = u'\U0001f194'
+
 class BasicRoom(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -11,10 +17,12 @@ class BasicRoom(commands.Cog):
         self.invitee_list = []
 
     @commands.command()
+    @commands.guild_only()
     async def new(self, ctx, *args):
         await Room.create(ctx.message.author, ctx=ctx, args=args)
 
     @commands.command()
+    @commands.guild_only()
     async def join(self, ctx, *args):
         settings = Settings.get_for(ctx.guild.id)
         if len(args) < 1:
@@ -25,7 +33,7 @@ class BasicRoom(commands.Cog):
             if success:
                 message = await ctx.send(embed=response)
                 if not room.lock:
-                    await message.add_reaction('➡️')
+                    await message.add_reaction(JOIN_EMOJI)
             else:
                 await ctx.send(response)
         else:
@@ -33,6 +41,7 @@ class BasicRoom(commands.Cog):
 
 
     @commands.command()
+    @commands.guild_only()
     async def invite(self, ctx, *args):
         settings = Settings.get_for(ctx.guild.id)
         if len(args) < 1:
@@ -58,10 +67,9 @@ class BasicRoom(commands.Cog):
             player_names.append(member.name.lower())
 
         for arg in args:
-            if arg in player_names:
-                p = discord.utils.find(lambda p: p.name.lower() == arg.lower(), ctx.guild.members)
-                if p and p.id not in invitees:
-                    invitees.append(p.id)
+            p = discord.utils.find(lambda p: p.name.lower() == arg.lower(), ctx.guild.members)
+            if p and p.id not in invitees:
+                invitees.append(p.id)
 
         rooms = rooms_db.find(guild=ctx.guild.id)
         room_match = None
@@ -82,17 +90,25 @@ class BasicRoom(commands.Cog):
             timestamp=now(),
             title=choice(settings.get_text('invite_messages')).format(player.display_name, room.activity) )
         embed.add_field(
+            inline=False,
+            name=room.activity,
+            value=room.description )
+        embed.add_field(
+            inline=False,
             name="{} ({}/{})".format(settings.get_text('players'), len(room.players), room.size),
             value="<@{}>".format(">, <@".join([str(id) for id in room.players])) )
         embed.add_field(
+            inline=False,
             name=settings.get_text('inviter') + ": " + player.display_name,
             value=settings.get_text('server') + ": " + ctx.guild.name )
         embed.add_field(
-            name=settings.get_text('room') + ": " + room.activity,
-            value=settings.get_text('description') + ": " + room.description )
-        embed.add_field(
-            name="ID",
+            inline=True,
+            name=ID_EMOJI,
             value=room.role_id )
+        embed.add_field(
+            inline=True,
+            name=LANGUAGE_EMOJI,
+            value=settings.language)
         embed.set_footer(
             text=settings.get_text('invite_instructions'),
             icon_url=discord.Embed.Empty )
@@ -116,8 +132,8 @@ class BasicRoom(commands.Cog):
                     continue
                 invitee = self.bot.get_user(invitee_id)
                 m = await invitee.send(embed=embed)
-                await m.add_reaction('✅')
-                await m.add_reaction('❌')
+                await m.add_reaction(ACCEPT_EMOJI)
+                await m.add_reaction(DECLINE_EMOJI)
                 self.invitee_list.append(invitee_id)
                 invitee_success.append(invitee_id)
             except discord.errors.Forbidden as e:
@@ -140,11 +156,10 @@ class BasicRoom(commands.Cog):
 
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction, user):
-        settings = Settings.get_for(reaction.message.channel.guild.id)
-        leave = reaction.emoji == '➡️'
+        leave = str(reaction.emoji) == JOIN_EMOJI
         if leave and reaction.message.author.id == self.bot.user.id and not user.bot:
             for field in reaction.message.embeds[0].fields:
-                if field.name == settings.get_text('channel'):
+                if field.name == get_all_text('channel'):
                     channel_id = field.value[2:-1] # remove mention
                     room_data = rooms_db.find_one(channel_id=channel_id)
                     if room_data:
@@ -153,11 +168,10 @@ class BasicRoom(commands.Cog):
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
-        settings = Settings.get_for(reaction.message.channel.guild.id)
-        join = reaction.emoji == '➡️'
+        join = str(reaction.emoji) == JOIN_EMOJI
         if join and reaction.message.author.id == self.bot.user.id and not user.bot:
             for field in reaction.message.embeds[0].fields:
-                if field.name == settings.get_text('channel'):
+                if field.name == settings.get_all_text('channel'):
                     channel_id = field.value[2:-1] # remove mention
                     room_data = rooms_db.find_one(channel_id=channel_id)
                     if room_data:
@@ -167,8 +181,8 @@ class BasicRoom(commands.Cog):
 
         player = user
         channel = reaction.message.channel
-        accept = reaction.emoji == '✅'
-        decline = reaction.emoji == '❌'
+        accept = str(reaction.emoji) == ACCEPT_EMOJI
+        decline = str(reaction.emoji) == DECLINE_EMOJI
         valid_invite_emoji = accept or decline
         from_dm = type(channel) is discord.channel.DMChannel
         if not valid_invite_emoji or player.id not in self.invitee_list or not from_dm:
@@ -176,33 +190,38 @@ class BasicRoom(commands.Cog):
 
         self.invitee_list.remove(player.id)
         room_id = None
+        lang = langs[0]
         for field in reaction.message.embeds[0].fields:
-            if field.name == "ID":
+            if field.name == ID_EMOJI:
                 room_id = field.value
-                break
+            elif field.name == LANGUAGE_EMOJI:
+                lang = field.value
         room = None
         room_data = rooms_db.find_one(role_id=room_id)
         if room_data:
             room = Room.from_query(room_data)
         if not room:
-            return await channel.send(settings.get_text('room_not_exist'))
+            return await channel.send(get_text('room_not_exist', lang=lang))
 
         if (accept):
+            room_channel = self.bot.get_channel(room.channel_id)
             guild = self.bot.get_guild(room.guild)
-            if not guild:
-                return await channel.send(settings.get_text('room_not_exist'))
-            await channel.send(settings.get_text('invite_accepted'))
+            member = guild.get_member(user.id)
+            if not room_channel or not guild or not member:
+                return await channel.send(get_text('room_not_exist', lang=lang))
+            await channel.send(get_text('invite_accepted', lang=lang))
             # TODO:
-            (success, response) = await self.try_join(reaction.message.channel, room, user)
+            (success, response) = await self.try_join(room_channel, room, member)
             if success:
                 await channel.send(embed=response)
             else:
                 await channel.send(response)
         else:
-            await channel.send(settings.get_text('invite_declined'))
+            await channel.send(get_text('invite_declined', lang=lang))
                 
 
     @commands.command()
+    @commands.guild_only()
     async def leave(self, ctx, *args):
         settings = Settings.get_for(ctx.guild.id)
         player = ctx.message.author
@@ -238,6 +257,7 @@ class BasicRoom(commands.Cog):
 
 
     @commands.command()
+    @commands.guild_only()
     async def ls(self, ctx):
         settings = Settings.get_for(ctx.guild.id)
         rooms = rooms_db.find(guild=ctx.guild.id)
@@ -261,6 +281,7 @@ class BasicRoom(commands.Cog):
 
 
     @commands.command()
+    @commands.guild_only()
     async def look(self, ctx, *args):
         settings = Settings.get_for(ctx.guild.id)
         r = Room.get_by_any(ctx, args)
