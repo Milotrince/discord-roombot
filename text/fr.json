@@ -63,10 +63,10 @@
     "not_in_room": "Vous n'êtes pas dans un salon.",
     "not_admin": "Vous n'êtes pas administrateur.",
     "not_host": "Vous n'êtes pas l'hôte du salon.",
-    "host_command_fail": "Soit vous n’êtes pas le propriétaire de ce salon ou alors cette commande est désactiver.",
+    "host_command_fail": "Soit vous n’êtes pas le propriétaire de ce salon, soit cette commande est désactivée.",
 
     "timed_out": "La demande a expiré.",
-    "rate_limited": "La demande pour modifier un rôle/salon a expiré. Discord est probablement entrain de limiter les demandes désolé.",
+    "rate_limited": "La demande pour modifier un rôle/salon a expiré. Discord est probablement en train de limiter les demandes. Désolé.",
     "missing_target_room": "Veuillez spécifier le salon en question.",
     "missing_target": "Veuillez spécifier le joueur ou le @mentionner.",
     "missing_target_invitees": "Qui voulez-vous inviter ? (Vérifier si le nom est bien orthographié.)",
@@ -83,8 +83,8 @@
     "language_not_exist": "`{}` Ce langage n’est pas supporté.",
 
     "purged_a": "{} Les salons enregistrés dans la base de données ont étés supprimés.",
-    "purged_b": "{0} les salons cassés {1} les rôles cassés ont été supprimées .",
-    "purged_b_fail": "J’ai raté {} salons et {} rôles. Il faudrait peut être les permission d’administrateur(temporairement!) et lancer la commande pour que je puisse réessayer ?",
+    "purged_b": "{0} salon(s) cassés, et {1} rôle(s) cassé(s) ont été supprimés.",
+    "purged_b_fail": "J’ai raté {} salon(s) et {} rôle(s). Il faudrait peut être les permissions d’administrateur (temporairement!) et lancer la commande pour que je puisse réessayer?",
     "kicked": "`{0}` expulsé `{1}` de `{2}`.",
     "new_host": "{1} est maintenant le nouvel hôte de {2}.",
     "new_voice_channel": "Vocal `#{}` créé.",
@@ -97,7 +97,7 @@
 
     "coming_soon": "Implémentation en cours ! Pour les mise à jours, go regarder sur le serveur support (`{}support`)",
     "see_below": "voir ci-dessous",
-    "settings_instructions": "Pour mettre en place une option(s), faite `{}settings -flag value`",
+    "settings_instructions": "Pour mettre en place une option, faite `{}settings -flag value`",
     "invite_instructions": "Réagis pour accepter ou refuser l'invitation.",
     "settings_success": "`{}` définie comme `{}`.",
     "reset_settings": "Les paramètres ont été réinitialisé.",
