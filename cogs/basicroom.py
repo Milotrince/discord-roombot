@@ -12,9 +12,6 @@ class BasicRoom(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.color = discord.Color.blurple()
-        # TODO: invitee list to db
-        # self.invitee_list = db.get_table('invitees', primary_id='id')
-        self.invitee_list = []
 
     @commands.command()
     @commands.guild_only()
@@ -134,7 +131,7 @@ class BasicRoom(commands.Cog):
                 m = await invitee.send(embed=embed)
                 await m.add_reaction(ACCEPT_EMOJI)
                 await m.add_reaction(DECLINE_EMOJI)
-                self.invitee_list.append(invitee_id)
+                invites_db.insert(dict(user=invitee_id, room=room.role_id))
                 invitee_success.append(invitee_id)
             except discord.errors.Forbidden as e:
                 invitee_fail.append(invitee_id)
@@ -185,10 +182,6 @@ class BasicRoom(commands.Cog):
         decline = str(reaction.emoji) == DECLINE_EMOJI
         valid_invite_emoji = accept or decline
         from_dm = type(channel) is discord.channel.DMChannel
-        if not valid_invite_emoji or player.id not in self.invitee_list or not from_dm:
-            return
-
-        self.invitee_list.remove(player.id)
         room_id = None
         lang = langs[0]
         for field in reaction.message.embeds[0].fields:
@@ -196,12 +189,19 @@ class BasicRoom(commands.Cog):
                 room_id = field.value
             elif field.name == LANGUAGE_EMOJI:
                 lang = field.value
+        search = invites_db.find_one(user=user.id, room=room_id)
+
+        if not valid_invite_emoji or not search or not from_dm:
+            return
+
         room = None
         room_data = rooms_db.find_one(role_id=room_id)
         if room_data:
             room = Room.from_query(room_data)
         if not room:
             return await channel.send(get_text('room_not_exist', lang=lang))
+
+        invites_db.delete(user=user.id, room=room_id)
 
         if (accept):
             room_channel = self.bot.get_channel(room.channel_id)
@@ -210,7 +210,7 @@ class BasicRoom(commands.Cog):
             if not room_channel or not guild or not member:
                 return await channel.send(get_text('room_not_exist', lang=lang))
             await channel.send(get_text('invite_accepted', lang=lang))
-            # TODO:
+            room.lock = False
             (success, response) = await self.try_join(room_channel, room, member)
             if success:
                 await channel.send(embed=response)

@@ -83,7 +83,6 @@ class Room:
         # activity (room name)
         activity = choice(settings.default_names).format(player.display_name)
         if ctx:
-            print(args)
             if len(args) < 1 and player.activity and player.activity and player.activity.name and len(player.activity.name) > 1:
                 activity = player.activity.name
             elif args:
@@ -314,8 +313,10 @@ class Room:
         return (False, None)
 
     async def disband(self, guild):
-        role = guild.get_role(self.role_id)
         rooms_db.delete(role_id=self.role_id)
+        invites_db.delete(room_id=self.role_id)
+
+        role = guild.get_role(self.role_id)
         await role.delete()
 
         channel = guild.get_channel(self.channel_id)
