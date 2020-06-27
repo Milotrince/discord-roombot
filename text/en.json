@@ -464,9 +464,9 @@
         "Hop into `{1}`!"
     ],
     "default_room_names":[
-        "{}'s room",
-        "{}'s epic party",
-        "Room of {}"
+        "{0}'s room",
+        "{0}'s epic party",
+        "Room of {0}"
     ],
     "default_room_descriptions":[
         "Let's do something together",

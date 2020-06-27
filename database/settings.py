@@ -171,7 +171,7 @@ class Settings:
             else:
                 messages = []
                 for s in re.split('[,]+', value):
-                    m = s.strip().replace('__', '{}')
+                    m = s.strip().replace('__', '{0}')
                     if len(m) > 0:
                         messages.append(m)
                 parsed_value = ','.join(messages)

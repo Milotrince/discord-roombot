@@ -81,7 +81,10 @@ class Room:
             return
 
         # activity (room name)
-        activity = choice(settings.default_names).format(player.display_name)
+        name = player.display_name
+        top = player.top_role.name
+        bottom = player.roles[1].name if len(player.roles) > 1 else top
+        activity = choice(settings.default_names).format(name, top, bottom)
         if ctx:
             if len(args) < 1 and player.activity and player.activity and player.activity.name and len(player.activity.name) > 1:
                 activity = player.activity.name

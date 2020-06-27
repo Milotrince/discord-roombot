@@ -465,9 +465,9 @@
         "Saute dans `{1}`!"
     ],
     "default_room_names":[
-        "Salle à {}",
-        "L’équipe épique de {}",
-        "Salle de {}"
+        "Salle à {0}",
+        "L’équipe épique de {0}",
+        "Salle de {0}"
     ],
     "default_room_descriptions":[
         "Faisons quelque chose ensemble!",
