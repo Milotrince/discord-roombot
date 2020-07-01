@@ -1,16 +1,12 @@
-from database.room import *
+from roombot.database.room import *
 from discord.ext import commands, tasks
-from utils.pagesembed import FieldPagesEmbed
+from roombot.utils.pagesembed import FieldPagesEmbed
 import discord
 
 class Admin(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.color = discord.Color.red()
-        self.destroy_pagesembed_instances.start()
-
-    def cog_unload(self):
-        self.destroy_pagesembed_instances.stop()
 
     async def cog_check(self, ctx):
         return ctx.message.author.guild_permissions.administrator
@@ -19,16 +15,6 @@ class Admin(commands.Cog):
         if type(error) == discord.ext.commands.errors.CheckFailure:
             settings = Settings.get_for(ctx.guild.id)
             await ctx.send(settings.get_text('not_admin'))
-        
-
-    @commands.Cog.listener()
-    async def on_reaction_add(self, reaction, user):
-        if user.id != self.bot.user.id:
-            await FieldPagesEmbed.on_reaction_add(reaction, user)
-
-    @tasks.loop(seconds=60)
-    async def destroy_pagesembed_instances(self):
-        await FieldPagesEmbed.destroy_old()
 
 
     @commands.command()
@@ -46,7 +32,6 @@ class Admin(commands.Cog):
     # @commands.command()
     # async def create_on_react(self, ctx, *args):
     #     settings = Settings.get_for(ctx.guild.id)
-
 
     @commands.command()
     @commands.guild_only()
@@ -132,7 +117,7 @@ class Admin(commands.Cog):
         if 'a' not in flags and 'b' not in flags:
             return await ctx.send(settings.get_text('purge_missing_flag'))
 
-        if 'a' in flags or 'active' in flags:
+        if 'a' in flags:
             rooms_db_data = rooms_db.find(guild=ctx.guild.id)
             count = 0
             for room_data in rooms_db_data:
@@ -142,7 +127,7 @@ class Admin(commands.Cog):
                 count += 1
             await ctx.send(settings.get_text('purged_a').format(count))
 
-        if 'b' in flags or 'broken' in flags:
+        if 'b' in flags:
             deleted_channels = 0
             deleted_roles = 0
             failed_channels = 0

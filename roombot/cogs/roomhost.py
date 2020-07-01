@@ -1,4 +1,4 @@
-from database.room import *
+from roombot.database.room import *
 from discord.ext import commands
 import discord
 

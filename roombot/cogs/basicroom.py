@@ -1,12 +1,9 @@
-from database.room import *
+from roombot.database.room import *
+from roombot.utils.roomembed import RoomEmbed
+from roombot.utils.constants import ACCEPT_EMOJI, DECLINE_EMOJI, JOIN_EMOJI, STOP_EMOJI, LANGUAGE_EMOJI, ID_EMOJI
 from discord.ext import commands
 import discord
 
-ACCEPT_EMOJI = '\u2705'
-DECLINE_EMOJI= '\u274c'
-JOIN_EMOJI = '\u27a1\ufe0f'
-LANGUAGE_EMOJI = u'\U0001f310'
-ID_EMOJI = u'\U0001f194'
 
 class BasicRoom(commands.Cog):
     def __init__(self, bot):
@@ -26,13 +23,11 @@ class BasicRoom(commands.Cog):
             return await ctx.send(settings.get_text('missing_target_room'))
         room = Room.get_by_any(ctx, args)
         if room:
-            (success, response) = await self.try_join(ctx, room, ctx.author)
-            if success:
-                message = await ctx.send(embed=response)
-                if not room.lock:
-                    await message.add_reaction(JOIN_EMOJI)
+            joined = await self.try_join(ctx, room, ctx.author)
+            if joined:
+                await RoomEmbed(ctx, room, settings.get_text('room_joined')).send()
             else:
-                await ctx.send(response)
+                await channel.send(settings.get_text('retry_error'))
         else:
             await ctx.send(settings.get_text('room_not_exist'))
 
@@ -153,72 +148,20 @@ class BasicRoom(commands.Cog):
 
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction, user):
-        leave = str(reaction.emoji) == JOIN_EMOJI
-        if leave and reaction.message.author.id == self.bot.user.id and not user.bot:
-            for field in reaction.message.embeds[0].fields:
-                if field.name in get_all_text('channel'):
-                    channel_id = field.value[2:-1] # remove mention
-                    room_data = rooms_db.find_one(channel_id=channel_id)
-                    if room_data:
-                        room = Room.from_query(room_data)
-                        await self.try_leave(reaction.message.channel, room, user)
+        if str(reaction) == JOIN_EMOJI and reaction.message.author.id == self.bot.user.id and not user.bot:
+            room = Room.from_message(reaction.message)
+            if room:
+                await self.try_leave(reaction.message.channel, room, user)
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
-        join = str(reaction.emoji) == JOIN_EMOJI
-        if join and reaction.message.author.id == self.bot.user.id and not user.bot:
-            for field in reaction.message.embeds[0].fields:
-                if field.name in get_all_text('channel'):
-                    channel_id = field.value[2:-1] # remove mention
-                    room_data = rooms_db.find_one(channel_id=channel_id)
-                    if room_data:
-                        room = Room.from_query(room_data)
-                        await self.try_join(reaction.message.channel, room, user)
-            return
-
-        player = user
-        channel = reaction.message.channel
-        accept = str(reaction.emoji) == ACCEPT_EMOJI
-        decline = str(reaction.emoji) == DECLINE_EMOJI
-        valid_invite_emoji = accept or decline
-        from_dm = type(channel) is discord.channel.DMChannel
-        room_id = None
-        lang = langs[0]
-        for field in reaction.message.embeds[0].fields:
-            if field.name == ID_EMOJI:
-                room_id = field.value
-            elif field.name == LANGUAGE_EMOJI:
-                lang = field.value
-        search = invites_db.find_one(user=user.id, room=room_id)
-
-        if not valid_invite_emoji or not search or not from_dm:
-            return
-
-        room = None
-        room_data = rooms_db.find_one(role_id=room_id)
-        if room_data:
-            room = Room.from_query(room_data)
-        if not room:
-            return await channel.send(get_text('room_not_exist', lang=lang))
-
-        invites_db.delete(user=user.id, room=room_id)
-
-        if (accept):
-            room_channel = self.bot.get_channel(room.channel_id)
-            guild = self.bot.get_guild(room.guild)
-            member = guild.get_member(user.id)
-            if not room_channel or not guild or not member:
-                return await channel.send(get_text('room_not_exist', lang=lang))
-            await channel.send(get_text('invite_accepted', lang=lang))
-            room.lock = False
-            (success, response) = await self.try_join(room_channel, room, member)
-            if success:
-                await channel.send(embed=response)
-            else:
-                await channel.send(response)
-        else:
-            await channel.send(get_text('invite_declined', lang=lang))
-                
+        if reaction.message.author.id == self.bot.user.id and not user.bot and user.guild:
+            if str(reaction) == JOIN_EMOJI:
+                room = Room.from_message(reaction.message)
+                if room:
+                    await self.try_join(reaction.message.channel, room, user)
+                else:
+                    await self.try_invite_response(reaction, user)
 
     @commands.command()
     @commands.guild_only()
@@ -284,11 +227,9 @@ class BasicRoom(commands.Cog):
     @commands.guild_only()
     async def look(self, ctx, *args):
         settings = Settings.get_for(ctx.guild.id)
-        r = Room.get_by_any(ctx, args)
-        if r:
-            message = await ctx.send(embed=r.get_embed(ctx.author, settings.get_text('request'))) 
-            if not r.lock:
-                await message.add_reaction('➡️')
+        room = Room.get_by_any(ctx, args)
+        if room:
+            await RoomEmbed(ctx, room, settings.get_text('request')).send()
         else:
             await ctx.send(settings.get_text('no_room'))
 
@@ -304,17 +245,14 @@ class BasicRoom(commands.Cog):
             return (False, settings.get_text('join_full_room'))
 
         if await room.add_player(player):
-            embed = room.get_embed(player, settings.get_text('room_joined'))
             room_channel = ctx.guild.get_channel(room.channel_id)
             await room_channel.send(choice(settings.join_messages).format(player.display_name))
             if len(room.players) >= room.size:
                 role = ctx.guild.get_role(room.role_id)
-                # TODO: check for all possible None errors
-                # if role:
-                await ctx.send(settings.get_text('full_room_notification').format(role.mention, len(room.players)))
-            return (True, embed)
-        else:
-            return (False, settings.get_text('retry_error'))
+                if role:
+                    await ctx.send(settings.get_text('full_room_notification').format(role.mention, len(room.players)))
+            return True
+        return False
 
     async def try_leave(self, ctx, room, player):
         settings = Settings.get_for(ctx.guild.id)
@@ -338,6 +276,48 @@ class BasicRoom(commands.Cog):
                 return (True, settings.get_text('retry_error'))
         return (False, None)
 
+    async def try_invite_response(self, reaction, user):
+        channel = reaction.message.channel
+        accept = str(reaction.emoji) == ACCEPT_EMOJI
+        decline = str(reaction.emoji) == DECLINE_EMOJI
+        valid_invite_emoji = accept or decline
+        from_dm = type(channel) is discord.channel.DMChannel
+        room_id = None
+        lang = langs[0]
+        for field in reaction.message.embeds[0].fields:
+            if field.name == ID_EMOJI:
+                room_id = field.value
+            elif field.name == LANGUAGE_EMOJI:
+                lang = field.value
+        search = invites_db.find_one(user=user.id, room=room_id)
+
+        if not valid_invite_emoji or not search or not from_dm:
+            return
+
+        room = None
+        room_data = rooms_db.find_one(role_id=room_id)
+        if room_data:
+            room = Room.from_query(room_data)
+        if not room:
+            return await channel.send(get_text('room_not_exist', lang=lang))
+
+        invites_db.delete(user=user.id, room=room_id)
+
+        if (accept):
+            room_channel = self.bot.get_channel(room.channel_id)
+            guild = self.bot.get_guild(room.guild)
+            member = guild.get_member(user.id)
+            if not room_channel or not guild or not member:
+                return await channel.send(get_text('room_not_exist', lang=lang))
+            await channel.send(get_text('invite_accepted', lang=lang))
+            room.lock = False
+            joined = await self.try_join(room_channel, room, member)
+            if joined:
+                await RoomEmbed(ctx, room, settings.get_text('room_joined')).send()
+            else:
+                await channel.send(settings.get_text('retry_error'))
+        else:
+            await channel.send(get_text('invite_declined', lang=lang))
 
 
 def setup(bot):

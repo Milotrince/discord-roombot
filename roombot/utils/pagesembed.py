@@ -1,14 +1,10 @@
-from utils.functions import *
-from database.settings import Settings
+from roombot.utils.functions import *
+from roombot.utils.constants import FIRST_EMOJI, PREV_EMOJI, NEXT_EMOJI, LAST_EMOJI, STOP_EMOJI
+from roombot.database.settings import Settings
 from math import ceil
 from abc import ABCMeta, abstractmethod
 
-FIRST_EMOJI = '\u23EE'
-PREV_EMOJI = '\u2B05'
-NEXT_EMOJI = '\u27A1'
-LAST_EMOJI = '\u23ED'
-STOP_EMOJI = '\u23F9'
-EMOJIS = [FIRST_EMOJI, PREV_EMOJI, NEXT_EMOJI, LAST_EMOJI, STOP_EMOJI]
+PAGES_EMOJIS = [FIRST_EMOJI, PREV_EMOJI, NEXT_EMOJI, LAST_EMOJI, STOP_EMOJI]
 
 class PagesEmbed(metaclass=ABCMeta):
     instances = {}
@@ -48,7 +44,7 @@ class PagesEmbed(metaclass=ABCMeta):
 
     async def send(self):
         self.m = await self.ctx.send(embed=self.get_page(1))
-        for emoji in EMOJIS:
+        for emoji in PAGES_EMOJIS:
             await self.m.add_reaction(emoji)
         PagesEmbed.instances[self.m.id] = self
 
@@ -72,7 +68,7 @@ class PagesEmbed(metaclass=ABCMeta):
 
     @classmethod
     async def on_reaction_add(cls, reaction, user):
-        if str(reaction) in EMOJIS and reaction.message.id in PagesEmbed.instances:
+        if str(reaction) in PAGES_EMOJIS and reaction.message.id in PagesEmbed.instances:
             instance = PagesEmbed.instances[reaction.message.id]
             if user.id == instance.ctx.author.id:
                 instance.time = now()

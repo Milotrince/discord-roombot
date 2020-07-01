@@ -1,4 +1,4 @@
-from utils.functions import *
+from roombot.utils.functions import *
 from collections import OrderedDict
 
 class Settings:

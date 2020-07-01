@@ -1,5 +1,7 @@
-from utils.functions import *
-from database.settings import *
+from roombot.utils.roomembed import RoomEmbed
+from roombot.utils.functions import *
+from roombot.database.settings import *
+import asyncio
 
 async def get_rooms_category(guild):
     settings = Settings.get_for(guild.id)
@@ -34,16 +36,18 @@ class Room:
     def unpack_data(self, data):
         for (key, value) in self.props.items():
             if key in data and data[key] != None:
-                v = data[key]
-                if isinstance(value, list) and isinstance(v, str):
-                    v = str_to_ids(v)
-                elif isinstance(value, int) and not isinstance(v, int):
-                    v = int(v)
-                elif isinstance(value, discord.Color) and isinstance(v, discord.Color):
-                    v = v.value
-            else:
-                v = value
-            self.__setattr__(key, v)
+                v = self.unpack_value(data[key], value)
+                self.__setattr__(key, v)
+    
+    def unpack_value(self, value, default):
+        v = value
+        if isinstance(default, list) and isinstance(v, str):
+            v = str_to_ids(v)
+        elif isinstance(default, int) and not isinstance(v, int):
+            v = int(v)
+        elif isinstance(default, discord.Color) and isinstance(v, discord.Color):
+            v = v.value
+        return v
     
     def pack_data(self):
         data = {}
@@ -166,15 +170,23 @@ class Room:
         await player.add_roles(role)
         await channel.edit(topic="({}/{}) {}".format(len(room.players), room.size, room.description))
         await channel.send(choice(settings.join_messages).format(player.display_name))
-        embed = room.get_embed(player, settings.get_text('new_room'))
         if ctx:
-            message = await ctx.send(embed=embed)
-            await message.add_reaction('➡️')
+            await RoomEmbed(ctx, room, settings.get_text('new_room')).send()
+
 
             
     @classmethod
     def from_query(cls, data):
         return cls(data)
+
+    @classmethod
+    def from_message(cls, message):
+        for field in message.embeds[0].fields:
+            if field.name in get_all_text('channel'):
+                channel_id = field.value[2:-1] # removes mention
+                room_data = rooms_db.find_one(channel_id=channel_id)
+                if room_data:
+                    return cls.from_query(room_data)
 
     @classmethod
     def get_hosted(cls, player_id, guild_id):
@@ -246,42 +258,16 @@ class Room:
         return rooms
 
 
-    def get_embed(self, player, footer_action):
-        s = Settings.get_for(self.guild)
-        description = discord.Embed.Empty if self.description == '' else self.description
-        room_status = s.get_text('room_status').format(self.size - len(self.players)) if len(self.players) < self.size else s.get_text('full_room')
-
-        embed = discord.Embed(
-            color=self.color,
-            description=description,
-            timestamp=self.created,
-            title="{}{}".format(":lock: " if self.lock else "", self.activity) )
-        embed.add_field(
-            name="{} ({}/{})".format(s.get_text('players'), len(self.players), self.size),
-            value="<@{}>".format(">, <@".join([str(id) for id in self.players])) )
-        embed.add_field(
-            name=room_status,
-            value=s.get_text('room_timeout_on').format(self.timeout) if self.timeout > 0 else s.get_text('room_timeout_off') )
-        embed.add_field(
-            name=s.get_text('host'),
-            value="<@{}>".format(self.host)),
-        embed.add_field(
-            name=s.get_text('channel'),
-            value="<#{}>".format(self.channel_id)),
-        embed.set_footer(
-            text="{} : {}".format(footer_action, player.display_name),
-            icon_url=discord.Embed.Empty )
-        
-        return embed
-
-    def send_embed(self, embed, channel):
-        asdf = channel
-
     def update(self, field, value):
+        v = self.unpack_value(value, Room.props[field])
+        self.__setattr__(field, v)
         new_dict = {}
         new_dict['role_id'] = self.role_id
         new_dict[field] = value
         rooms_db.update(new_dict, ['role_id'])
+        if field != 'last_active':
+            asyncio.ensure_future(
+                RoomEmbed.update(self) )
 
     def update_active(self):
         self.last_active = now()
@@ -318,14 +304,13 @@ class Room:
     async def disband(self, guild):
         rooms_db.delete(role_id=self.role_id)
         invites_db.delete(room_id=self.role_id)
+        asyncio.ensure_future(
+            RoomEmbed.destroy_room(self.role_id) )
 
         role = guild.get_role(self.role_id)
-        await role.delete()
-
+        await try_delete(role)
         channel = guild.get_channel(self.channel_id)
-        await channel.delete()
-
+        await try_delete(channel)
         if self.voice_channel_id:
             voice_channel = guild.get_channel(self.voice_channel_id)
-            if voice_channel:
-                await voice_channel.delete()
+            await try_delete(voice_channel)

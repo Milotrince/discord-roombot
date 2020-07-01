@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
-from database.room import *
-from utils.pagesembed import EmbedPagesEmbed
+from roombot.database.room import *
+from roombot.utils.pagesembed import EmbedPagesEmbed
 
 class General(commands.Cog):
     def __init__(self, bot):

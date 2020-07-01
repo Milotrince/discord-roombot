@@ -4,8 +4,8 @@ import pytz
 import re
 from random import choice
 from datetime import datetime, timedelta
-from database.connect import *
-from utils.text import *
+from roombot.database.connect import *
+from roombot.utils.text import *
 
 # General helper functions
 
@@ -139,3 +139,9 @@ def remove_mentions(args):
         return re.sub(r"<(@!|@&|#)[\d]*>", '', ' '.join(args)).split(' ')
     else:
         return re.sub(r"<(@!|@&|#)[\d]*>", '', args).strip()
+
+async def try_delete(discord_object):
+    try:
+        await discord_object.delete()
+    except:
+        pass
