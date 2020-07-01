@@ -84,10 +84,15 @@ class RoomEmbed():
     @classmethod
     async def update(cls, room):
         try:
-            for r_embed in cls.instances.values():
-                if r_embed.room.role_id == room.role_id:
-                    r_embed.room = room
-                    embed = r_embed.get_embed()
-                    await r_embed.m.edit(embed=embed)
+            for b in cls.instances.values():
+                if b.room.role_id == room.role_id:
+                    was_locked = b.room.lock
+                    b.room = room
+                    embed = b.get_embed()
+                    await b.m.edit(embed=embed)
+                    if not b.room.lock and was_locked:
+                        await b.m.add_reaction(JOIN_EMOJI)
+                    elif b.room.lock and not was_locked:
+                        await b.m.clear_reaction(JOIN_EMOJI)
         except:
             pass # fail silently
