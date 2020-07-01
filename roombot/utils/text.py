@@ -1,11 +1,17 @@
 import json
+from glob import glob
 from pathlib import Path
+from os import path
+
+parent_path = Path(__file__).parent.parent
 
 strings = {}
-langs = ['en', 'fr']
+
+glob_search = str(parent_path.joinpath('text', '*.json'))
+langs = [path.basename(x)[:-5] for x in glob(glob_search)]
 
 for lang in langs:
-    path = Path(__file__).parent.parent.joinpath('text', f'{lang}.json')
+    path = parent_path.joinpath('text', f'{lang}.json')
     with open(path, 'r', encoding='utf-8') as file:
         strings[lang] = json.load(file)
 
