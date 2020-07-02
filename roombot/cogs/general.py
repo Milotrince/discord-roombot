@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
-from roombot.database.room import *
+from roombot.database.room import Room
+from roombot.database.settings import Settings
+from roombot.utils.functions import load_cog
 from roombot.utils.pagesembed import EmbedPagesEmbed
 
 class General(commands.Cog):

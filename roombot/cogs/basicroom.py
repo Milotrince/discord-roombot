@@ -1,19 +1,34 @@
-from roombot.database.room import *
+import discord
+from discord.ext import commands
+from roombot.database.room import Room
+from roombot.database.settings import Settings
+from roombot.database.db import RoomBotDatabase
+from roombot.utils.functions import load_cog, get_aliases, now, pop_flags
+from roombot.utils.text import langs, get_text
 from roombot.utils.roomembed import RoomEmbed
 from roombot.utils.constants import ACCEPT_EMOJI, DECLINE_EMOJI, JOIN_EMOJI, STOP_EMOJI, LANGUAGE_EMOJI, ID_EMOJI
-from discord.ext import commands
-import discord
-
+from random import choice
 
 class BasicRoom(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.color = discord.Color.blurple()
+        self.invites = RoomBotDatabase().invites
 
     @commands.command()
     @commands.guild_only()
     async def new(self, ctx, *args):
-        await Room.create(ctx.message.author, ctx=ctx, args=args)
+        (flags, flag_args) = pop_flags(args)
+        if len(flags) > 0:
+            opts = {}
+            for flag, i in enumerate(flags):
+                keys = ['activity', 'color', 'description', 'lock', 'size', 'timeout']
+                for key in keys:
+                    if flag == key or flag in get_aliases(key):
+                        opts[key] = flag_args[i]
+            await Room.create(ctx.message.author, ctx=ctx, **opts)
+        else:
+            await Room.create(ctx.message.author, ctx=ctx, name=' '.join(args))
 
     @commands.command()
     @commands.guild_only()
@@ -25,7 +40,7 @@ class BasicRoom(commands.Cog):
         if room:
             joined = await self.try_join(ctx, room, ctx.author)
             if joined:
-                await RoomEmbed(ctx, room, settings.get_text('room_joined')).send()
+                await RoomEmbed(ctx, room, 'room_joined', settings).send()
             else:
                 await channel.send(settings.get_text('retry_error'))
         else:
@@ -63,7 +78,7 @@ class BasicRoom(commands.Cog):
             if p and p.id not in invitees:
                 invitees.append(p.id)
 
-        rooms = rooms_db.find(guild=ctx.guild.id)
+        rooms = Room.find(guild=ctx.guild.id)
         room_match = None
         if rooms:
             for room_data in rooms:
@@ -126,7 +141,7 @@ class BasicRoom(commands.Cog):
                 m = await invitee.send(embed=embed)
                 await m.add_reaction(ACCEPT_EMOJI)
                 await m.add_reaction(DECLINE_EMOJI)
-                invites_db.insert(dict(user=invitee_id, room=room.role_id))
+                self.invites.insert(dict(user=invitee_id, room=room.role_id))
                 invitee_success.append(invitee_id)
             except discord.errors.Forbidden as e:
                 invitee_fail.append(invitee_id)
@@ -155,13 +170,14 @@ class BasicRoom(commands.Cog):
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
-        if reaction.message.author.id == self.bot.user.id and not user.bot and user.guild:
-            if str(reaction) == JOIN_EMOJI:
-                room = Room.from_message(reaction.message)
-                if room:
-                    await self.try_join(reaction.message.channel, room, user)
-                else:
-                    await self.try_invite_response(reaction, user)
+        if reaction.message.author.id == self.bot.user.id and not user.bot:
+            if hasattr(user, 'guild'):
+                if str(reaction) == JOIN_EMOJI:
+                    room = Room.from_message(reaction.message)
+                    if room:
+                        await self.try_join(reaction.message.channel, room, user)
+            else:
+                await self.try_invite_response(reaction, user)
 
     @commands.command()
     @commands.guild_only()
@@ -203,7 +219,7 @@ class BasicRoom(commands.Cog):
     @commands.guild_only()
     async def ls(self, ctx):
         settings = Settings.get_for(ctx.guild.id)
-        rooms = rooms_db.find(guild=ctx.guild.id)
+        rooms = Room.find(guild=ctx.guild.id)
         embed = discord.Embed(color=discord.Color.blurple())
         count = 0
 
@@ -229,7 +245,7 @@ class BasicRoom(commands.Cog):
         settings = Settings.get_for(ctx.guild.id)
         room = Room.get_by_any(ctx, args)
         if room:
-            await RoomEmbed(ctx, room, settings.get_text('request')).send()
+            await RoomEmbed(ctx, room, 'request', settings).send()
         else:
             await ctx.send(settings.get_text('no_room'))
 
@@ -289,19 +305,20 @@ class BasicRoom(commands.Cog):
                 room_id = field.value
             elif field.name == LANGUAGE_EMOJI:
                 lang = field.value
-        search = invites_db.find_one(user=user.id, room=room_id)
+        search = self.invites.find_one(user=user.id, room=room_id)
 
         if not valid_invite_emoji or not search or not from_dm:
             return
 
         room = None
-        room_data = rooms_db.find_one(role_id=room_id)
+        room_data = Room.find_one(role_id=room_id)
         if room_data:
             room = Room.from_query(room_data)
         if not room:
             return await channel.send(get_text('room_not_exist', lang=lang))
 
-        invites_db.delete(user=user.id, room=room_id)
+        self.invites.delete(user=user.id, room=room_id)
+        settings = Settings.get_for(room.guild)
 
         if (accept):
             room_channel = self.bot.get_channel(room.channel_id)
@@ -313,7 +330,7 @@ class BasicRoom(commands.Cog):
             room.lock = False
             joined = await self.try_join(room_channel, room, member)
             if joined:
-                await RoomEmbed(ctx, room, settings.get_text('room_joined')).send()
+                await RoomEmbed(reaction.message, room, 'room_joined', settings).send()
             else:
                 await channel.send(settings.get_text('retry_error'))
         else:

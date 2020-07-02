@@ -1,7 +1,10 @@
-from roombot.database.room import *
-from discord.ext import commands, tasks
-from roombot.utils.pagesembed import FieldPagesEmbed
 import discord
+from discord.ext import commands
+from roombot.database.room import Room
+from roombot.database.settings import Settings
+from roombot.utils.functions import load_cog, pop_flags, iter_len
+from roombot.utils.text import langs, get_text
+from roombot.utils.pagesembed import FieldPagesEmbed
 
 class Admin(commands.Cog):
     def __init__(self, bot):
@@ -63,7 +66,7 @@ class Admin(commands.Cog):
             for field_name, field in settings_info.items():
                 field_value = settings.get(field_name)
                 if isinstance(field_value, bool): 
-                    field_value = bool_to_text(field_value)
+                    field_value = str(int(field_value))
                 elif isinstance(field_value, list):
                     field_value = '[`\n'+'\n'.join(['  `'+str(s).replace('`{}`', '__')+'`,' for s in field_value])+'\n`]' if len(field_value) > 0 else '[]'
 
@@ -87,11 +90,11 @@ class Admin(commands.Cog):
     @commands.guild_only()
     async def force_disband(self, ctx, *args):
         settings = Settings.get_for(ctx.guild.id)
-        rooms = rooms_db.find(guild=ctx.guild.id)
+        rooms = Room.find(guild=ctx.guild.id)
         activity_filter = " ".join(args) if args else None
         role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions else None
 
-        rooms = rooms_db.find(guild=ctx.guild.id)
+        rooms = Room.find(guild=ctx.guild.id)
         if rooms:
             for room_data in rooms:
                 r = Room.from_query(room_data)
@@ -118,9 +121,9 @@ class Admin(commands.Cog):
             return await ctx.send(settings.get_text('purge_missing_flag'))
 
         if 'a' in flags:
-            rooms_db_data = rooms_db.find(guild=ctx.guild.id)
+            rooms_data = Room.find(guild=ctx.guild.id)
             count = 0
-            for room_data in rooms_db_data:
+            for room_data in rooms_data:
                 r = Room.from_query(room_data)
                 guild = self.bot.get_guild(r.guild)
                 await r.disband(guild)
@@ -136,14 +139,14 @@ class Admin(commands.Cog):
             if not category:
                 return await ctx.send(settings.get_text('no_category'))
             for channel in category.channels:
-                if iter_len(rooms_db.find(guild=ctx.guild.id, channel_id=channel.id)) < 1:
+                if iter_len(Room.find(guild=ctx.guild.id, channel_id=channel.id)) < 1:
                     try:
                         await channel.delete()
                         deleted_channels += 1
                     except:
                         failed_channels += 1
             for role in ctx.guild.roles:
-                if iter_len(rooms_db.find(guild=ctx.guild.id, role_id=role.id)) < 1:
+                if iter_len(Room.find(guild=ctx.guild.id, role_id=role.id)) < 1:
                     if any([ role.name.startswith('({})'.format(get_text('room', lang=l))) for l in langs ]):
                         try:
                             await role.delete()

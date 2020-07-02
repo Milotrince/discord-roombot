@@ -1,39 +1,46 @@
 import discord
-import asyncio
 import pytz
 import re
 from random import choice
 from datetime import datetime, timedelta
-from roombot.database.connect import *
-from roombot.utils.text import *
+from roombot.utils.text import langs, get_text
 
-# General helper functions
 
-def log(content):
-    print('{} {}'.format(datetime.now(), content))
-
-async def logc(content, bot):
-    log(content)
-    channel_id = os.getenv('LOGGING_CHANNEL_ID')
-    guild_id = os.getenv('LOGGING_SERVER_ID')
-    if bot and channel_id and guild_id:
-        guild = bot.get_guild(int(guild_id))
-        if guild:
-            channel = guild.get_channel(int(channel_id))
-            if channel:
-                await channel.send(content)
+# discord =============
 
 def load_cog(bot, cog):
     for command in cog.get_commands():
         aliases = []
-        for lang in langs:
-            text = get_text('_commands', lang=lang)[command.name]
-            aliases += text['_aliases']
         command.update(
-            aliases=list(set(aliases)),
+            aliases=get_aliases(command.name),
             pass_context=True )
     bot.add_cog(cog)
 
+def get_aliases(command_name):
+    aliases = []
+    for lang in langs:
+        text = get_text('_commands', lang=lang)[command_name]
+        aliases += text['_aliases']
+    return list(set(aliases))
+
+def remove_mentions(args):
+    if isinstance(args, list) or isinstance(args, tuple):
+        return re.sub(r"<(@!|@&|#)[\d]*>", '', ' '.join(args)).split(' ')
+    else:
+        return re.sub(r"<(@!|@&|#)[\d]*>", '', args).strip()
+
+async def get_rooms_category(guild, settings):
+    existing_category = discord.utils.get(guild.categories, name=settings.category_name)
+    return existing_category if existing_category else await guild.create_category(settings.category_name)
+
+async def try_delete(discord_object):
+    try:
+        await discord_object.delete()
+    except:
+        pass
+
+
+# time =============
 
 def now():
     return datetime.now(pytz.utc)
@@ -41,6 +48,8 @@ def now():
 def utime(d):
     return d.replace(tzinfo=pytz.utc)
 
+
+# colors =============
 
 def get_default_colors():
     return [ c.value for c in [
@@ -81,6 +90,10 @@ def get_color(color, return_default=True):
     else:
         return None
 
+
+
+# other =============
+
 def pop_flags(args):
     split_on_flags = ' '.join(list(args)).split('-')
     del split_on_flags[0]
@@ -95,9 +108,6 @@ def pop_flags(args):
 
 def text_to_bool(text):
     return text.lower() in get_text('True')
-
-def bool_to_text(yes):
-    return "Yes" if yes else "No"
 
 def iter_len(iterator):
     return sum(1 for _ in iterator)
@@ -133,15 +143,3 @@ def strip_list(_list):
         else:
             l.append(el)
     return l
-
-def remove_mentions(args):
-    if isinstance(args, list) or isinstance(args, tuple):
-        return re.sub(r"<(@!|@&|#)[\d]*>", '', ' '.join(args)).split(' ')
-    else:
-        return re.sub(r"<(@!|@&|#)[\d]*>", '', args).strip()
-
-async def try_delete(discord_object):
-    try:
-        await discord_object.delete()
-    except:
-        pass

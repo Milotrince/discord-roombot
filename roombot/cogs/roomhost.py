@@ -1,6 +1,10 @@
-from roombot.database.room import *
-from discord.ext import commands
 import discord
+from discord.ext import commands
+from roombot.database.room import Room
+from roombot.database.settings import Settings
+from roombot.utils.functions import load_cog, get_rooms_category, get_color, remove_mentions, text_to_bool, clamp
+from random import choice
+import asyncio
 
 class RoomContext(object):
     def __init__(self, *initial_data, **kwargs):
@@ -198,21 +202,21 @@ class RoomHost(commands.Cog):
     async def voice_channel(self, ctx, *args):
         c = self.get_context(ctx, args)
         if c.voice_channel:
-            # TODO: calling vc again destroys the vc
-            return await ctx.send(c.settings.get_text('voice_channel_exists'))
-        category = await get_rooms_category(ctx.guild)
-        settings = Settings.get_for(ctx.guild.id)
-        voice_channel = await ctx.guild.create_voice_channel(
-            c.room.activity,
-            category=category,
-            position=0,
-            bitrate=settings.bitrate * 1000, 
-            overwrites={
-                ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-                ctx.guild.me: discord.PermissionOverwrite(move_members=True),
-                c.role: discord.PermissionOverwrite(read_messages=True) })
-        c.room.update('voice_channel_id', voice_channel.id)
-        return await ctx.send(c.settings.get_text('new_voice_channel').format(voice_channel.name))
+            await c.voice_channel.delete()
+            await ctx.send(c.settings.get_text('deleted_voice_channel'))
+        else:
+            category = await get_rooms_category(ctx.guild, c.settings)
+            voice_channel = await ctx.guild.create_voice_channel(
+                c.room.activity,
+                category=category,
+                position=0,
+                bitrate=c.settings.bitrate * 1000, 
+                overwrites={
+                    ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                    ctx.guild.me: discord.PermissionOverwrite(move_members=True),
+                    c.role: discord.PermissionOverwrite(read_messages=True) })
+            c.room.update('voice_channel_id', voice_channel.id)
+            await ctx.send(c.settings.get_text('new_voice_channel').format(voice_channel.name))
 
 
 def setup(bot):

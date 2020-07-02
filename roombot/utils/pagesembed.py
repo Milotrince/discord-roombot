@@ -1,5 +1,6 @@
-from roombot.utils.functions import *
+import discord
 from roombot.utils.constants import FIRST_EMOJI, PREV_EMOJI, NEXT_EMOJI, LAST_EMOJI, STOP_EMOJI
+from roombot.utils.functions import now, clamp
 from roombot.database.settings import Settings
 from math import ceil
 from abc import ABCMeta, abstractmethod
@@ -58,7 +59,7 @@ class PagesEmbed(metaclass=ABCMeta):
 
 
     @classmethod
-    async def destroy_old(cls):
+    async def delete_old(cls):
         to_destroy = []
         for instance in cls.instances.values():
             if (now() - instance.time).total_seconds() > 60 * 5:

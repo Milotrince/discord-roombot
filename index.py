@@ -1,3 +1,6 @@
+
+from dotenv import load_dotenv
+load_dotenv()
 from roombot.bot import run_bot 
 
 print("""

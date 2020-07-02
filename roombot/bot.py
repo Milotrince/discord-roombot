@@ -1,13 +1,13 @@
 
 from discord.ext import commands, tasks
-from roombot.database.settings import *
-from roombot.database.room import *
+from roombot.database.settings import Settings
+from roombot.database.room import Room
 from roombot.utils.pagesembed import PagesEmbed, EmbedPagesEmbed, FieldPagesEmbed
 from roombot.utils.roomembed import RoomEmbed
+from roombot.utils.functions import now, has_common_element
 import discord
 import logging
 import os
-
 
 # logging
 if os.getenv('ENV') == 'development':
@@ -16,6 +16,20 @@ if os.getenv('ENV') == 'development':
     handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
     handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
     logger.addHandler(handler)
+
+def log(content):
+    print('{} {}'.format(now(), content))
+
+async def logc(content):
+    log(content)
+    channel_id = os.getenv('LOGGING_CHANNEL_ID')
+    guild_id = os.getenv('LOGGING_SERVER_ID')
+    if bot and channel_id and guild_id:
+        guild = bot.get_guild(int(guild_id))
+        if guild:
+            channel = guild.get_channel(int(channel_id))
+            if channel:
+                await channel.send(content)
 
 
 async def determine_prefix(bot, message):
@@ -106,8 +120,8 @@ async def on_command_error(ctx, error):
     elif type(error) == commands.errors.MissingPermissions:
         return await ctx.send(settings.get_text('not_admin'))
     elif type(error) == discord.Forbidden:
-        await logc("===== FORBIDDEN Error raised from: " + ctx.message.content, bot)
-        await logc(error.text, bot)
+        await logc("===== FORBIDDEN Error raised from: " + ctx.message.content)
+        await logc(error.text)
         return await ctx.send(settings.get_text('not_admin'))
         # return await ctx.send(settings.get_text('missing_permission').format('`, `'.join(missing_permissions)))
     elif type(error) == commands.NoPrivateMessage:
@@ -131,8 +145,8 @@ async def on_command_error(ctx, error):
 
         if missing_permissions:
             return await ctx.send(settings.get_text('missing_permission').format('`, `'.join(missing_permissions)))
-    await logc("===== Error raised from: " + ctx.message.content, bot)
-    await logc(error, bot)
+    await logc("===== Error raised from: " + ctx.message.content)
+    await logc(error)
 
     errorText = ''
     try:
@@ -144,48 +158,17 @@ async def on_command_error(ctx, error):
             settings.prefix + settings.get_text('_commands')['support']['_name']) )
 
 
-# Periodically check for inactive rooms
-async def delete_inactive_rooms():
-    for room_data in rooms_db.find():
-        r = Room.from_query(room_data)
-        if r.timeout and r.timeout > 0:
-            guild = bot.get_guild(r.guild)
-            birth_channel = guild.get_channel(r.birth_channel) if guild else None
-            channel = guild.get_channel(r.channel_id) if guild else None
-
-            if (channel):
-                history = (await channel.history(limit=1).flatten())
-                if len(history) > 0:
-                    last_message = history[0]
-                    last_message_datetime = utime(last_message.created_at)
-                    voice_channel = guild.get_channel(r.voice_channel_id) if guild else None
-                    if voice_channel and len(voice_channel.members) > 0:
-                        r.update_active()
-                    if last_message_datetime > utime(r.last_active):
-                        r.update('last_active', last_message_datetime)
-
-            time_diff = now() - utime(r.last_active)
-            if time_diff.total_seconds()/60 >= r.timeout: # timeout is in minutes
-                if guild:
-                    await r.disband(guild)
-                    if birth_channel:
-                        settings = Settings.get_for(guild.id)
-                        await birth_channel.send(settings.get_text('disband_from_inactivity').format(r.activity))
-                else:
-                    rooms_db.delete(role_id=self.role_id)
-                    invites_db.delete(room_id=self.role_id)
-
 
 @tasks.loop(seconds=60)
 async def delete_inactive():
     try:
-        await FieldPagesEmbed.destroy_old()
-        await EmbedPagesEmbed.destroy_old()
-        await RoomEmbed.destroy_old()
-        await delete_inactive_rooms()
+        await FieldPagesEmbed.delete_old()
+        await EmbedPagesEmbed.delete_old()
+        await RoomEmbed.delete_old()
+        await Room.delete_inactive(bot)
     except Exception as e:
-        await logc("===== Error raised from: delete_inactive", bot)
-        await logc(e, bot)
+        await logc("===== Error raised from: delete_inactive")
+        await logc(e)
 
 # add cogs (groups of commands)
 cogs = [ 'general', 'basicroom', 'roomhost', 'admin' ]

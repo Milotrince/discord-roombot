@@ -76,7 +76,6 @@
     "target_not_in_room": "{0} n'est pas dans le vocal {1}.",
     "bad_field": "Le domaine `{}` n’est pas reconnu.",
     "need_integer": "Cette valeur doit être un entier",
-    "voice_channel_exists": "Il y a déjà un vocal pour ce salon.",
     "size_too_small": "Il y a trop de joueurs.",
     "prefix_too_long": "Le préfixe est trop long. Il doit contenir moins de {} caractères.",
     "should_use_mentions": "`{}` doit être une liste de ids/mentions.",
@@ -88,6 +87,7 @@
     "kicked": "`{0}` expulsé `{1}` de `{2}`.",
     "new_host": "{1} est maintenant le nouvel hôte de {2}.",
     "new_voice_channel": "Vocal `#{}` créé.",
+    "deleted_voice_channel": "Vocal a été supprimé.",
     "full_room_notification": "Hey {0}! {1} joueurs ont rejoints.",
     "updated_field": "{2} mise à jour `{0}` de `{1}` pour le salon {3}.",
 

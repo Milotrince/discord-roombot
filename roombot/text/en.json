@@ -75,7 +75,6 @@
     "target_not_in_room": "{0} is not in your room {1}.",
     "bad_field": "The field `{}` is not recognized.",
     "need_integer": "The new value must be an integer",
-    "voice_channel_exists": "There is already a voice channel for this room.",
     "size_too_small": "There are too many players.",
     "prefix_too_long": "Prefix is too long. Should be less than {} characters.",
     "should_use_mentions": "`{}` should be a list of ids/mentions.",
@@ -87,6 +86,7 @@
     "kicked": "`{0}` kicked `{1}` from `{2}`.",
     "new_host": "{1} is now the new host of {2}.",
     "new_voice_channel": "Created voice channel `#{}`.",
+    "deleted_voice_channel": "Voice channel has been deleted.",
     "full_room_notification": "Hey {0}! {1} players have joined.",
     "updated_field": "{2} updated `{0}` to `{1}` for room {3}.",
 

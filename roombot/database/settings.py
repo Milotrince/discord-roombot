@@ -1,5 +1,11 @@
-from roombot.utils.functions import *
+from roombot.database.db import RoomBotDatabase
+from roombot.utils.functions import get_default_colors, get_color, text_to_bool, ids_to_str, str_to_ids, clamp, is_number, strip_list
+from roombot.utils.text import get_text
 from collections import OrderedDict
+import os
+import re
+
+db = RoomBotDatabase()
 
 class Settings:
     defaults = {
@@ -32,7 +38,7 @@ class Settings:
         self.set_programmatic_defaults(_data)
         self.guild_id = data['guild_id']
         _data['guild_id'] = self.guild_id
-        settings_db.upsert(self.pack_data(_data), ['guild_id'])
+        db.settings.upsert(self.pack_data(_data), ['guild_id'])
 
     def set_programmatic_defaults(self, data):
         for (key, value) in data.items():
@@ -101,7 +107,7 @@ class Settings:
 
     @classmethod
     def get_for(cls, guild_id):
-        query = settings_db.find_one(guild_id=guild_id)
+        query = db.settings.find_one(guild_id=guild_id)
         return cls.from_query(query) if query else cls.make_default(guild_id)
 
     @classmethod
@@ -201,7 +207,7 @@ class Settings:
             self.__setattr__(field, value)
             new_dict = {'guild_id': self.guild_id}
             new_dict[field] = value
-            settings_db.update(new_dict, ['guild_id'])
+            db.settings.update(new_dict, ['guild_id'])
 
     def get(self, field):
         return getattr(self, field)

@@ -1,13 +1,13 @@
-from roombot.utils.roomembed import RoomEmbed
-from roombot.utils.functions import *
-from roombot.database.settings import *
 import asyncio
+import discord
+from roombot.database.db import RoomBotDatabase
+from roombot.database.settings import Settings
+from roombot.utils.roomembed import RoomEmbed
+from roombot.utils.functions import get_rooms_category, now, utime, remove_mentions, try_delete, ids_to_str, str_to_ids
+from roombot.utils.text import get_all_text
+from random import choice
 
-async def get_rooms_category(guild):
-    settings = Settings.get_for(guild.id)
-    existing_category = discord.utils.get(guild.categories, name=settings.category_name)
-    return existing_category if existing_category else await guild.create_category(settings.category_name)
-
+db = RoomBotDatabase()
 
 class Room:
     props = {
@@ -31,7 +31,7 @@ class Room:
     def __init__(self, data={}, **kwargs):
         data.update(kwargs)
         self.unpack_data(data)
-        rooms_db.upsert(self.pack_data(), ['role_id'])
+        db.rooms.upsert(self.pack_data(), ['role_id'])
     
     def unpack_data(self, data):
         for (key, value) in self.props.items():
@@ -66,7 +66,7 @@ class Room:
        
          
     @classmethod
-    async def create(cls, member, ctx=None, args=None):
+    async def create(cls, member, ctx=None, **opts):
         player = member
         guild = member.guild
         settings = Settings.get_for(guild.id)
@@ -88,12 +88,7 @@ class Room:
         name = player.display_name
         top = player.top_role.name
         bottom = player.roles[1].name if len(player.roles) > 1 else top
-        activity = choice(settings.default_names).format(name, top, bottom)
-        if ctx:
-            if len(args) < 1 and player.activity and player.activity and player.activity.name and len(player.activity.name) > 1:
-                activity = player.activity.name
-            elif args:
-                activity = remove_mentions(" ".join(args))
+        activity = opts['name'] if name in opts and opts['name'] else choice(settings.default_names).format(name, top, bottom)
         activity = activity[0:90].strip()
 
         # color
@@ -131,7 +126,7 @@ class Room:
             overwrites[accessor] = discord.PermissionOverwrite(read_messages=True)
 
         # channel
-        category = await get_rooms_category(guild)
+        category = await get_rooms_category(guild, settings)
         channel = await guild.create_text_channel(
             name=activity,
             category=category,
@@ -171,7 +166,7 @@ class Room:
         await channel.edit(topic="({}/{}) {}".format(len(room.players), room.size, room.description))
         await channel.send(choice(settings.join_messages).format(player.display_name))
         if ctx:
-            await RoomEmbed(ctx, room, settings.get_text('new_room')).send()
+            await RoomEmbed(ctx, room, 'new_room', settings).send()
 
 
             
@@ -184,13 +179,13 @@ class Room:
         for field in message.embeds[0].fields:
             if field.name in get_all_text('channel'):
                 channel_id = field.value[2:-1] # removes mention
-                room_data = rooms_db.find_one(channel_id=channel_id)
+                room_data = cls.find_one(channel_id=channel_id)
                 if room_data:
                     return cls.from_query(room_data)
 
     @classmethod
     def get_hosted(cls, player_id, guild_id):
-        rooms = rooms_db.find(guild=guild_id, host=player_id)
+        rooms = cls.find(guild=guild_id, host=player_id)
         if rooms:
             for room_data in rooms:
                 r = cls.from_query(room_data)
@@ -199,12 +194,12 @@ class Room:
 
     @classmethod
     def get_by_mention(cls, ctx, args):
-        rooms = rooms_db.find(guild=ctx.guild.id)
+        rooms = cls.find(guild=ctx.guild.id)
         player_filter = ctx.message.mentions[0].id if ctx.message.mentions else None
         activity_filter = " ".join(args) if args else None
         role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions else None
 
-        rooms = rooms_db.find(guild=ctx.guild.id)
+        rooms = cls.find(guild=ctx.guild.id)
         if rooms:
             for room_data in rooms:
                 r = cls.from_query(room_data)
@@ -214,19 +209,19 @@ class Room:
 
     @classmethod
     def get_by_role(cls, role_id):
-        room_data = rooms_db.find_one(role_id=role_id)
+        room_data = cls.find_one(role_id=role_id)
         if room_data:
             return cls.from_query(room_data)
         return None
 
     @classmethod
     def get_by_any(cls, ctx, args):
-        rooms = rooms_db.find(guild=ctx.guild.id)
+        rooms = cls.find(guild=ctx.guild.id)
         player_mention_filter = ctx.message.mentions[0].id if ctx.message.mentions else ctx.message.author.id
         text_filter = " ".join(args).lower() if args else None
         role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions else None
 
-        rooms = rooms_db.find(guild=ctx.guild.id)
+        rooms = cls.find(guild=ctx.guild.id)
         if rooms:
             for room_data in rooms:
                 r = cls.from_query(room_data)
@@ -249,13 +244,52 @@ class Room:
     @classmethod
     def get_player_rooms(cls, player_id, guild_id):
         rooms = []
-        rooms_query = rooms_db.find(guild=guild_id)
+        rooms_query = cls.find(guild=guild_id)
         if rooms_query:
             for room_data in rooms_query:
                 r = cls.from_query(room_data)
                 if player_id in r.players or player_id == r.host:
                     rooms.append(r)
         return rooms
+
+    @classmethod
+    def find(cls, **kwargs):
+        return db.rooms.find(**kwargs)
+
+    @classmethod
+    def find_one(cls, **kwargs):
+        return db.rooms.find_one(**kwargs)
+
+    @classmethod
+    async def delete_inactive(cls, bot):
+        for room_data in cls.find():
+            r = cls.from_query(room_data)
+            if r.timeout and r.timeout > 0:
+                guild = bot.get_guild(r.guild)
+                birth_channel = guild.get_channel(r.birth_channel) if guild else None
+                channel = guild.get_channel(r.channel_id) if guild else None
+
+                if (channel):
+                    history = (await channel.history(limit=1).flatten())
+                    if len(history) > 0:
+                        last_message = history[0]
+                        last_message_datetime = utime(last_message.created_at)
+                        voice_channel = guild.get_channel(r.voice_channel_id) if guild else None
+                        if voice_channel and len(voice_channel.members) > 0:
+                            r.update_active()
+                        if last_message_datetime > utime(r.last_active):
+                            r.update('last_active', last_message_datetime)
+
+                time_diff = now() - utime(r.last_active)
+                if time_diff.total_seconds()/60 >= r.timeout: # timeout is in minutes
+                    if guild:
+                        await r.disband(guild)
+                        if birth_channel:
+                            settings = Settings.get_for(guild.id)
+                            await birth_channel.send(settings.get_text('disband_from_inactivity').format(r.activity))
+                    else:
+                        db.rooms.delete(role_id=r.role_id)
+                        db.invites.delete(room_id=r.role_id)
 
 
     def update(self, field, value):
@@ -264,7 +298,7 @@ class Room:
         new_dict = {}
         new_dict['role_id'] = self.role_id
         new_dict[field] = value
-        rooms_db.update(new_dict, ['role_id'])
+        db.rooms.update(new_dict, ['role_id'])
         if field != 'last_active':
             asyncio.ensure_future(
                 RoomEmbed.update(self) )
@@ -302,8 +336,8 @@ class Room:
         return (False, None)
 
     async def disband(self, guild):
-        rooms_db.delete(role_id=self.role_id)
-        invites_db.delete(room_id=self.role_id)
+        db.rooms.delete(role_id=self.role_id)
+        db.invites.delete(room_id=self.role_id)
         asyncio.ensure_future(
             RoomEmbed.destroy_room(self.role_id) )
 
