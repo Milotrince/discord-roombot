@@ -102,6 +102,15 @@
     "settings_success": "`{}` définie comme `{}`.",
     "reset_settings": "Les paramètres ont été réinitialisé.",
 
+    "red": "rouge",
+    "orange": "orange",
+    "yellow": "jaune",
+    "green": "vert",
+    "teal": "cyan",
+    "blue": "bleu",
+    "purple": "violet",
+    "pink": "rose",
+
     "_commands": {
         "about": {
             "_name": "à propos",
@@ -124,7 +133,7 @@
             "_aliases": [ "c", "couleur" ],
             "_help": [
                 "Définit la couleur de votre salle.",
-                "Les couleurs possibles sont: cyan, vert, bleu, violet, magenta, jaune, orange, et rouge.",
+                "Vous pouvez utiliser une couleur hexadécimale ou des mots de couleur courante.",
                 "Une couleur aléatoire sera définie si la couleur spécifiée n’est pas inclue au dessus."
             ]
         },

@@ -101,6 +101,15 @@
     "settings_success": "Set `{}` to `{}`.",
     "reset_settings": "Settings have been reset.",
 
+    "red": "red",
+    "orange": "orange",
+    "yellow": "yellow",
+    "green": "green",
+    "teal": "teal",
+    "blue": "blue",
+    "purple": "purple",
+    "pink": "pink",
+
     "_commands": {
         "about": {
             "_name": "about",
@@ -123,7 +132,7 @@
             "_aliases": [ "c", "colour" ],
             "_help": [
                 "Set the color of your room.",
-                "Possible colors are: teal, green, blue, purple, magenta/pink, gold/yellow, orange, and red.",
+                "You can use a hex color or common color words.",
                 "A random color is set if the specified color is not included above."
             ]
         },

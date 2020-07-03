@@ -1,6 +1,6 @@
 from roombot.database.db import RoomBotDatabase
 from roombot.utils.functions import get_default_colors, get_color, text_to_bool, ids_to_str, str_to_ids, clamp, is_number, strip_list
-from roombot.utils.text import get_text
+from roombot.utils.text import langs, get_text
 from collections import OrderedDict
 import os
 import re

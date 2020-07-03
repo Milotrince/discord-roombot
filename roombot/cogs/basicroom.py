@@ -21,7 +21,7 @@ class BasicRoom(commands.Cog):
         (flags, flag_args) = pop_flags(args)
         if len(flags) > 0:
             opts = {}
-            for flag, i in enumerate(flags):
+            for (i, flag) in enumerate(flags):
                 keys = ['activity', 'color', 'description', 'lock', 'size', 'timeout']
                 for key in keys:
                     if flag == key or flag in get_aliases(key):

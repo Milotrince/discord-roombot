@@ -3,7 +3,7 @@ import pytz
 import re
 from random import choice
 from datetime import datetime, timedelta
-from roombot.utils.text import langs, get_text
+from roombot.utils.text import langs, get_text, get_all_text
 
 
 # discord =============
@@ -69,22 +69,22 @@ def get_color(color, return_default=True):
     hex_match = re.search('[0-9a-fA-F]{6}', color)
     if hex_match and hex_match.group():
         return discord.Color(int(hex_match.group(), 16))
-    if 'teal' in color:
-        return discord.Color.teal()
-    elif 'green' in color:
-        return discord.Color.green()
-    elif 'blue' in color:
-        return discord.Color.blue()
-    elif 'purple' in color:
-        return discord.Color.purple()
-    elif 'magenta' in color or 'pink' in color:
-        return discord.Color.magenta()
-    elif 'gold' in color or 'yellow' in color:
-        return discord.Color.gold()
-    elif 'orange' in color:
-        return discord.Color.orange()
-    elif 'red' in color:
+    elif color in get_all_text('red'):
         return discord.Color.red()
+    elif color in get_all_text('orange'):
+        return discord.Color.orange()
+    elif color in get_all_text('yellow'):
+        return discord.Color.gold()
+    elif color in get_all_text('green'):
+        return discord.Color.green()
+    elif color in get_all_text('teal'):
+        return discord.Color.teal()
+    elif color in get_all_text('blue'):
+        return discord.Color.blue()
+    elif color in get_all_text('purple'):
+        return discord.Color.purple()
+    elif color in get_all_text('pink'):
+        return discord.Color.magenta()
     elif return_default:
         return discord.Color(some_color())
     else:

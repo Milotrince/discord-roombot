@@ -3,7 +3,7 @@ import discord
 from roombot.database.db import RoomBotDatabase
 from roombot.database.settings import Settings
 from roombot.utils.roomembed import RoomEmbed
-from roombot.utils.functions import get_rooms_category, now, utime, remove_mentions, try_delete, ids_to_str, str_to_ids
+from roombot.utils.functions import get_rooms_category, get_color, now, utime, remove_mentions, try_delete, ids_to_str, str_to_ids
 from roombot.utils.text import get_all_text
 from random import choice
 
@@ -39,12 +39,18 @@ class Room:
                 v = self.unpack_value(data[key], value)
                 self.__setattr__(key, v)
     
-    def unpack_value(self, value, default):
+    @classmethod
+    def unpack_value(cls, value, default):
         v = value
         if isinstance(default, list) and isinstance(v, str):
             v = str_to_ids(v)
         elif isinstance(default, int) and not isinstance(v, int):
-            v = int(v)
+            try:
+                v = int(v)
+            except ValueError:
+                v = -1
+        elif isinstance(default, bool) and not isinstance(v, bool):
+            v = bool(v)
         elif isinstance(default, discord.Color) and isinstance(v, discord.Color):
             v = v.value
         return v
@@ -66,10 +72,13 @@ class Room:
        
          
     @classmethod
-    async def create(cls, member, ctx=None, **opts):
+    async def create(cls, member, ctx=None, **flags):
         player = member
         guild = member.guild
         settings = Settings.get_for(guild.id)
+
+        def flag(key):
+            return cls.unpack_value(flags[key], cls.props[key]) if key in settings.allowed_host_commands and key in flags and len(flags[key]) > 0 else None
 
         if not guild.me.guild_permissions.manage_channels or not guild.me.guild_permissions.manage_roles:
             raise discord.ext.commands.errors.CommandInvokeError("Missing Permissons")
@@ -88,11 +97,13 @@ class Room:
         name = player.display_name
         top = player.top_role.name
         bottom = player.roles[1].name if len(player.roles) > 1 else top
-        activity = opts['name'] if name in opts and opts['name'] else choice(settings.default_names).format(name, top, bottom)
+        activity = flag('activity') or choice(settings.default_names).format(name, top, bottom)
         activity = activity[0:90].strip()
 
         # color
-        if player.top_role.color != discord.Color.default():
+        if flag('color'):
+            color = get_color(flag('color'))
+        elif player.top_role.color != discord.Color.default():
             color = player.top_role.color
         else:
             color = discord.Color(int(choice(settings.default_colors)))
@@ -155,10 +166,10 @@ class Room:
             players=[player.id],
             activity=activity,
             color=color,
-            lock=settings.default_lock,
-            description=choice(settings.default_descriptions),
-            size=settings.default_size,
-            timeout=settings.default_timeout,
+            lock=flag('lock') or settings.default_lock,
+            description=flag('description') or choice(settings.default_descriptions),
+            size=flag('size') or settings.default_size,
+            timeout=flag('timeout') or settings.default_timeout,
             created=now(),
             last_active=now()
         )
