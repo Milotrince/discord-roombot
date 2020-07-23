@@ -226,7 +226,7 @@ class RoomHost(commands.Cog):
     async def reset_permissions(self, ctx, *args):
         c = self.get_context(ctx, args)
         category = await get_rooms_category(ctx.guild, c.settings)
-        overwrites = category.permissions
+        overwrites = category.overwrites
         await c.channel.edit(overwrites=overwrites)
         if c.voice_channel:
             await c.voice_channel.edit(overwrites=overwrites)

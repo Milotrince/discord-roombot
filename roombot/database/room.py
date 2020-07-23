@@ -138,10 +138,13 @@ class Room:
 
         # channel
         category = await get_rooms_category(guild, settings)
+        o = category.overwrites
+        o.update(overwrites)
+        overwrites = o
         channel = await category.create_text_channel(
             name=activity,
             position=0,
-            overwrites=category.overwrites.update(overwrites)
+            overwrites=overwrites
         )
 
         voice_channel = None
