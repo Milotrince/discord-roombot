@@ -58,7 +58,8 @@ class RoomHost(commands.Cog):
     def get_target_player(self, c):
         target_player = c.ctx.message.mentions[0] if c.ctx.message.mentions else None
         if not target_player:
-            return get_target(c.ctx.guild, ' '.join(c.args), role=False)
+            target_player = get_target(c.ctx.guild, ' '.join(c.args), role=False)
+        return target_player
     
 
     @commands.command()
@@ -91,7 +92,6 @@ class RoomHost(commands.Cog):
             if p == new_host.id:
                 c.room.host = new_host.id
                 c.room.update('host', new_host.id)
-                c.room.host = new_host.id
                 return await ctx.send(c.settings.get_text('new_host').format(c.player.display_name, new_host.mention, c.channel.mention))
         return await ctx.send(c.settings.get_text('target_not_in_room').format(new_host.display_name, c.channel.mention))
 
