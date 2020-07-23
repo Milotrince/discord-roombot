@@ -21,14 +21,14 @@ class BasicRoom(commands.Cog):
         (flags, flag_args) = pop_flags(args)
         if len(flags) > 0:
             opts = {}
+            keys = ['activity', 'color', 'description', 'lock', 'size', 'timeout']
             for (i, flag) in enumerate(flags):
-                keys = ['activity', 'color', 'description', 'lock', 'size', 'timeout']
                 for key in keys:
                     if flag == key or flag in get_aliases(key):
                         opts[key] = flag_args[i]
             await Room.create(ctx.message.author, ctx=ctx, **opts)
         else:
-            await Room.create(ctx.message.author, ctx=ctx, name=' '.join(args))
+            await Room.create(ctx.message.author, ctx=ctx, activity=' '.join(args))
 
     @commands.command()
     @commands.guild_only()

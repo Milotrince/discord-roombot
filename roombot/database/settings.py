@@ -14,13 +14,14 @@ class Settings:
         'allow_multiple_rooms': False,
         'creation_channel': 0,
         'voice_creation_channel': 0,
-        'allowed_host_commands': ['activity', 'color', 'description', 'host', 'kick', 'lock', 'size', 'timeout', 'voice_channel'],
+        'allowed_host_commands': ['activity', 'color', 'description', 'host', 'kick', 'lock', 'size', 'timeout', 'voice_channel', 'grant_permissions', 'remove_permissions', 'reset_permissions'],
         'respond_to_invalid': True,
         'delete_command_message': False,
         'role_restriction': [],
         'access_all_rooms_role': [],
         'bitrate': 64,
         'category_name': '',
+        'use_role_color': True,
         'default_names': [],
         'default_descriptions': [],
         'default_colors': get_default_colors(),
@@ -199,7 +200,7 @@ class Settings:
             is_string = isinstance(parsed_value, str)
             text_value = parsed_value if not is_string or (is_string and len(parsed_value) > 0) else 'None'
             self.update(field, parsed_value)
-            result = (True, self.get_text('settings_success').format(field, text_value))
+            result = (True, self.get_text('set_value').format(field, text_value))
         return result
 
     def update(self, field, value):

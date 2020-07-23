@@ -29,6 +29,27 @@ def remove_mentions(args):
     else:
         return re.sub(r"<(@!|@&|#)[\d]*>", '', args).strip()
 
+def get_target(guild, text, member=True, role=True):
+    text = text.lower()
+    rx = re.search('\d{14,}', text)
+    id = rx.group() if rx else None
+    if member:
+        if id:
+            p = guild.get_member(int(id))
+            if p:
+                return p
+        for p in guild.members:
+            if text in p.display_name.lower() or text in p.name.lower():
+                return p
+    if role:
+        if id:
+            r = guild.get_role(int(id))
+            if r:
+                return r
+        for r in guild.roles:
+            if text in r.name.lower():
+                return r
+
 async def get_rooms_category(guild, settings):
     existing_category = discord.utils.get(guild.categories, name=settings.category_name)
     return existing_category if existing_category else await guild.create_category(settings.category_name)

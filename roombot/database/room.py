@@ -103,7 +103,7 @@ class Room:
         # color
         if flag('color'):
             color = get_color(flag('color'))
-        elif player.top_role.color != discord.Color.default():
+        elif settings.use_role_color and player.top_role.color != discord.Color.default():
             color = player.top_role.color
         else:
             color = discord.Color(int(choice(settings.default_colors)))
@@ -138,11 +138,10 @@ class Room:
 
         # channel
         category = await get_rooms_category(guild, settings)
-        channel = await guild.create_text_channel(
+        channel = await category.create_text_channel(
             name=activity,
-            category=category,
             position=0,
-            overwrites=overwrites
+            overwrites=category.overwrites.update(overwrites)
         )
 
         voice_channel = None

@@ -19,4 +19,7 @@ def get_text(key, lang='en'):
     return strings[lang][key]
 
 def get_all_text(key):
-    return [ strings[s][key] for s in langs ]
+    ls = [ strings[s][key] for s in langs ]
+    if len(ls) > 0 and isinstance(ls[0], list):
+        return [i for l in ls for i in l]
+    return ls

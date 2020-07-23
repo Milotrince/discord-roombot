@@ -73,7 +73,7 @@
     "purge_missing_flag": "Merci d’utiliser les flags `-a` or `-b`.",
     "require_flags": "Merci de spécifier le(s) domaines par les flags.",
     "self_target": "Vous ne pouvez pas vous inviter vous-même.",
-    "target_not_in_room": "{0} n'est pas dans le vocal {1}.",
+    "target_not_in_room": "`{}` n'est pas dans le vocal.",
     "bad_field": "Le domaine `{}` n’est pas reconnu.",
     "need_integer": "Cette valeur doit être un entier",
     "size_too_small": "Il y a trop de joueurs.",
@@ -89,7 +89,8 @@
     "new_voice_channel": "Vocal `#{}` créé.",
     "deleted_voice_channel": "Le vocal a été supprimé.",
     "full_room_notification": "Hey {0}! {1} joueurs ont rejoints.",
-    "updated_field": "{2} mise à jour `{0}` de `{1}` pour le salon {3}.",
+    "updated_field_to": "{2} mise à jour `{0}` de `{1}` pour le salon `{3}`.",
+    "updated_field": "{1} mise à jour `{0}` pour le salon `{2}`.",
 
     "ping": "Ping?",
     "pong": "Pong! Latence: `{}`ms",
@@ -99,7 +100,7 @@
     "see_below": "voir ci-dessous",
     "settings_instructions": "Pour mettre en place une option, faite `{}settings -flag value`",
     "invite_instructions": "Réagis pour accepter ou refuser l'invitation.",
-    "settings_success": "`{}` définie comme `{}`.",
+    "set_value": "`{}` définie comme `{}`.",
     "reset_settings": "Les paramètres ont été réinitialisé.",
 
     "red": "rouge",
@@ -110,6 +111,12 @@
     "blue": "bleu",
     "purple": "violet",
     "pink": "rose",
+
+    "permissions": "permissions",
+    "read_messages": ["v", "vue", "lire"],
+    "send_messages": ["e", "envoyer", "message"],
+    "connect": ["c", "connecter"],
+    "speak": ["p", "parler"],
 
     "_commands": {
         "about": {
@@ -280,6 +287,34 @@
                 "Ne va pas se créer si il y en a déja un."
             ]
         },
+        "grant_permissions": {
+            "_name": "accorder_les_permissions",
+            "_aliases": [ "perm", "perms", "accorder" ],
+            "_help": [
+                "Définir les permissions de votre salon.",
+                "Exemple d'utilisation: `-permission1 cible1 cible2`",
+                "Permissions posibles: `read`, `send`, `connect`, `speak`",
+                "La cible peut être un nom ou la mention d'un utilisateur ou d'un rôle."
+            ]
+        },
+        "remove_permissions": {
+            "_name": "supprimer_les_permissions",
+            "_aliases": [ "permx", "permsx", "supprimer" ],
+            "_help": [
+                "Définir les permissions de votre salon.",
+                "Exemple d'utilisation: `-permission1 cible1 cible2`",
+                "Permissions posibles: `read`, `send`, `connect`, `speak`",
+                "La cible peut être un nom ou la mention d'un utilisateur ou d'un rôle."
+            ]
+        },
+        "reset_permissions": {
+            "_name": "réinitialiser_les_permissions",
+            "_aliases": [ "sync" ],
+            "_help": [
+                "Réinitialiser les permissions de votre salon.",
+                "Cela synchronisera les autorisations avec la catégorie des salles."
+            ]
+        },
         "support": {
             "_name": "supporter",
             "_aliases": [ "sup", "serveur", "supporter"],
@@ -341,6 +376,13 @@
             "_aliases": [ "categorie" ],
             "_help": [
                 "Le nom de la catégorie avec toutes les salles."
+            ]
+        },
+        "use_role_color": {
+            "_name": "utiliser_la_couleur_du_rôle",
+            "_aliases": [ "ucr", "urc" ],
+            "_help": [
+                "Utilisez la couleur de rôle lors de une nouvelle salle."
             ]
         },
         "default_names": {

@@ -72,7 +72,7 @@
     "purge_missing_flag": "Please use flags `-a` or `-b`.",
     "require_flags": "Please specify the field(s) using flags.",
     "self_target": "You can't do that to yourself.",
-    "target_not_in_room": "{0} is not in your room {1}.",
+    "target_not_in_room": "`{}` is not in your room.",
     "bad_field": "The field `{}` is not recognized.",
     "need_integer": "The new value must be an integer",
     "size_too_small": "There are too many players.",
@@ -88,7 +88,8 @@
     "new_voice_channel": "Created voice channel `#{}`.",
     "deleted_voice_channel": "Voice channel has been deleted.",
     "full_room_notification": "Hey {0}! {1} players have joined.",
-    "updated_field": "{2} updated `{0}` to `{1}` for room {3}.",
+    "updated_field_to": "{2} updated `{0}` to `{1}` for room `{3}`.",
+    "updated_field": "{1} updated `{0}` for room `{2}`.",
 
     "ping": "Ping?",
     "pong": "Pong! Latency: `{}`ms",
@@ -98,7 +99,7 @@
     "see_below": "see below",
     "settings_instructions": "To set an option(s), use `{}settings -flag value`.",
     "invite_instructions": "React to accept or decline the invite.",
-    "settings_success": "Set `{}` to `{}`.",
+    "set_value": "Set `{}` to `{}`.",
     "reset_settings": "Settings have been reset.",
 
     "red": "red",
@@ -109,6 +110,12 @@
     "blue": "blue",
     "purple": "purple",
     "pink": "pink",
+
+    "permissions": "permissions",
+    "read_messages": ["v", "view", "read"],
+    "send_messages": ["s", "send", "message"],
+    "connect": ["c", "connect", "voice"],
+    "speak": ["t", "talk", "speak"],
 
     "_commands": {
         "about": {
@@ -279,6 +286,34 @@
                 "Will not create if already exists."
             ]
         },
+        "grant_permissions": {
+            "_name": "grant_permissions",
+            "_aliases": [ "perm", "perms", "grant" ],
+            "_help": [
+                "Set permissions for your room.",
+                "Example usage: `-permission1 target1 target2`",
+                "Possible permissions: `read`, `send`, `connect`, `speak`",
+                "The target can be a name or mention of a user or role."
+            ]
+        },
+        "remove_permissions": {
+            "_name": "remove_permissions",
+            "_aliases": [ "rperm", "rperms", "remove" ],
+            "_help": [
+                "Set permissions for your room.",
+                "Example usage: `-permission1 target1 target2`",
+                "Possible permissions: `read`, `send`, `connect`, `speak`",
+                "The target can be a name or mention of a user or role."
+            ]
+        },
+        "reset_permissions": {
+            "_name": "reset_permissions",
+            "_aliases": [ "sync", "reset_perms" ],
+            "_help": [
+                "Reset the permissions for your room.",
+                "This will sync permissions with the room category."
+            ]
+        },
         "support": {
             "_name": "support",
             "_aliases": [ "report", "server" ],
@@ -340,6 +375,13 @@
             "_aliases": [ "category" ],
             "_help": [
                 "The name of the category where all the rooms are grouped."
+            ]
+        },
+        "use_role_color": {
+            "_name": "use_role_color",
+            "_aliases": [ "urc" ],
+            "_help": [
+                "Whether or not to use the top role color when making a new room."
             ]
         },
         "default_names": {

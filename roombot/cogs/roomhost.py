@@ -2,9 +2,11 @@ import discord
 from discord.ext import commands
 from roombot.database.room import Room
 from roombot.database.settings import Settings
-from roombot.utils.functions import load_cog, get_rooms_category, get_color, remove_mentions, text_to_bool, clamp
+from roombot.utils.functions import load_cog, get_target, get_rooms_category, get_color, pop_flags, remove_mentions, text_to_bool, clamp
+from roombot.utils.text import get_all_text
 from random import choice
 import asyncio
+import re
 
 class RoomContext(object):
     def __init__(self, *initial_data, **kwargs):
@@ -48,20 +50,15 @@ class RoomHost(commands.Cog):
             room = Room.get_hosted(player.id, ctx.guild.id)
         if room:
             context.room = room
-            context.mentioned_player = ctx.message.mentions[0] if ctx.message.mentions else None
             context.channel = ctx.guild.get_channel(room.channel_id)
             context.voice_channel = ctx.guild.get_channel(room.voice_channel_id)
             context.role = ctx.guild.get_role(room.role_id)
         return context
 
     def get_target_player(self, c):
-        name_filter = " ".join(c.args).lower()
-        target_player = c.mentioned_player
+        target_player = c.ctx.message.mentions[0] if c.ctx.message.mentions else None
         if not target_player:
-            for p in c.ctx.guild.members:
-                if p.display_name.lower() == name_filter or p.name.lower() == name_filter:
-                    target_player = p
-        return target_player
+            return get_target(c.ctx.guild, ' '.join(c.args), role=False)
     
 
     @commands.command()
@@ -80,7 +77,7 @@ class RoomHost(commands.Cog):
                 await c.room.disband(c.player.guild)
                 return await ctx.send(c.settings.get_text('disband_empty_room'))
         else:
-            return await ctx.send(c.settings.get_text('target_not_in_room').format(kickee.display_name, c.channel.mention))
+            return await ctx.send(c.settings.get_text('target_not_in_room').format(kickee.display_name))
 
 
     @commands.command()
@@ -116,7 +113,7 @@ class RoomHost(commands.Cog):
             await c.voice_channel.edit(name=new_activity)
         c.room.activity = new_activity
         c.room.update('activity', new_activity)
-        return await ctx.send(c.settings.get_text('updated_field').format(c.settings.get_text('activity'), new_activity, player_name, c.channel.mention))
+        return await ctx.send(c.settings.get_text('updated_field_to').format(c.settings.get_text('activity'), new_activity, player_name, c.channel.mention))
 
 
     @commands.command()
@@ -131,7 +128,7 @@ class RoomHost(commands.Cog):
             return await ctx.send(c.settings.get_text('rate_limited'))
         c.room.description = new_description
         c.room.update('description', new_description)
-        return await ctx.send(c.settings.get_text('updated_field').format(c.settings.get_text('description'), new_description, c.player.display_name, c.channel.mention))
+        return await ctx.send(c.settings.get_text('updated_field_to').format(c.settings.get_text('description'), new_description, c.player.display_name, c.channel.mention))
 
 
     @commands.command()
@@ -144,7 +141,7 @@ class RoomHost(commands.Cog):
                 return await ctx.send(c.settings.get_text('size_too_small'))
             c.room.size = new_size
             c.room.update('size', new_size)
-            return await ctx.send(c.settings.get_text('updated_field').format(c.settings.get_text('size'), new_size, c.player.display_name, c.channel.mention))
+            return await ctx.send(c.settings.get_text('updated_field_to').format(c.settings.get_text('size'), new_size, c.player.display_name, c.channel.mention))
         except ValueError:
             return await ctx.send(c.settings.get_text('need_integer'))
 
@@ -162,7 +159,7 @@ class RoomHost(commands.Cog):
             new_timeout = -1
         c.room.timeout = new_timeout
         c.room.update('timeout', new_timeout)
-        return await ctx.send(c.settings.get_text('updated_field').format(c.settings.get_text('timeout'), new_timeout, c.player.display_name, c.channel.mention))
+        return await ctx.send(c.settings.get_text('updated_field_to').format(c.settings.get_text('timeout'), new_timeout, c.player.display_name, c.channel.mention))
 
 
     @commands.command()
@@ -185,17 +182,8 @@ class RoomHost(commands.Cog):
         except asyncio.TimeoutError:
             return await ctx.send(c.settings.get_text('rate_limited'))
         c.room.update('color', color.value)
-        return await ctx.send(c.settings.get_text('updated_field').format(c.settings.get_text('color'), color, c.player.display_name, c.channel.mention))
+        return await ctx.send(c.settings.get_text('updated_field_to').format(c.settings.get_text('color'), color, c.player.display_name, c.channel.mention))
 
-    # TODO: set view/send perms
-    # @commands.command()
-    # @commands.guild_only()
-    # async def view_permission(self, ctx, *args):
-    #     pass
-
-    # @commands.command()
-    # async def send_permission(self, ctx, *args):
-    #     pass
 
     @commands.command()
     @commands.guild_only()
@@ -217,6 +205,66 @@ class RoomHost(commands.Cog):
                     c.role: discord.PermissionOverwrite(read_messages=True) })
             c.room.update('voice_channel_id', voice_channel.id)
             await ctx.send(c.settings.get_text('new_voice_channel').format(voice_channel.name))
+
+
+    @commands.command()
+    @commands.guild_only()
+    async def grant_permissions(self, ctx, *args):
+        c = self.get_context(ctx, args)
+        await set_permissions(c, True)
+
+
+    @commands.command()
+    @commands.guild_only()
+    async def remove_permissions(self, ctx, *args):
+        c = self.get_context(ctx, args)
+        await set_permissions(c, False)
+        
+
+    @commands.command()
+    @commands.guild_only()
+    async def reset_permissions(self, ctx, *args):
+        c = self.get_context(ctx, args)
+        category = await get_rooms_category(ctx.guild, c.settings)
+        overwrites = category.permissions
+        await c.channel.edit(overwrites=overwrites)
+        if c.voice_channel:
+            await c.voice_channel.edit(overwrites=overwrites)
+        await c.ctx.send(c.settings.get_text('updated_field').format(
+            c.settings.get_text('permissions'),
+            c.ctx.author.display_name,
+            c.room.activity
+        ))
+        
+
+async def set_permissions(c, grant):
+    perms = ['read_messages', 'send_messages', 'connect', 'speak']
+    (perm_args, target_args) = pop_flags(c.args)
+    perm_dict = {}
+    for (i, perm_arg) in enumerate(perm_args):
+        for perm in perms:
+            if perm_arg in get_all_text(perm):
+                perm_dict[perm] = re.split('[,\s]+', target_args[i])
+                break
+    if not perm_dict:
+        return await c.ctx.send(c.settings.get_text('require_flags'))
+    overwrites = {}
+    for (perm, target_args) in perm_dict.items():
+        for t in target_args:
+            target = get_target(c.ctx.guild, t)
+            if target:
+                if target in overwrites:
+                    overwrites[target].update(**{perm:grant})
+                else:
+                    overwrites[target] = discord.PermissionOverwrite(**{perm:True})
+    await c.channel.edit(overwrites=overwrites)
+    if c.voice_channel:
+        await c.voice_channel.edit(overwrites=overwrites)
+    await c.ctx.send(c.settings.get_text('updated_field').format(
+        c.settings.get_text('permissions'),
+        c.ctx.author.display_name,
+        c.room.activity
+    ))
 
 
 def setup(bot):
