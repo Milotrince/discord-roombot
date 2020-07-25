@@ -185,12 +185,13 @@ class BasicRoom(commands.Cog):
         settings = Settings.get_for(ctx.guild.id)
         player = ctx.message.author
         rooms = Room.get_player_rooms(player.id, ctx.guild.id)
+        
         room = None
         if len(rooms) > 1:
-            role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions else None
+            role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions and ctx.message.role_mentions[0] else None
             text_filter = ' '.join(args).lower() if args else None
             for r in rooms:
-                match_channel = ctx.channel.id == r.channel_id
+                match_channel = ctx.channel.id == r.channel_id if ctx.channel else False
                 match_text = text_filter and text_filter in r.activity.lower()
                 match_role = role_mention_filter == r.role_id
                 if match_channel or match_text or match_role:
@@ -198,7 +199,6 @@ class BasicRoom(commands.Cog):
                     break
             if not room:
                 return await ctx.send(settings.get_text('in_multiple_rooms'))
-            
         elif len(rooms) == 1:
             room = rooms[0]
         else:
@@ -206,7 +206,7 @@ class BasicRoom(commands.Cog):
 
         if room:
             (success, response) = await self.try_leave(ctx, room, player)
-            if success and response and ctx.channel.id != room.channel_id:
+            if success and response and ctx.channel and ctx.channel.id != room.channel_id:
                 try:
                     await ctx.send(response)
                 except:

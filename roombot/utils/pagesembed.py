@@ -54,8 +54,11 @@ class PagesEmbed(metaclass=ABCMeta):
             del PagesEmbed.instances[self.m.id]
         embed = self.make_timed_out_page()
         embed.set_footer(text=self.get_req_text()+' | '+self.get_text('timed_out'))
-        await self.m.clear_reactions()
-        await self.m.edit(embed=embed)
+        try:
+            await self.m.clear_reactions()
+            await self.m.edit(embed=embed)
+        except:
+            pass
 
 
     @classmethod

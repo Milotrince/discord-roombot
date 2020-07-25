@@ -61,9 +61,12 @@ class RoomEmbed():
         if self.m and self.m.id in RoomEmbed.instances:
             del RoomEmbed.instances[self.m.id]
         embed = self.make_timed_out_embed()
-        await self.m.edit(embed=embed)
-        if not self.is_dm:
-            await self.m.clear_reactions()
+        try:
+            await self.m.edit(embed=embed)
+            if not self.is_dm:
+                await self.m.clear_reactions()
+        except:
+            pass
 
 
     @classmethod

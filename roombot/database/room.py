@@ -299,7 +299,10 @@ class Room:
                         await r.disband(guild)
                         if birth_channel:
                             settings = Settings.get_for(guild.id)
-                            await birth_channel.send(settings.get_text('disband_from_inactivity').format(r.activity))
+                            try:
+                                await birth_channel.send(settings.get_text('disband_from_inactivity').format(r.activity))
+                            except:
+                                pass
                     else:
                         db.rooms.delete(role_id=r.role_id)
                         db.invites.delete(room_id=r.role_id)
