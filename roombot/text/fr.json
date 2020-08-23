@@ -63,7 +63,8 @@
     "no_rooms": "Aucun salon n'existe pour l'instant.",
     "not_in_room": "Vous n'êtes pas dans un salon.",
     "not_admin": "Vous n'êtes pas administrateur.",
-    "not_host": "Vous n'êtes pas l'hôte du salon.",
+    "not_host_of_any": "Vous n'êtes pas l'hôte d'un salon.",
+    "not_host_of_room": "Vous n'êtes pas l'hôte de ce salon.",
     "host_command_disabled": "Cette commande est désactivée.",
 
     "timed_out": "La demande a expiré.",

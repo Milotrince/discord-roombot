@@ -62,7 +62,8 @@
     "no_rooms": "No rooms exist yet.",
     "not_in_room": "You are not in a room.",
     "not_admin": "You are not an administrator.",
-    "not_host": "You are not the host of a room.",
+    "not_host_of_any": "You are not the host of a room.",
+    "not_host_of_room": "You are not the host of this room.",
     "host_command_disabled": "This host command is disabled.",
 
     "timed_out": "Timed out.",

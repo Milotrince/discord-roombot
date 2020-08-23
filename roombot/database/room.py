@@ -1,5 +1,6 @@
 import asyncio
 import discord
+import re
 from roombot.database.db import RoomBotDatabase
 from roombot.database.settings import Settings
 from roombot.utils.roomembed import RoomEmbed
@@ -201,38 +202,43 @@ class Room:
 
 
     @classmethod
-    def get_hosted(cls, ctx, args):
-        s = Settings.get_for(ctx.guild.id)
-        player_id = ctx.message.author.id
-        guild_id = ctx.guild.id
-        rooms = cls.find(guild=guild_id, host=player_id)
-        room = None
-        first_room = None
-        match_room = None
-        count = 0
-        role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions and ctx.message.role_mentions[0] else None
-        text_filter = ' '.join(args).lower() if args else None
+    def get_hosted_rooms(cls, ctx, args):
+        settings = Settings.get_for(ctx.guild.id)
+        player = ctx.message.author
+        rooms = Room.get_player_rooms(player.id, ctx.guild.id)
 
+        is_host = False
         for r in rooms:
-            r = Room.from_query(r)
-            count += 1
-            if count == 1:
-                first_room = r
-
-            match_channel = ctx.channel.id == r.channel_id if ctx.channel else False
-            match_text = text_filter and text_filter in r.activity.lower()
-            match_role = role_mention_filter == r.role_id
-            if match_channel or match_text or match_role:
-                room = r
+            if r.host == player.id:
+                is_host = True
                 break
-
-        room = match_room or first_room
-        if count > 1 and not match_room:
-            return (None, s.get_text('in_multiple_rooms'))
-        if room:
-            return (room, None)
+        if not is_host:
+            return (None, settings.get_text('not_host_of_any'))
+        
+        room = None
+        if len(rooms) > 1:
+            role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions and ctx.message.role_mentions[0] else None
+            string = ' '.join(args).lower()
+            rx = re.search(r'\((.*?)\)', string)
+            text_filter = rx.group(1) if rx else remove_mentions(string)
+            for r in rooms:
+                match_channel = ctx.channel.id == r.channel_id if ctx.channel else False
+                match_text = text_filter and text_filter in r.activity.lower()
+                match_role = role_mention_filter == r.role_id
+                if match_channel or match_text or match_role:
+                    room = r
+                    break
+            if not room:
+                return (None, settings.get_text('in_multiple_rooms'))
+        elif len(rooms) == 1:
+            room = rooms[0]
         else:
-            return (None, s.get_text('not_in_room'))
+            return (None, settings.get_text('not_in_room'))
+
+        if room.host != player.id:
+            return (None, settings.get_text('not_host_of_room'))
+        return (room, None)
+
 
     @classmethod
     def get_by_mention(cls, ctx, args):

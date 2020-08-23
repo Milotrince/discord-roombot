@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from roombot.database.room import Room
 from roombot.database.settings import Settings
-from roombot.utils.functions import load_cog, get_target, get_rooms_category, get_color, pop_flags, remove_mentions, text_to_bool, clamp
+from roombot.utils.functions import load_cog, get_target, get_rooms_category, get_color, pop_flags, clean_args, text_to_bool, clamp
 from roombot.utils.text import get_all_text
 from random import choice
 import asyncio
@@ -24,16 +24,8 @@ class RoomHost(commands.Cog):
     async def cog_check(self, ctx):
         s = Settings.get_for(ctx.guild.id)
         is_enabled_command = ctx.command.name in s.allowed_host_commands
-        (is_host, m) = Room.get_hosted(ctx, ctx.args)
-        if not is_host and m:
-            await ctx.send(m)
-            return False
-        is_admin = ctx.message.author.guild_permissions.administrator
-        searched_room = Room.get_by_mention(ctx, ctx.message.content.split(' ')[1:])
-        if is_host and not is_enabled_command:
+        if not is_enabled_command:
             await ctx.send(s.get_text('host_command_disabled'))
-            return False
-        elif not is_admin and searched_room:
             return False
         return True
 
@@ -41,7 +33,7 @@ class RoomHost(commands.Cog):
         if type(error) == discord.ext.commands.errors.CheckFailure:
             return
 
-    def get_context(self, ctx, args):
+    async def get_context(self, ctx, args):
         is_admin = ctx.message.author.guild_permissions.administrator
         mentions = len(ctx.message.mentions)
         role_mentions = ctx.message.role_mentions
@@ -54,7 +46,10 @@ class RoomHost(commands.Cog):
         if is_admin and (len(role_mentions) >= 1):
             room = Room.get_by_role(role_mentions[0].id)
         else:
-            (room, m) = Room.get_hosted(ctx, context.args)
+            (room, m) = Room.get_hosted_rooms(ctx, context.args)
+            if m:
+                await ctx.send(m)
+                raise discord.ext.commands.errors.CheckFailure()
         if room:
             context.room = room
             context.channel = ctx.guild.get_channel(room.channel_id)
@@ -72,7 +67,7 @@ class RoomHost(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def kick(self, ctx, *args):
-        c = self.get_context(ctx, args)
+        c = await self.get_context(ctx, args)
         kickee = self.get_target_player(c)
         if not kickee:
             return await ctx.send(c.settings.get_text('missing_target'))
@@ -91,7 +86,7 @@ class RoomHost(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def host(self, ctx, *args):
-        c = self.get_context(ctx, args)
+        c = await self.get_context(ctx, args)
         new_host = self.get_target_player(c)
         if not new_host:
             return await ctx.send(c.settings.get_text('missing_target'))
@@ -106,8 +101,8 @@ class RoomHost(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def activity(self, ctx, *args):
-        c = self.get_context(ctx, args)
-        new_activity = remove_mentions(' '.join(args))
+        c = await self.get_context(ctx, args)
+        new_activity = clean_args(args).join(' ')
         player_name = c.player.display_name
         if len(new_activity) < 1:
             new_activity = choice(c.settings.default_names).format(player_name)
@@ -126,8 +121,8 @@ class RoomHost(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def description(self, ctx, *args):
-        c = self.get_context(ctx, args)
-        new_description = remove_mentions(' '.join(args))
+        c = await self.get_context(ctx, args)
+        new_description = clean_args(args).join(' ')
         topic = "({}/{}) {}".format(len(c.room.players), c.room.size, c.room.description)
         try:
             await asyncio.wait_for(c.channel.edit(topic=topic), timeout=3.0)
@@ -141,9 +136,9 @@ class RoomHost(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def size(self, ctx, *args):
-        c = self.get_context(ctx, args)
+        c = await self.get_context(ctx, args)
         try:
-            new_size = clamp(int(remove_mentions(args)[0]), 2, 999) if remove_mentions(args) else None
+            new_size = clamp(int(clean_args(args)[0]), 2, 999) if clean_args(args) else None
             if len(c.room.players) > new_size:
                 return await ctx.send(c.settings.get_text('size_too_small'))
             c.room.size = new_size
@@ -156,8 +151,8 @@ class RoomHost(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def timeout(self, ctx, *args):
-        c = self.get_context(ctx, args)
-        new_timeout = remove_mentions(args)[0] if remove_mentions(args) else False 
+        c = await self.get_context(ctx, args)
+        new_timeout = clean_args(args)[0] if clean_args(args) else False 
         try:
             new_timeout = min(int(new_timeout), 999)
             if (new_timeout < 0):
@@ -172,8 +167,8 @@ class RoomHost(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def lock(self, ctx, *args):
-        c = self.get_context(ctx, args)
-        first_arg = remove_mentions(args)[0]
+        c = await self.get_context(ctx, args)
+        first_arg = clean_args(args)[0]
         new_lock = text_to_bool(first_arg) if len(first_arg) > 0 else not c.room.lock 
         c.room.update('lock', new_lock)
         return await ctx.send(c.settings.get_text('lock_room') if new_lock else c.settings.get_text('unlock_room'))
@@ -182,8 +177,8 @@ class RoomHost(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def nsfw(self, ctx, *args):
-        c = self.get_context(ctx, args)
-        first_arg = remove_mentions(args)[0]
+        c = await self.get_context(ctx, args)
+        first_arg = clean_args(args)[0]
         new_nsfw = text_to_bool(first_arg) if len(first_arg) > 0 else not c.room.nsfw
         await c.channel.edit(nsfw=new_nsfw)
         c.room.update('nsfw', new_nsfw)
@@ -193,8 +188,8 @@ class RoomHost(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def color(self, ctx, *args):
-        c = self.get_context(ctx, args)
-        color = get_color(remove_mentions(args)[0] if remove_mentions(args) else '') 
+        c = await self.get_context(ctx, args)
+        color = get_color(clean_args(args)[0] if clean_args(args) else '') 
         try:
             await asyncio.wait_for(c.role.edit(color=color), timeout=3.0)
         except asyncio.TimeoutError:
@@ -206,7 +201,7 @@ class RoomHost(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def voice_channel(self, ctx, *args):
-        c = self.get_context(ctx, args)
+        c = await self.get_context(ctx, args)
         if c.voice_channel:
             await c.voice_channel.delete()
             await ctx.send(c.settings.get_text('deleted_voice_channel'))
@@ -228,21 +223,21 @@ class RoomHost(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def grant_permissions(self, ctx, *args):
-        c = self.get_context(ctx, args)
+        c = await self.get_context(ctx, args)
         await set_permissions(c, True)
 
 
     @commands.command()
     @commands.guild_only()
     async def remove_permissions(self, ctx, *args):
-        c = self.get_context(ctx, args)
+        c = await self.get_context(ctx, args)
         await set_permissions(c, False)
         
 
     @commands.command()
     @commands.guild_only()
     async def reset_permissions(self, ctx, *args):
-        c = self.get_context(ctx, args)
+        c = await self.get_context(ctx, args)
         category = await get_rooms_category(ctx.guild, c.settings)
         overwrites = category.overwrites
         await c.channel.edit(overwrites=overwrites)

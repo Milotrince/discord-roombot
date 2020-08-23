@@ -29,6 +29,10 @@ def remove_mentions(args):
     else:
         return re.sub(r"<(@!|@&|#)[\d]*>", '', args).strip()
 
+def clean_args(args):
+    s = re.sub(r'\((.*?)\)', '', remove_mentions(' '.join(args))).strip()
+    return re.sub(r'\s+', ' ', s).split(' ')
+
 def get_target(guild, text, member=True, role=True):
     text = text.lower()
     rx = re.search('\d{14,}', text)
