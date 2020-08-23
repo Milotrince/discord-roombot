@@ -50,7 +50,7 @@ Sometimes you want to play something with a group, but everyone's busy at the mo
 6. `python3 index.py`
 
 ## Help improve RoomBot
-RoomBot is still growing up. If there are any features you would like to see added, [create a new issue](https://github.com/Milotrince/discord-roombot/issues/new) or message me on Discord (Milotrince#0001)!
+RoomBot is still growing up. If there are any features you would like to see added, [create a new issue](https://github.com/Milotrince/discord-roombot/issues/new) or message me on Discord (Milotrince#3916)!
 
 --------
 

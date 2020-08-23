@@ -41,7 +41,7 @@ class General(commands.Cog):
                 ":robot: [Server](https://discord.gg/37kzrpr) Join my support server!",
                 ":cat: [GitHub](https://github.com/Milotrince/discord-roombot) Help improve me!",
                 ":mailbox: [Invite Link](https://discord.com/api/oauth2/authorize?client_id=592816310656696341&permissions=285224016&scope=bot) Invite me to another server!",
-                ":woman: [Profile](https://github.com/Milotrince) Contact my creator @Milotrince#0001",
+                ":woman: [Profile](https://github.com/Milotrince) Contact my creator @Milotrince#3916",
                 ":heart: [Ko-fi](https://ko-fi.com/milotrince) Donate :coffee:!",
                 ":purple_heart: RoomBot was made for Discord Hack Week"])
             ).set_thumbnail(
