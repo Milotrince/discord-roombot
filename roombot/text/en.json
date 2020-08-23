@@ -8,6 +8,7 @@
     "flags": "flags",
     "host": "host",
     "lock": "lock",
+    "nsfw": "nsfw",
     "alias": "aka",
 
     "players": "Players",
@@ -62,7 +63,7 @@
     "not_in_room": "You are not in a room.",
     "not_admin": "You are not an administrator.",
     "not_host": "You are not the host of a room.",
-    "host_command_fail": "Either you are not the host of a room or this command is disabled.",
+    "host_command_disabled": "This host command is disabled.",
 
     "timed_out": "Timed out.",
     "rate_limited": "Timed out trying to edit a channel/role. Discord is probably rate limiting me, sorry!",
@@ -275,7 +276,14 @@
             "_name": "lock",
             "_aliases": [ "private" ],
             "_help": [
-                "Prevent people from joining your room."
+                "Prevent people from joining your room. Invites will still allow people to join."
+            ]
+        },
+        "nsfw": {
+            "_name": "nsfw",
+            "_aliases": [],
+            "_help": [
+                "Set room to NSFW."
             ]
         },
         "voice_channel": {
@@ -431,6 +439,13 @@
             "_aliases": [ "lock" ],
             "_help": [
                 "Whether or not to lock the room when making a new room."
+            ]
+        },
+        "default_nsfw": {
+            "_name": "default_nsfw",
+            "_aliases": [ "nsfw" ],
+            "_help": [
+                "Whether or not to set the room to NSFW when making a new room."
             ]
         },
         "join_messages": {

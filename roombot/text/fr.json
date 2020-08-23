@@ -9,6 +9,7 @@
     "flags": "flags",
     "host": "hôte",
     "lock": "bloquer",
+    "nsfw": "nsfw",
     "alias": "aka",
 
     "players": "Joueurs",
@@ -63,7 +64,7 @@
     "not_in_room": "Vous n'êtes pas dans un salon.",
     "not_admin": "Vous n'êtes pas administrateur.",
     "not_host": "Vous n'êtes pas l'hôte du salon.",
-    "host_command_fail": "Soit vous n’êtes pas le propriétaire de ce salon, soit cette commande est désactivée.",
+    "host_command_disabled": "Cette commande est désactivée.",
 
     "timed_out": "La demande a expiré.",
     "rate_limited": "La demande pour modifier un rôle/salon a expiré. Discord est probablement en train de limiter les demandes. Désolé.",
@@ -279,6 +280,13 @@
                 "Empêche à n’importe qui de rejoindre ta salle."
             ]
         },
+       "nsfw": {
+            "_name": "nsfw",
+            "_aliases": [],
+            "_help": [
+                "Réglez le salon sur NSFW."
+            ]
+        },
         "voice_channel": {
             "_name": "salon_vocal",
             "_aliases": [ "sv", "voix", "salonvocal" ],
@@ -431,7 +439,14 @@
             "_name": "fermer_par_défaut",
             "_aliases": [ "lock_def" ],
             "_help": [
-                "Créer uniquement des salles privées."
+                "Définir le salon comme privée par défaut ou non."
+            ]
+        },
+        "default_nsfw": {
+            "_name": "default_nsfw",
+            "_aliases": [ "nsfw", "nsfw_def" ],
+            "_help": [
+                "Définir le salon comme NSFW par défaut ou non."
             ]
         },
         "join_messages": {

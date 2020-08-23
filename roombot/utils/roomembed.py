@@ -34,7 +34,7 @@ class RoomEmbed():
             color=self.room.color,
             description=description,
             timestamp=self.room.created,
-            title="{}{}".format(":lock: " if self.room.lock else "", self.room.activity)
+            title="{}{}".format(self.room.get_symbols(), self.room.activity)
         ).add_field(
             name="{} ({}/{})".format(self.get_text('players'), len(self.room.players), self.room.size),
             value="<@{}>".format(">, <@".join([str(id) for id in self.room.players]))

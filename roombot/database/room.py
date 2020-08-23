@@ -21,6 +21,7 @@ class Room:
         'size': 1,
         'color': discord.Color.blurple(),
         'lock': False,
+        'nsfw': False,
         'activity': '',
         'description': '',
         'timeout': 0,
@@ -38,6 +39,9 @@ class Room:
             if key in data and data[key] != None:
                 v = self.unpack_value(data[key], value)
                 self.__setattr__(key, v)
+            else:
+                self.__setattr__(key, value)
+
     
     @classmethod
     def unpack_value(cls, value, default):
@@ -84,11 +88,7 @@ class Room:
             raise discord.ext.commands.errors.CommandInvokeError("Missing Permissons")
 
         # check if able to make room
-        if settings.allow_multiple_rooms and cls.get_hosted(player.id, guild.id):
-            if ctx:
-                await ctx.send(settings.get_text('already_is_host'))
-            return
-        elif not settings.allow_multiple_rooms and cls.player_is_in_any(player.id, guild.id):
+        if not settings.allow_multiple_rooms and cls.player_is_in_any(player.id, guild.id):
             if ctx:
                 await ctx.send(settings.get_text('already_in_room'))
             return
@@ -169,6 +169,7 @@ class Room:
             activity=activity,
             color=color,
             lock=flag('lock') or settings.default_lock,
+            nsfw=flag('nsfw') or settings.default_nsfw,
             description=flag('description') or choice(settings.default_descriptions),
             size=flag('size') or settings.default_size,
             timeout=flag('timeout') or settings.default_timeout,
@@ -176,7 +177,9 @@ class Room:
             last_active=now()
         )
         await player.add_roles(role)
-        await channel.edit(topic="({}/{}) {}".format(len(room.players), room.size, room.description))
+        await channel.edit(
+            topic="({}/{}) {}".format(len(room.players), room.size, room.description),
+            nsfw=room.nsfw )
         await channel.send(choice(settings.join_messages).format(player.display_name))
         if ctx:
             await RoomEmbed(ctx, room, 'new_room', settings).send()
@@ -196,14 +199,40 @@ class Room:
                 if room_data:
                     return cls.from_query(room_data)
 
+
     @classmethod
-    def get_hosted(cls, player_id, guild_id):
+    def get_hosted(cls, ctx, args):
+        s = Settings.get_for(ctx.guild.id)
+        player_id = ctx.message.author.id
+        guild_id = ctx.guild.id
         rooms = cls.find(guild=guild_id, host=player_id)
-        if rooms:
-            for room_data in rooms:
-                r = cls.from_query(room_data)
-                return r
-        return None  
+        room = None
+        first_room = None
+        match_room = None
+        count = 0
+        role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions and ctx.message.role_mentions[0] else None
+        text_filter = ' '.join(args).lower() if args else None
+
+        for r in rooms:
+            r = Room.from_query(r)
+            count += 1
+            if count == 1:
+                first_room = r
+
+            match_channel = ctx.channel.id == r.channel_id if ctx.channel else False
+            match_text = text_filter and text_filter in r.activity.lower()
+            match_role = role_mention_filter == r.role_id
+            if match_channel or match_text or match_role:
+                room = r
+                break
+
+        room = match_room or first_room
+        if count > 1 and not match_room:
+            return (None, s.get_text('in_multiple_rooms'))
+        if room:
+            return (room, None)
+        else:
+            return (None, s.get_text('not_in_room'))
 
     @classmethod
     def get_by_mention(cls, ctx, args):
@@ -306,6 +335,16 @@ class Room:
                     else:
                         db.rooms.delete(role_id=r.role_id)
                         db.invites.delete(room_id=r.role_id)
+
+    def get_symbols(self):
+        symbols = ''
+        if self.nsfw:
+            symbols += ':underage:'
+        if self.lock:
+            symbols += ':lock:'
+        if symbols:
+            symbols += ' '
+        return symbols
 
 
     def update(self, field, value):

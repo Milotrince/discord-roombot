@@ -229,7 +229,7 @@ class BasicRoom(commands.Cog):
 
             description = room.description if room.description else "{}: {}".format(settings.get_text('players'), ', '.join(room.players))
             embed.add_field(
-                name="{}{} ({}/{})".format(":lock: " if room.lock else "", room.activity, len(room.players), room.size),
+                name="{}{} ({}/{})".format(room.get_symbols(), room.activity, len(room.players), room.size),
                 value=description,
                 inline=False )
         if count > 0:

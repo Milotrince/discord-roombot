@@ -14,7 +14,7 @@ class Settings:
         'allow_multiple_rooms': False,
         'creation_channel': 0,
         'voice_creation_channel': 0,
-        'allowed_host_commands': ['activity', 'color', 'description', 'host', 'kick', 'lock', 'size', 'timeout', 'voice_channel', 'grant_permissions', 'remove_permissions', 'reset_permissions'],
+        'allowed_host_commands': ['activity', 'color', 'description', 'host', 'kick', 'lock', 'nsfw', 'size', 'timeout', 'voice_channel', 'grant_permissions', 'remove_permissions', 'reset_permissions'],
         'respond_to_invalid': True,
         'delete_command_message': False,
         'role_restriction': [],
@@ -29,6 +29,7 @@ class Settings:
         'default_size': 4,
         'default_voice_channel': False,
         'default_lock': False,
+        'default_nsfw': False,
         'join_messages': [],
         'leave_messages': [],
     }

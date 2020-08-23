@@ -24,17 +24,24 @@ class RoomHost(commands.Cog):
     async def cog_check(self, ctx):
         s = Settings.get_for(ctx.guild.id)
         is_enabled_command = ctx.command.name in s.allowed_host_commands
-        is_host = Room.get_hosted(ctx.message.author.id, ctx.guild.id)
+        (is_host, m) = Room.get_hosted(ctx, ctx.args)
+        if not is_host and m:
+            await ctx.send(m)
+            return False
         is_admin = ctx.message.author.guild_permissions.administrator
         searched_room = Room.get_by_mention(ctx, ctx.message.content.split(' ')[1:])
-        return (is_host and is_enabled_command) or (is_admin and searched_room)
+        if is_host and not is_enabled_command:
+            await ctx.send(s.get_text('host_command_disabled'))
+            return False
+        elif not is_admin and searched_room:
+            return False
+        return True
 
     async def cog_command_error(self, ctx, error):
-        s = Settings.get_for(ctx.guild.id)
         if type(error) == discord.ext.commands.errors.CheckFailure:
-            await ctx.send(s.get_text('host_command_fail'))
+            return
 
-    def get_context(self, ctx, *args):
+    def get_context(self, ctx, args):
         is_admin = ctx.message.author.guild_permissions.administrator
         mentions = len(ctx.message.mentions)
         role_mentions = ctx.message.role_mentions
@@ -42,12 +49,12 @@ class RoomHost(commands.Cog):
         context = RoomContext(
             ctx=ctx,
             settings=Settings.get_for(ctx.guild.id),
-            args=list(list(args)[0]),
+            args=list(args) if args else [],
             player=player )
         if is_admin and (len(role_mentions) >= 1):
             room = Room.get_by_role(role_mentions[0].id)
         else:
-            room = Room.get_hosted(player.id, ctx.guild.id)
+            (room, m) = Room.get_hosted(ctx, context.args)
         if room:
             context.room = room
             context.channel = ctx.guild.get_channel(room.channel_id)
@@ -92,8 +99,8 @@ class RoomHost(commands.Cog):
             if p == new_host.id:
                 c.room.host = new_host.id
                 c.room.update('host', new_host.id)
-                return await ctx.send(c.settings.get_text('new_host').format(c.player.display_name, new_host.mention, c.channel.mention))
-        return await ctx.send(c.settings.get_text('target_not_in_room').format(new_host.display_name, c.channel.mention))
+                return await ctx.send(c.settings.get_text('new_host').format(c.player.display_name, new_host.mention, c.room.activity))
+        return await ctx.send(c.settings.get_text('target_not_in_room').format(new_host.display_name, c.room.activity))
 
 
     @commands.command()
@@ -113,7 +120,7 @@ class RoomHost(commands.Cog):
             await c.voice_channel.edit(name=new_activity)
         c.room.activity = new_activity
         c.room.update('activity', new_activity)
-        return await ctx.send(c.settings.get_text('updated_field_to').format(c.settings.get_text('activity'), new_activity, player_name, c.channel.mention))
+        return await ctx.send(c.settings.get_text('updated_field_to').format(c.settings.get_text('activity'), new_activity, player_name, c.room.activity))
 
 
     @commands.command()
@@ -128,7 +135,7 @@ class RoomHost(commands.Cog):
             return await ctx.send(c.settings.get_text('rate_limited'))
         c.room.description = new_description
         c.room.update('description', new_description)
-        return await ctx.send(c.settings.get_text('updated_field_to').format(c.settings.get_text('description'), new_description, c.player.display_name, c.channel.mention))
+        return await ctx.send(c.settings.get_text('updated_field_to').format(c.settings.get_text('description'), new_description, c.player.display_name, c.room.activity))
 
 
     @commands.command()
@@ -141,7 +148,7 @@ class RoomHost(commands.Cog):
                 return await ctx.send(c.settings.get_text('size_too_small'))
             c.room.size = new_size
             c.room.update('size', new_size)
-            return await ctx.send(c.settings.get_text('updated_field_to').format(c.settings.get_text('size'), new_size, c.player.display_name, c.channel.mention))
+            return await ctx.send(c.settings.get_text('updated_field_to').format(c.settings.get_text('size'), new_size, c.player.display_name, c.room.activity))
         except ValueError:
             return await ctx.send(c.settings.get_text('need_integer'))
 
@@ -159,7 +166,7 @@ class RoomHost(commands.Cog):
             new_timeout = -1
         c.room.timeout = new_timeout
         c.room.update('timeout', new_timeout)
-        return await ctx.send(c.settings.get_text('updated_field_to').format(c.settings.get_text('timeout'), new_timeout, c.player.display_name, c.channel.mention))
+        return await ctx.send(c.settings.get_text('updated_field_to').format(c.settings.get_text('timeout'), new_timeout, c.player.display_name, c.room.activity))
 
 
     @commands.command()
@@ -174,6 +181,17 @@ class RoomHost(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
+    async def nsfw(self, ctx, *args):
+        c = self.get_context(ctx, args)
+        first_arg = remove_mentions(args)[0]
+        new_nsfw = text_to_bool(first_arg) if len(first_arg) > 0 else not c.room.nsfw
+        await c.channel.edit(nsfw=new_nsfw)
+        c.room.update('nsfw', new_nsfw)
+        return await ctx.send(c.settings.get_text('updated_field_to').format(c.settings.get_text('nsfw'), new_nsfw, c.player.display_name, c.room.activity))
+
+
+    @commands.command()
+    @commands.guild_only()
     async def color(self, ctx, *args):
         c = self.get_context(ctx, args)
         color = get_color(remove_mentions(args)[0] if remove_mentions(args) else '') 
@@ -182,7 +200,7 @@ class RoomHost(commands.Cog):
         except asyncio.TimeoutError:
             return await ctx.send(c.settings.get_text('rate_limited'))
         c.room.update('color', color.value)
-        return await ctx.send(c.settings.get_text('updated_field_to').format(c.settings.get_text('color'), color, c.player.display_name, c.channel.mention))
+        return await ctx.send(c.settings.get_text('updated_field_to').format(c.settings.get_text('color'), color, c.player.display_name, c.room.activity))
 
 
     @commands.command()
