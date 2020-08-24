@@ -102,7 +102,7 @@ class RoomHost(commands.Cog):
     @commands.guild_only()
     async def activity(self, ctx, *args):
         c = await self.get_context(ctx, args)
-        new_activity = clean_args(args).join(' ')
+        new_activity = ' '.join(clean_args(args))
         player_name = c.player.display_name
         if len(new_activity) < 1:
             new_activity = choice(c.settings.default_names).format(player_name)
@@ -122,7 +122,7 @@ class RoomHost(commands.Cog):
     @commands.guild_only()
     async def description(self, ctx, *args):
         c = await self.get_context(ctx, args)
-        new_description = clean_args(args).join(' ')
+        new_description = ' '.join(clean_args(args))
         topic = "({}/{}) {}".format(len(c.room.players), c.room.size, c.room.description)
         try:
             await asyncio.wait_for(c.channel.edit(topic=topic), timeout=3.0)
