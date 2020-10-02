@@ -78,15 +78,9 @@ class BasicRoom(commands.Cog):
             if p and p.id not in invitees:
                 invitees.append(p.id)
 
-        rooms = Room.find(guild=ctx.guild.id)
-        room_match = None
-        if rooms:
-            for room_data in rooms:
-                r = Room.from_query(room_data)
-                if player.id in r.players:
-                    room = r
+        (room, message) = Room.get_room(ctx, args)
         if not room:
-            return await ctx.send(settings.get_text('not_in_room'))
+            return await ctx.send(message)
 
         if not invitees:
             return await ctx.send(settings.get_text('missing_target_invitees'))

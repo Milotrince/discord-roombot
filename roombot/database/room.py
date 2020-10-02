@@ -202,6 +202,34 @@ class Room:
 
 
     @classmethod
+    def get_room(cls, ctx, args):
+        settings = Settings.get_for(ctx.guild.id)
+        player = ctx.message.author
+        rooms = Room.get_player_rooms(player.id, ctx.guild.id)
+        
+        room = None
+        if len(rooms) > 1:
+            role_mention_filter = ctx.message.role_mentions[0].id if ctx.message.role_mentions and ctx.message.role_mentions[0] else None
+            string = ' '.join(args).lower()
+            rx = re.search(r'\((.*?)\)', string)
+            text_filter = rx.group(1) if rx else remove_mentions(string)
+            for r in rooms:
+                match_channel = ctx.channel.id == r.channel_id if ctx.channel else False
+                match_text = text_filter and text_filter in r.activity.lower()
+                match_role = role_mention_filter == r.role_id
+                if match_channel or match_text or match_role:
+                    room = r
+                    break
+            if not room:
+                return (None, settings.get_text('in_multiple_rooms'))
+        elif len(rooms) == 1:
+            room = rooms[0]
+        else:
+            return (None, settings.get_text('not_in_room'))
+
+        return (room, None)
+
+    @classmethod
     def get_hosted_rooms(cls, ctx, args):
         settings = Settings.get_for(ctx.guild.id)
         player = ctx.message.author
