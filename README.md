@@ -8,7 +8,7 @@
       </a>
     </p>
     <p>
-      <a href="https://discord.com/api/oauth2/authorize?client_id=592816310656696341&permissions=285224016&scope=bot" target="_blank">
+      <a href="https://discord.com/api/oauth2/authorize?client_id=592816310656696341&permissions=268463184&scope=bot" target="_blank">
         <img src="https://img.shields.io/badge/invite-RoomBot-7289da" alt="Invite RoomBot"/>
       </a>
     </p>
