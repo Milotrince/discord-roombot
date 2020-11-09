@@ -132,7 +132,8 @@ class Room:
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(read_messages=False),
             guild.me: discord.PermissionOverwrite(read_messages=True, manage_channels=True),
-            role: discord.PermissionOverwrite(read_messages=True)
+            role: discord.PermissionOverwrite(read_messages=True),
+            player: discord.PermissionOverwrite(manage_channels=True)
         }
         for accessor in accessors:
             overwrites[accessor] = discord.PermissionOverwrite(read_messages=True)
