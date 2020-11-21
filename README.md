@@ -41,6 +41,7 @@ Sometimes you want to play something with a group, but everyone's busy at the mo
 1. Clone this repository.
 2. Rename `example.env` to `.env` and update its contents
     * `DISCORD_BOT_TOKEN` is bot token from [Discord Developer Portal](https://discordapp.com/developers/applications/)
+      * **!! IMPORTANT !!** Make sure to enable both Privileged Intents under Bot > Privileged Gateway Intents
     * if `ENV` is `development`, then the default prefix will be `t.` instead of `r.`. Use `production` or anything else to have the default prefix `r.`.
 3. Install `pipenv`
     * macOS (Terminal) `brew install pipenv` or `pip3 install pipenv`

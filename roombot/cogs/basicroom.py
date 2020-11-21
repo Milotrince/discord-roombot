@@ -74,7 +74,7 @@ class BasicRoom(commands.Cog):
             player_names.append(member.name.lower())
 
         for arg in args:
-            p = discord.utils.find(lambda p: p.name.lower() == arg.lower(), ctx.guild.members)
+            p = discord.utils.find(lambda p: p.name.lower() == arg.lower() or p.display_name.lower() == arg.lower(), ctx.guild.members)
             if p and p.id not in invitees:
                 invitees.append(p.id)
 
