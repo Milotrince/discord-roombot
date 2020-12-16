@@ -41,9 +41,11 @@ async def determine_prefix(bot, message):
     return Settings.get_default_value('prefix')
 
 # Define bot
-intents = discord.Intents.all()
+intents = discord.Intents.default()
+intents.members = True
+intents.typing = False
 bot = commands.Bot(
-    intents=discord.Intents.all(),
+    intents=intents,
     command_prefix=determine_prefix, 
     case_insensitive=True,
     activity=discord.Game('the waiting game'))
