@@ -130,7 +130,6 @@ class Room:
             accessors = list(filter(lambda m : m.bot, guild.members))
 
         overwrites = {
-            guild.default_role: discord.PermissionOverwrite(read_messages=False),
             guild.me: discord.PermissionOverwrite(read_messages=True, manage_channels=True),
             role: discord.PermissionOverwrite(read_messages=True),
             player: discord.PermissionOverwrite(manage_channels=True)

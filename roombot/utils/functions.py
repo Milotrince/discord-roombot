@@ -55,12 +55,15 @@ def get_target(guild, text, member=True, role=True):
                 return r
 
 async def get_rooms_category(guild, settings):
-    overwrites = {
-        guild.default_role: discord.PermissionOverwrite(read_messages=False),
-        guild.me: discord.PermissionOverwrite(read_messages=True, manage_channels=True),
-    }
     existing_category = discord.utils.get(guild.categories, name=settings.category_name)
-    return existing_category if existing_category else await guild.create_category(settings.category_name, overwrites=overwrites)
+    if existing_category:
+        return existing_category
+    else:
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            guild.me: discord.PermissionOverwrite(read_messages=True, manage_channels=True),
+        }
+        return await guild.create_category(settings.category_name, overwrites=overwrites)
 
 async def try_delete(discord_object):
     try:
