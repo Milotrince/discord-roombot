@@ -69,7 +69,7 @@ class RoomHost(commands.Cog):
     async def kick(self, ctx, *args):
         c = await self.get_context(ctx, args)
         kickee = self.get_target_player(c)
-        if not kickee:
+        if not kickee or len(args) < 1:
             return await ctx.send(c.settings.get_text('missing_target'))
         if c.player.id == kickee.id:
             return await ctx.send(c.settings.get_text('self_target').format(c.player.display_name))
