@@ -88,7 +88,7 @@ class RoomHost(commands.Cog):
     async def host(self, ctx, *args):
         c = await self.get_context(ctx, args)
         new_host = self.get_target_player(c)
-        if not new_host:
+        if not new_host or len(args) < 1:
             return await ctx.send(c.settings.get_text('missing_target'))
         for p in c.room.players:
             if p == new_host.id:
