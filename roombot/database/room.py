@@ -114,7 +114,7 @@ class Room:
             name="({}) {}".format(settings.get_text('room'), activity),
             color=color,
             hoist=True,
-            mentionable=True )
+            mentionable=False )
 
         # overwrites
         accessors_ids = settings.access_all_rooms_role
