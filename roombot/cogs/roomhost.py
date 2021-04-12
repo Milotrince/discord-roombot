@@ -216,10 +216,8 @@ class RoomHost(commands.Cog):
                 category=category,
                 position=0,
                 bitrate=c.settings.bitrate * 1000, 
-                overwrites={
-                    ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-                    ctx.guild.me: discord.PermissionOverwrite(move_members=True),
-                    c.role: discord.PermissionOverwrite(read_messages=True) })
+                overwrites= c.channel.overwrites
+            )
             c.room.update('voice_channel_id', voice_channel.id)
             await ctx.send(c.settings.get_text('new_voice_channel').format(voice_channel.name))
 
