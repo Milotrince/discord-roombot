@@ -48,7 +48,7 @@ bot = commands.Bot(
     intents=intents,
     command_prefix=determine_prefix, 
     case_insensitive=True,
-    activity=discord.Game('hey look, why you don't use me :( | do r.h'))
+    activity=discord.Game("hey look, why you don't use me? :) | do r.h"))
 bot.remove_command('help')
 
 @bot.check
