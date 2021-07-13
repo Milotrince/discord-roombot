@@ -60,6 +60,13 @@ def passes_role_restriction(ctx):
         return has_common_element(role_ids, settings.role_restriction) or member.guild_permissions.administrator
     return True
 
+@bot.check
+async def check_banned_server(ctx):
+    banned = str(ctx.guild.id) in os.getenv("BANNED_SERVERS")
+    if banned:
+        await ctx.send('This server has been reported to be unethical and has banned from using RoomBot. Thank you for your understanding.')
+    return not banned
+
 @bot.event
 async def on_ready():
     log('{} is online!'.format(bot.user.name))
@@ -171,8 +178,9 @@ async def delete_inactive():
         await RoomEmbed.delete_old()
         await Room.delete_inactive(bot)
     except Exception as e:
-        await logc("===== Error raised from: delete_inactive")
-        await logc(e)
+        # await logc("===== Error raised from: delete_inactive")
+        # await logc(e)
+        pass
 
 # add cogs (groups of commands)
 cogs = [ 'general', 'basicroom', 'roomhost', 'admin' ]
