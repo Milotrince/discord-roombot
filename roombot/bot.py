@@ -177,6 +177,7 @@ async def delete_inactive():
         await EmbedPagesEmbed.delete_old()
         await RoomEmbed.delete_old()
         await Room.delete_inactive(bot)
+        await Settings.delete_inactive(bot)
     except Exception as e:
         # await logc("===== Error raised from: delete_inactive")
         # await logc(e)

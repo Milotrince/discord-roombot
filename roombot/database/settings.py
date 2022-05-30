@@ -120,6 +120,19 @@ class Settings:
     def make_default(cls, guild_id):
         return cls(guild_id=guild_id)
 
+    @classmethod
+    async def delete_inactive(cls, bot):
+        print("in settings delete")
+        for s_data in db.settings.all():
+            s = cls.from_query(s_data)
+
+            guild = bot.get_guild(s.guild_id)
+            if guild == None:
+                print('deleting')
+                db.rooms.delete(guild=s.guild_id)
+                db.invites.delete(guild=s.guild_id)
+                db.settings.delete(guild=s.guild_id)
+
     def set(self, ctx, field, value):
         result = (True, None)
         parsed_value = value

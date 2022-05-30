@@ -345,7 +345,7 @@ class Room:
                 birth_channel = guild.get_channel(r.birth_channel) if guild else None
                 channel = guild.get_channel(r.channel_id) if guild else None
 
-                if (channel):
+                if channel:
                     history = (await channel.history(limit=1).flatten())
                     if len(history) > 0:
                         last_message = history[0]
