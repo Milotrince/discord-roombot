@@ -29,15 +29,20 @@ class RoomEmbed():
 
     def get_embed(self):
         description = discord.Embed.Empty if self.room.description == '' else self.room.description
-        room_status = self.get_text('room_status').format(self.room.size - len(self.room.players)) if len(self.room.players) < self.room.size else self.get_text('full_room')
+        total_player = len(self.room.players)
+        player_show_limit = 5
+        room_status = self.get_text('room_status').format(self.room.size - total_player) if total_player < self.room.size else self.get_text('full_room')
         return discord.Embed(
             color=self.room.color,
             description=description,
             timestamp=self.room.created,
             title="{}{}".format(self.room.get_symbols(), self.room.activity)
         ).add_field(
-            name="{} ({}/{})".format(self.get_text('players'), len(self.room.players), self.room.size),
-            value="<@{}>".format(">, <@".join([str(id) for id in self.room.players]))
+            name="{} ({}/{})".format(self.get_text('players'), total_player, self.room.size),
+            value=(
+                "<@{}>".format(">, <@".join([str(id) for id in self.room.players[:player_show_limit]])) +
+                (" and {} more.".format(total_player - player_show_limit) if total_player > player_show_limit else "")
+            )
         ).add_field(
             name=self.get_text('host'),
             value="<@{}>".format(self.room.host)
