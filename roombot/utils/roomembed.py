@@ -44,10 +44,10 @@ class RoomEmbed():
                 (" and {} more.".format(total_player - player_show_limit) if total_player > player_show_limit else "")
             )
         ).add_field(
-            name=self.get_text('host'),
+            name=self.get_text('Host'),
             value="<@{}>".format(self.room.host)
         ).add_field(
-            name=self.get_text('channel'),
+            name=self.get_text('Channel'),
             value="<#{}>".format(self.room.channel_id)
         ).add_field(
             name=room_status,
