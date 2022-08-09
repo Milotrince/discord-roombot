@@ -30,11 +30,11 @@ Sometimes you want to play something with a group, but everyone's busy at the mo
 * Once you have enough people, RoomBot will notify everybody!
 
 ### Basic Commands
-* `new` Create a new room based on your current activity or message
-* `list` List rooms in current guild.
-* `join` Join a room with `@someone` or the room name
-* `leave` Leave a room
-* `look` Show room information
+* `r.new` Create a new room based on your current activity or message
+* `r.list` List rooms in current guild.
+* `r.join` Join a room with `@someone` or the room name
+* `r.leave` Leave a room
+* `r.look` Show room information
 * ... and more!
 
 ## Running Your Own RoomBot
